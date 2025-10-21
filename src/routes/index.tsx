@@ -7,6 +7,7 @@ import InternalManagement from "@/pages/InternalManagement/InternalManagement";
 import ConductWarranty from "@/pages/ConductWarranty/ConductWarranty";
 import ROUTERS_PATH from "@/constants/routers";
 import NotFound from "@/pages/NotFound";
+import CustomerSearch from "@/pages/manageCustomer/features/CustomerSearch";
 
 // Nơi để mình cấu hình các routes cho ứng dụng
 function Routers() {
@@ -19,10 +20,8 @@ function Routers() {
         {
           path: ROUTERS_PATH.MANAGE_CUSTOMER,
           element: <ManageCustomer />,
-          // children: [
-          //   { path: "details/:customerId", element: <ManageCustomer /> },
-          // ],
         },
+        { path: ROUTERS_PATH.CUSTOMER_SEARCH, element: <CustomerSearch /> },
         { path: ROUTERS_PATH.CREATE_WARRANTY, element: <CreateWarranty /> },
         {
           path: ROUTERS_PATH.INTERNAL_MANAGEMENT,

@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Table,
   TableBody,
@@ -11,8 +10,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router";
+import ROUTERS_PATH from "@/constants/routers";
 
 export default function ManageCustomer() {
+  const navigate = useNavigate();
+  const onNavigateToCustomerSearch = () => {
+    navigate(ROUTERS_PATH.CUSTOMER_SEARCH);
+  };
   return (
     <div className="font-semibold p-8 space-y-6 border rounded-lg shadow-sm bg-white">
       <h1 className="text-2xl font-bold text-gray-800">
@@ -61,14 +66,14 @@ export default function ManageCustomer() {
             <TableHead className="text-right font-semibold text-gray-700 uppercase tracking-wider">
               Năm SX
             </TableHead>
-            <TableHead className="text-right font-semibold text-gray-700 uppercase tracking-wider">
-              Chi Tiết
-            </TableHead>
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          <TableRow className="hover:bg-gray-50 transition-colors">
+          <TableRow
+            className="hover:bg-gray-50 transition-colors"
+            onClick={onNavigateToCustomerSearch}
+          >
             <TableCell className="font-medium text-gray-800">
               Nguyễn Văn A
             </TableCell>
@@ -79,14 +84,6 @@ export default function ManageCustomer() {
             </TableCell>
             <TableCell className="text-right text-gray-600">CR-V</TableCell>
             <TableCell className="text-right text-gray-600">2022</TableCell>
-            <TableCell className="text-right text-blue-600 hover:underline cursor-pointer">
-              <Button
-                type="submit"
-                className="rounded-full ml-2 px-4 bg-blue-600 hover:bg-blue-800 text-white font-medium"
-              >
-                xem
-              </Button>
-            </TableCell>
           </TableRow>
         </TableBody>
       </Table>
