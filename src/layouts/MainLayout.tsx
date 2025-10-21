@@ -32,7 +32,7 @@ export default function MainLayout() {
             orientation="vertical"
             className="mr-2 data-[orientation=vertical]:h-4"
           />
-          <Breadcrumb>
+          {/* <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
                 <BreadcrumbLink href="#">
@@ -44,8 +44,9 @@ export default function MainLayout() {
                 <BreadcrumbPage>Data Fetching</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
-          </Breadcrumb>
+          </Breadcrumb> */}
         </header>
+
         {/* Phần nội dung chính — đặt Outlet ở đây */}
         <main className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <Outlet />

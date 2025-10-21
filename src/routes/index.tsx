@@ -8,6 +8,7 @@ import ConductWarranty from "@/pages/ConductWarranty/ConductWarranty";
 import ROUTERS_PATH from "@/constants/routers";
 import NotFound from "@/pages/NotFound";
 
+// Nơi để mình cấu hình các routes cho ứng dụng
 function Routers() {
   const routers = createBrowserRouter([
     {
@@ -15,7 +16,13 @@ function Routers() {
       element: <MainLayout />,
       children: [
         { index: true, element: <Home /> },
-        { path: ROUTERS_PATH.MANAGE_CUSTOMER, element: <ManageCustomer /> },
+        {
+          path: ROUTERS_PATH.MANAGE_CUSTOMER,
+          element: <ManageCustomer />,
+          // children: [
+          //   { path: "details/:customerId", element: <ManageCustomer /> },
+          // ],
+        },
         { path: ROUTERS_PATH.CREATE_WARRANTY, element: <CreateWarranty /> },
         {
           path: ROUTERS_PATH.INTERNAL_MANAGEMENT,
