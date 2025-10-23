@@ -1,92 +1,161 @@
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import { useNavigate } from "react-router";
-import ROUTERS_PATH from "@/constants/routers";
 
-export default function ManageCustomer() {
-  const navigate = useNavigate();
-  const onNavigateToCustomerSearch = () => {
-    navigate(ROUTERS_PATH.CUSTOMER_SEARCH);
+import type { Customer } from "./types/index";
+import {
+  mockCustomers,
+  mockParts,
+  mockServiceHistory,
+} from "../manageCustomer/data/mockData";
+import { Screen1CustomerSearch } from "@/pages/manageCustomer/features/CustomerSearch";
+import { Screen2VehicleInfo } from "@/pages/manageCustomer/features/VehicleInfomation";
+import { Screen21PartsManagement } from "@/pages/manageCustomer/features/PartsManagement";
+import { Screen22ServiceHistory } from "@/pages/manageCustomer/features/ServiceHistory";
+
+export default function App() {
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+  const [activeTab, setActiveTab] = useState("info");
+  const [showDialog, setShowDialog] = useState(false);
+
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setActiveTab("info");
+    setShowDialog(true); // Mở dialog thông báo thay vì toaster
   };
+
+  const handleBackToSearch = () => {
+    setSelectedCustomer(null);
+  };
+
   return (
-    <div className="font-semibold p-8 space-y-6 border rounded-lg shadow-sm bg-white">
-      <h1 className="text-2xl font-bold text-gray-800">
-        Tra Cứu Thông Tin Khách Hàng
-      </h1>
+    <div className="min-h-screen bg-gradient-to-br from-background via-slate-50 to-background text-foreground">
+      {/* Header */}
+      <header className="border-b bg-card shadow-sm sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {selectedCustomer && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToSearch}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Quay lại
+              </Button>
+            )}
+            <div>
+              <h1 className="text-xl font-semibold">
+                Hệ thống quản lý khách hàng & xe
+              </h1>
+              {selectedCustomer && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Đang xem hồ sơ:{" "}
+                  <span className="font-medium text-foreground">
+                    {selectedCustomer.name}
+                  </span>{" "}
+                  - {selectedCustomer.vin}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
 
-      {/* Ô tìm kiếm cải tiến */}
-      <form className="flex w-full max-w-md items-center bg-gray-50 border border-gray-200 rounded-full px-3 py-2 shadow-sm hover:shadow-md transition-all">
-        <Search className="h-5 w-5 text-gray-500 ml-1" />
-        <Input
-          type="text"
-          placeholder="Nhập số VIN khách hàng..."
-          className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 text-gray-700 placeholder:text-gray-400"
-        />
-        <Button
-          type="submit"
-          className="rounded-full ml-2 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-        >
-          Tìm kiếm
-        </Button>
-      </form>
+      {/* Main */}
+      <main className="py-8">
+        {!selectedCustomer ? (
+          <div className="max-w-5xl mx-auto px-4">
+            <Screen1CustomerSearch
+              customers={mockCustomers}
+              onSelectCustomer={handleSelectCustomer}
+            />
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="bg-card shadow-md rounded-2xl p-6 border space-y-6">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="space-y-6"
+              >
+                <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto bg-muted/40 p-1 rounded-xl">
+                  <TabsTrigger
+                    value="info"
+                    className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition"
+                  >
+                    🚗 Thông tin xe
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="parts"
+                    className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition"
+                  >
+                    ⚙️ Quản lý phụ tùng
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="history"
+                    className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition"
+                  >
+                    🧰 Lịch sử dịch vụ
+                  </TabsTrigger>
+                </TabsList>
 
-      {/* Bảng dữ liệu */}
-      <Table className="min-w-full border border-gray-200 rounded-xl shadow-sm overflow-hidden text-sm">
-        <TableCaption className="text-gray-500 py-3">
-          Danh sách khách hàng gần đây.
-        </TableCaption>
+                <TabsContent value="info" className="pt-4">
+                  <Screen2VehicleInfo customer={selectedCustomer} />
+                </TabsContent>
 
-        <TableHeader className="bg-gray-50">
-          <TableRow>
-            <TableHead className="w-[100px] font-semibold text-gray-700 uppercase tracking-wider">
-              Họ Tên
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 uppercase tracking-wider">
-              Số Điện Thoại
-            </TableHead>
-            <TableHead className="font-semibold text-gray-700 uppercase tracking-wider">
-              Địa Chỉ
-            </TableHead>
-            <TableHead className="text-right font-semibold text-gray-700 uppercase tracking-wider">
-              Số VIN
-            </TableHead>
-            <TableHead className="text-right font-semibold text-gray-700 uppercase tracking-wider">
-              Model
-            </TableHead>
-            <TableHead className="text-right font-semibold text-gray-700 uppercase tracking-wider">
-              Năm SX
-            </TableHead>
-          </TableRow>
-        </TableHeader>
+                <TabsContent value="parts" className="pt-4">
+                  <Screen21PartsManagement
+                    customer={selectedCustomer}
+                    parts={mockParts}
+                  />
+                </TabsContent>
 
-        <TableBody>
-          <TableRow
-            className="hover:bg-gray-50 transition-colors"
-            onClick={onNavigateToCustomerSearch}
-          >
-            <TableCell className="font-medium text-gray-800">
-              Nguyễn Văn A
-            </TableCell>
-            <TableCell>0901234567</TableCell>
-            <TableCell className="text-gray-600">Hà Nội</TableCell>
-            <TableCell className="text-right font-semibold text-gray-800">
-              VIN12345
-            </TableCell>
-            <TableCell className="text-right text-gray-600">CR-V</TableCell>
-            <TableCell className="text-right text-gray-600">2022</TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
+                <TabsContent value="history" className="pt-4">
+                  <Screen22ServiceHistory
+                    customer={selectedCustomer}
+                    serviceHistory={mockServiceHistory}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Dialog thay thế Toaster */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Khách hàng đã được chọn</DialogTitle>
+            <DialogDescription>
+              Bạn đang xem thông tin của{" "}
+              <span className="font-semibold text-foreground">
+                {selectedCustomer?.name}
+              </span>
+              . Chọn tab để xem chi tiết.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Đóng
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
