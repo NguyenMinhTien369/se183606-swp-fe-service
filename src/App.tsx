@@ -1,7 +1,12 @@
+import { AuthProvider } from "@/pages/Login/feature/AuthContext";
 import Routers from "./routes";
 
 function App() {
-  return <Routers />;
+  return (
+    <AuthProvider>
+      <Routers />
+    </AuthProvider>
+  );
 }
 
 export default App;

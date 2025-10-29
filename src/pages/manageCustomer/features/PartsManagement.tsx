@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Customer, Part } from "../types/index";
-import { Settings, CheckCircle2 } from "lucide-react";
+import { Settings, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,19 +22,58 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { installedPartAPI } from "@/utility/index";
 
 interface Screen21Props {
   customer: Customer;
-  parts: Part[];
 }
 
-export function Screen21PartsManagement({ customer, parts }: Screen21Props) {
+export function Screen21PartsManagement({ customer }: Screen21Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
+  const [parts, setParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+
+  // Load parts khi component mount hoặc customer thay đổi
+  useEffect(() => {
+    if (customer?.vin) {
+      loadInstalledParts();
+    }
+  }, [customer]);
+
+  const loadInstalledParts = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await installedPartAPI.getLatestInstalledParts(
+        customer.vin
+      );
+      const partsData = response.data.result || [];
+
+      // Map backend data to frontend Part interface
+      const mappedParts: Part[] = partsData.map((item: any) => ({
+        id: item.installedPartID?.toString() || "",
+        name: item.partTypeName || "Unknown",
+        serialNumber: item.partSerialNumber || "",
+        type: item.partTypeID ? "Chính" : "Phụ", // Có thể cần logic phức tạp hơn
+        installedDate: item.installationDate || "",
+      }));
+
+      setParts(mappedParts);
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Không thể tải danh sách phụ tùng"
+      );
+      console.error("Error loading parts:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectPart = (part: Part) => {
     setSelectedPart(part);
-    setDialogOpen(true); // Mở dialog thay vì dùng toaster
+    setDialogOpen(true);
   };
 
   return (
@@ -76,6 +115,13 @@ export function Screen21PartsManagement({ customer, parts }: Screen21Props) {
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           {/* ⚙️ Danh sách phụ tùng */}
           <div className="space-y-3">
             <h4 className="font-medium text-base flex items-center gap-2">
@@ -94,7 +140,17 @@ export function Screen21PartsManagement({ customer, parts }: Screen21Props) {
                 </TableHeader>
 
                 <TableBody>
-                  {parts.length === 0 ? (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-8 text-sm text-muted-foreground"
+                      >
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                        Đang tải phụ tùng...
+                      </TableCell>
+                    </TableRow>
+                  ) : parts.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}

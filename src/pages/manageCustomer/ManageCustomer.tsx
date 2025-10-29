@@ -13,11 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 import type { Customer } from "./types/index";
-import {
-  mockCustomers,
-  mockParts,
-  mockServiceHistory,
-} from "../manageCustomer/data/mockData";
 import { Screen1CustomerSearch } from "@/pages/manageCustomer/features/CustomerSearch";
 import { Screen2VehicleInfo } from "@/pages/manageCustomer/features/VehicleInfomation";
 import { Screen21PartsManagement } from "@/pages/manageCustomer/features/PartsManagement";
@@ -33,7 +28,7 @@ export default function App() {
   const handleSelectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setActiveTab("info");
-    setShowDialog(true); // Mở dialog thông báo thay vì toaster
+    setShowDialog(true);
   };
 
   const handleBackToSearch = () => {
@@ -79,10 +74,7 @@ export default function App() {
       <main className="py-8">
         {!selectedCustomer ? (
           <div className="max-w-5xl mx-auto px-4">
-            <Screen1CustomerSearch
-              customers={mockCustomers}
-              onSelectCustomer={handleSelectCustomer}
-            />
+            <Screen1CustomerSearch onSelectCustomer={handleSelectCustomer} />
           </div>
         ) : (
           <div className="max-w-7xl mx-auto px-6">
@@ -118,17 +110,11 @@ export default function App() {
                 </TabsContent>
 
                 <TabsContent value="parts" className="pt-4">
-                  <Screen21PartsManagement
-                    customer={selectedCustomer}
-                    parts={mockParts}
-                  />
+                  <Screen21PartsManagement customer={selectedCustomer} />
                 </TabsContent>
 
                 <TabsContent value="history" className="pt-4">
-                  <Screen22ServiceHistory
-                    customer={selectedCustomer}
-                    serviceHistory={mockServiceHistory}
-                  />
+                  <Screen22ServiceHistory customer={selectedCustomer} />
                 </TabsContent>
               </Tabs>
             </div>

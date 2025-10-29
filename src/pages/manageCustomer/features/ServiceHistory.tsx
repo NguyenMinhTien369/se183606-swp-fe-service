@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Customer, ServiceHistory } from "../types/index";
-import { Save, ClipboardList } from "lucide-react";
+import { Save, ClipboardList, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -21,20 +21,52 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { serviceHistoryAPI } from "@/utility/index";
 
-export function Screen22ServiceHistory({
-  customer,
-  serviceHistory,
-}: {
-  customer: Customer;
-  serviceHistory: ServiceHistory[];
-}) {
+export function Screen22ServiceHistory({ customer }: { customer: Customer }) {
   const [notes, setNotes] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState("");
   const [dialogType, setDialogType] = useState<"success" | "error">("success");
+  const [serviceHistory, setServiceHistory] = useState<ServiceHistory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
 
   const maxChars = 500;
+
+  // Load service history khi component mount hoặc customer thay đổi
+  useEffect(() => {
+    if (customer?.vin) {
+      loadServiceHistory();
+    }
+  }, [customer]);
+
+  const loadServiceHistory = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await serviceHistoryAPI.getByVehicleVin(customer.vin);
+      const historyData = response.data.result || [];
+
+      // Map backend data to frontend ServiceHistory interface
+      const mappedHistory: ServiceHistory[] = historyData.map((item: any) => ({
+        id: item.serviceHistoryID?.toString() || "",
+        date: item.serviceDate || "",
+        serviceType: item.serviceType || "",
+        category: item.description || "",
+        partReplaced: item.partReplaced || "N/A",
+        serialNumber: item.partSerialNumber || "N/A",
+        technician: item.technicianName || "Unknown",
+      }));
+
+      setServiceHistory(mappedHistory);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Không thể tải lịch sử dịch vụ");
+      console.error("Error loading service history:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSaveNotes = () => {
     if (notes.length > maxChars) {
@@ -43,6 +75,7 @@ export function Screen22ServiceHistory({
       setDialogOpen(true);
       return;
     }
+    // TODO: Implement API call to save notes
     setDialogMessage("✅ Đã lưu ghi chú thành công!");
     setDialogType("success");
     setDialogOpen(true);
@@ -84,6 +117,13 @@ export function Screen22ServiceHistory({
             </div>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           {/* 📋 Bảng lịch sử dịch vụ */}
           <div className="pt-2">
             <h4 className="mb-3 text-base font-medium">Bảng lịch sử</h4>
@@ -100,7 +140,17 @@ export function Screen22ServiceHistory({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {serviceHistory.length > 0 ? (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-muted-foreground py-8"
+                      >
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                        Đang tải lịch sử...
+                      </TableCell>
+                    </TableRow>
+                  ) : serviceHistory.length > 0 ? (
                     serviceHistory.map((service) => (
                       <TableRow key={service.id} className="hover:bg-muted/30">
                         <TableCell>{service.date}</TableCell>
