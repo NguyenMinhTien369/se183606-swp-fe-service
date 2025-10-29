@@ -1,9 +1,11 @@
-import { Navigate } from "react-router";
+import { Navigate, useLocation } from "react-router";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
+import { canAccessRoute } from "@/utils/constants"; // ← Import helper function
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRoles?: string[];
+  checkRouteAccess?: boolean; // ← New prop: Enable route access checking
 }
 
 /**
@@ -20,8 +22,10 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({
   children,
   allowedRoles = [],
+  checkRouteAccess = false, // ← Default: không check route access
 }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, hasAnyRole } = useAuth();
+  const { isAuthenticated, loading, hasAnyRole, user } = useAuth();
+  const location = useLocation(); // ← Lấy current path
 
   // Đang loading → hiển thị loading screen
   if (loading) {
@@ -40,9 +44,23 @@ export default function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  // Có yêu cầu role nhưng user không có role phù hợp → redirect về /unauthorized
+  // ✅ Check 1: Role-based access (allowedRoles)
   if (allowedRoles.length > 0 && !hasAnyRole(allowedRoles)) {
+    console.log("❌ User không có role phù hợp");
     return <Navigate to="/unauthorized" replace />;
+  }
+
+  // ✅ Check 2: Route-based access (ROLE_ACCESSIBLE_ROUTES)
+  if (checkRouteAccess && user) {
+    const userRole = user.role?.roleName?.replace("ROLE_", "") || "";
+    const currentPath = location.pathname;
+
+    console.log("🔍 Checking route access:", { userRole, currentPath });
+
+    if (!canAccessRoute(userRole, currentPath)) {
+      console.log("❌ User không có quyền truy cập route này");
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   // Authenticated và có quyền → render children

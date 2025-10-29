@@ -2,13 +2,13 @@
 // 🔐 AUTHENTICATION & AUTHORIZATION CONSTANTS
 // ============================================
 
+import ROUTERS_PATH from "@/constants/routers";
+
 /**
  * Role constants matching backend Role entity
  * Backend: FA25_SWP391_SE1818_G6/EVWarrantyHub/entity/Role.java
  */
 export const ROLES = {
-  ADMIN: "ADMIN",
-  EVM_STAFF: "EVM_STAFF",
   SC_STAFF: "SC_STAFF",
   SC_TECHNICIAN: "SC_TECHNICIAN",
 } as const;
@@ -17,13 +17,26 @@ export type RoleType = (typeof ROLES)[keyof typeof ROLES];
 
 /**
  * Home route mapping for each role after login
- * Maps role -> default dashboard route
+ * Maps role -> default dashboard route (first route in array)
  */
 export const ROLE_HOME_ROUTES: Record<string, string> = {
-  [ROLES.ADMIN]: "/admin/dashboard",
-  [ROLES.EVM_STAFF]: "/evm/dashboard",
-  [ROLES.SC_STAFF]: "/", // Currently SC_STAFF uses home page
-  [ROLES.SC_TECHNICIAN]: "/technician/dashboard",
+  [ROLES.SC_STAFF]: ROUTERS_PATH.HOME, // Default route for SC_STAFF
+  [ROLES.SC_TECHNICIAN]: ROUTERS_PATH.HOME, // Default route for SC_TECHNICIAN
+};
+
+/**
+ * All accessible routes for each role
+ * Maps role -> array of accessible routes
+ */
+export const ROLE_ACCESSIBLE_ROUTES: Record<string, string[]> = {
+  [ROLES.SC_STAFF]: [
+    ROUTERS_PATH.MANAGE_CUSTOMER, // Quản lý khách hàng
+    ROUTERS_PATH.INTERNAL_MANAGEMENT, // Quản lý nội bộ
+  ],
+  [ROLES.SC_TECHNICIAN]: [
+    ROUTERS_PATH.CREATE_WARRANTY, // Tạo bảo hành
+    ROUTERS_PATH.CONDUCT_WARRANTY, // Thực hiện bảo hành
+  ],
 };
 
 /**
@@ -31,30 +44,6 @@ export const ROLE_HOME_ROUTES: Record<string, string> = {
  * Used by AuthContext.hasPermission() to check authorization
  */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
-  [ROLES.ADMIN]: [
-    "manage_users",
-    "manage_system",
-    "view_all_data",
-    "manage_products",
-    "manage_parts",
-    "approve_warranty",
-    "manage_campaigns",
-    "view_reports",
-    "create_staff_accounts",
-    "delete_users",
-    "edit_system_settings",
-  ],
-  [ROLES.EVM_STAFF]: [
-    "manage_products",
-    "manage_parts",
-    "approve_warranty",
-    "reject_warranty",
-    "manage_campaigns",
-    "view_reports",
-    "manage_supply_chain",
-    "view_warranty_claims",
-    "export_reports",
-  ],
   [ROLES.SC_STAFF]: [
     "manage_customers",
     "manage_vehicles",
@@ -79,8 +68,6 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
  * Role display names in Vietnamese
  */
 export const ROLE_DISPLAY_NAMES: Record<string, string> = {
-  [ROLES.ADMIN]: "Quản trị viên",
-  [ROLES.EVM_STAFF]: "Nhân viên hãng xe",
   [ROLES.SC_STAFF]: "Nhân viên trung tâm",
   [ROLES.SC_TECHNICIAN]: "Kỹ thuật viên",
 };
@@ -89,8 +76,6 @@ export const ROLE_DISPLAY_NAMES: Record<string, string> = {
  * Role descriptions
  */
 export const ROLE_DESCRIPTIONS: Record<string, string> = {
-  [ROLES.ADMIN]: "Quản trị viên hệ thống",
-  [ROLES.EVM_STAFF]: "Nhân viên hãng xe điện",
   [ROLES.SC_STAFF]: "Nhân viên trung tâm dịch vụ",
   [ROLES.SC_TECHNICIAN]: "Kỹ thuật viên trung tâm dịch vụ",
 };
@@ -180,12 +165,50 @@ export const WARRANTY_CLAIM_STATUS_DISPLAY: Record<string, string> = {
 };
 
 // ============================================
+// 🛠️ HELPER FUNCTIONS
+// ============================================
+
+/**
+ * Check if a role can access a specific route
+ * @param role - User's role (e.g., "SC_STAFF")
+ * @param route - Route path to check
+ * @returns boolean - true if role can access the route
+ *
+ * @example
+ * canAccessRoute("SC_STAFF", "/ManageCustomer") // true
+ * canAccessRoute("SC_TECHNICIAN", "/ManageCustomer") // false
+ */
+export const canAccessRoute = (role: string, route: string): boolean => {
+  const accessibleRoutes = ROLE_ACCESSIBLE_ROUTES[role] || [];
+  return accessibleRoutes.includes(route);
+};
+
+/**
+ * Get all accessible routes for a role
+ * @param role - User's role
+ * @returns string[] - Array of accessible route paths
+ */
+export const getAccessibleRoutes = (role: string): string[] => {
+  return ROLE_ACCESSIBLE_ROUTES[role] || [];
+};
+
+/**
+ * Get default home route for a role
+ * @param role - User's role
+ * @returns string - Default route path (first route in accessible routes)
+ */
+export const getHomeRoute = (role: string): string => {
+  return ROLE_HOME_ROUTES[role] || "/";
+};
+
+// ============================================
 // 🎯 EXPORT ALL
 // ============================================
 
 export default {
   ROLES,
   ROLE_HOME_ROUTES,
+  ROLE_ACCESSIBLE_ROUTES,
   ROLE_PERMISSIONS,
   ROLE_DISPLAY_NAMES,
   ROLE_DESCRIPTIONS,
@@ -196,4 +219,7 @@ export default {
   PAGINATION,
   WARRANTY_CLAIM_STATUS,
   WARRANTY_CLAIM_STATUS_DISPLAY,
+  canAccessRoute,
+  getAccessibleRoutes,
+  getHomeRoute,
 };

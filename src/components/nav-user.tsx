@@ -1,19 +1,13 @@
 "use client";
 
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-} from "lucide-react";
+import { ChevronsUpDown, LogOut } from "lucide-react";
+import { useNavigate } from "react-router";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -36,6 +30,8 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   return (
     <SidebarMenu>
@@ -76,29 +72,18 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                .......
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                .......
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                .......
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                .......
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                try {
+                  await logout();
+                  navigate("/login", { replace: true });
+                } catch (error) {
+                  console.error("Logout failed:", error);
+                  // Vẫn navigate về login ngay cả khi có lỗi
+                  navigate("/login", { replace: true });
+                }
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

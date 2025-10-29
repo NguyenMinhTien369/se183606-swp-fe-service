@@ -1,7 +1,7 @@
 ﻿import React, { useState } from "react";
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "./feature/AuthContext";
-import { ROLE_HOME_ROUTES } from "@/utils/constants";
+import { getHomeRoute } from "@/utils/constants"; // ← Import helper function
 import { FaUser, FaLock } from "react-icons/fa";
 
 export default function LoginForm() {
@@ -11,25 +11,47 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /*
+Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
+- @param e: là một sự kiện của biểu mẫu (form event) được truyền vào khi người dùng gửi biểu mẫu đăng nhập.
+- chuyển trang dựa vào role của user sau khi đăng nhập thành công. Chuyển về trang home chứ không phải trang login nữa.
+*/
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     const result = await login(formData);
     if (result.success) {
-      const roleName = result.user?.role?.roleName || result.user?.role || "";
-      const roleKey =
-        typeof roleName === "string" ? roleName.replace("ROLE_", "") : "";
-      console.log(
-        "🔵 Navigating with role:",
-        roleKey,
-        "to:",
-        ROLE_HOME_ROUTES[roleKey]
-      );
-      navigate(ROLE_HOME_ROUTES[roleKey] || "/");
+      // Giải nén user từ kết quả login
+      const user = result.user;
+
+      // Kiểm tra có tồn tại user và role không
+      let roleName = "";
+      if (user && user.role) {
+        // Nếu role là object có key roleName
+        if (typeof user.role === "object" && "roleName" in user.role) {
+          roleName = user.role.roleName;
+        } else if (typeof user.role === "string") {
+          // Nếu role là chuỗi, ví dụ "ROLE_ADMIN"
+          roleName = user.role;
+        }
+      }
+
+      // Loại bỏ tiền tố ROLE_
+      const roleKey = roleName.replace("ROLE_", "");
+
+      console.log("🔵 Navigating with role:", roleKey);
+
+      // ✅ Sử dụng helper function để lấy home route
+      const destination = getHomeRoute(roleKey);
+      console.log("🔵 Destination:", destination);
+      navigate(destination);
     } else {
-      setError(result.error || "Đăng nhập thất bại");
+      // Đăng nhập thất bại
+      const errorMessage = result.error ?? "Đăng nhập thất bại";
+      setError(errorMessage);
     }
+
     setLoading(false);
   };
 

@@ -244,7 +244,6 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
         </CardContent>
       </Card>
 
-      {/* 🪟 Dialog thay thế Toaster */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

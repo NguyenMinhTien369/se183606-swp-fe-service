@@ -125,6 +125,7 @@ export const authAPI = {
     axiosInstance.post("/auth/login", credentials),
   introspect: (token: string) =>
     axiosInstance.post("/auth/introspect", { token }),
+  logout: () => axiosInstance.post("/users/logout"), // API logout từ backend UserController
 };
 
 // ==================== USER API ====================

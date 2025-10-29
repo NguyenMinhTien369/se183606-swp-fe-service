@@ -121,14 +121,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
   };
-
+  /*
+credentials: là 1 tham số kiểu LoginCredentials chứa thông tin đăng nhập của người dùng (username và password).
+:Promise<LoginResult>: hàm trả về một Promise chứa kết quả đăng nhập kiểu LoginResult, bao gồm thông tin về việc đăng nhập có thành công hay không, thông tin người dùng nếu thành công, hoặc thông báo lỗi nếu thất bại.
+*/
   const login = async (credentials: LoginCredentials): Promise<LoginResult> => {
     try {
       console.log("Đang gửi request login...", credentials);
       const response = await authAPI.login(credentials);
       console.log("Login response:", response.data);
 
-      // Backend trả về: { code: 0, result: { token, authenticated } }
+      // Backend trả về: { code: 0, result: { token, authenticated } }  !!!
       const result = response.data?.result;
       const token = result?.token;
 
@@ -162,6 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error("Login error:", error);
       console.error("Error response:", error.response?.data);
+
       return {
         success: false,
         error:
@@ -174,8 +178,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async (): Promise<void> => {
     try {
-      // await authAPI.logout(); // API này chưa có trong backend
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        // Gọi API logout từ backend để invalidate token
+        await authAPI.logout();
+      }
+    } catch (error) {
+      console.error("Logout API error:", error);
+      // Vẫn tiếp tục logout ở frontend ngay cả khi API thất bại
     } finally {
+      // Luôn xóa localStorage và reset user state
       localStorage.clear();
       setUser(null);
     }

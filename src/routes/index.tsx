@@ -10,6 +10,7 @@ import Unauthorized from "@/pages/Unauthorized";
 import ROUTERS_PATH from "@/constants/routers";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import LOGIN_ROUTE from "@/constants/loginrouter";
 
 // Nơi để mình cấu hình các routes cho ứng dụng
 function Routers() {
@@ -18,7 +19,7 @@ function Routers() {
     // 🔐 PUBLIC ROUTES (không cần authentication)
     // ============================================
     {
-      path: "/login",
+      path: LOGIN_ROUTE,
       element: <LoginForm />,
     },
     {
