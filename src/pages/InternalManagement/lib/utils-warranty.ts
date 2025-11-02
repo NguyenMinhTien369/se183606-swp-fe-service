@@ -1,43 +1,73 @@
-import type { WarrantyStatus, Priority } from "../types/warranty";
-
-export const getStatusLabel = (status: WarrantyStatus): string => {
-  const labels: Record<WarrantyStatus, string> = {
-    pending: "Chờ duyệt",
-    assigned: "Đã phân công",
-    receiving_parts: "Nhận phụ tùng",
-    in_progress: "Đang thay thế",
-    completed: "Hoàn tất",
-    rejected: "Từ chối",
+// ==================== Warranty Claim Status ====================
+// Backend uses UPPERCASE status values
+export const getClaimStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    PENDING: "Chờ duyệt",
+    APPROVED: "Đã duyệt",
+    IN_PROGRESS: "Đang xử lý",
+    COMPLETED: "Hoàn tất",
+    REJECTED: "Từ chối",
   };
-  return labels[status];
+  return labels[status] || status;
 };
 
-export const getStatusColor = (status: WarrantyStatus): string => {
-  const colors: Record<WarrantyStatus, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    assigned: "bg-blue-100 text-blue-800",
-    receiving_parts: "bg-purple-100 text-purple-800",
-    in_progress: "bg-orange-100 text-orange-800",
-    completed: "bg-green-100 text-green-800",
-    rejected: "bg-red-100 text-red-800",
+export const getClaimStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    PENDING: "bg-yellow-100 text-yellow-800",
+    APPROVED: "bg-blue-100 text-blue-800",
+    IN_PROGRESS: "bg-purple-100 text-purple-800",
+    COMPLETED: "bg-green-100 text-green-800",
+    REJECTED: "bg-red-100 text-red-800",
   };
-  return colors[status];
+  return colors[status] || "bg-gray-100 text-gray-800";
 };
 
-export const getPriorityLabel = (priority: Priority): string => {
-  const labels: Record<Priority, string> = {
-    high: "Cao",
-    medium: "Bình thường",
-    low: "Thấp",
+// ==================== Assignment Status ====================
+export const getAssignmentStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    ASSIGNED: "Đã phân công",
+    IN_PROGRESS: "Đang xử lý",
+    AWAITING_PARTS: "Chờ phụ tùng",
+    COMPLETED: "Hoàn tất",
   };
-  return labels[priority];
+  return labels[status] || status;
 };
 
-export const getPriorityColor = (priority: Priority): string => {
-  const colors: Record<Priority, string> = {
-    high: "bg-red-100 text-red-800",
-    medium: "bg-blue-100 text-blue-800",
-    low: "bg-gray-100 text-gray-800",
+export const getAssignmentStatusColor = (status: string): string => {
+  const colors: Record<string, string> = {
+    ASSIGNED: "bg-blue-100 text-blue-800",
+    IN_PROGRESS: "bg-purple-100 text-purple-800",
+    AWAITING_PARTS: "bg-yellow-100 text-yellow-800",
+    COMPLETED: "bg-green-100 text-green-800",
   };
-  return colors[priority];
+  return colors[status] || "bg-gray-100 text-gray-800";
 };
+
+// ==================== Performance Metrics ====================
+export const getPerformanceColor = (rate: number): string => {
+  if (rate >= 80) return "bg-green-100 text-green-800";
+  if (rate >= 60) return "bg-yellow-100 text-yellow-800";
+  return "bg-red-100 text-red-800";
+};
+
+export const getPerformanceBadgeClass = (rate: number): string => {
+  if (rate >= 80) return "bg-green-500";
+  if (rate >= 60) return "bg-yellow-500";
+  return "bg-red-500";
+};
+
+// ==================== Time Formatting ====================
+export const formatCompletionTime = (hours: number): string => {
+  if (hours < 24) return `${hours.toFixed(1)}h`;
+  const days = Math.ceil(hours / 24);
+  return `${days} ngày`;
+};
+
+// ==================== Deprecated Functions ====================
+// Keep for backward compatibility
+
+/** @deprecated Use getClaimStatusLabel instead */
+export const getStatusLabel = getClaimStatusLabel;
+
+/** @deprecated Use getClaimStatusColor instead */
+export const getStatusColor = getClaimStatusColor;

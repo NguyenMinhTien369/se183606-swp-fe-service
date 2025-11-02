@@ -38,27 +38,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { mockWarrantyRequests } from "../lib/mock-data"; // ensure this exports a runtime value
-import type { WarrantyRequest } from "../types/warranty"; // optional: keep type import if available
+import type { WarrantyClaimResponse } from "../types";
 
-export function ArchiveReports() {
-  // compute completed requests from the runtime mock
-  const completedRequests = mockWarrantyRequests.filter(
-    (r) => r.status === "completed"
-  );
+interface ArchiveReportsProps {
+  claims: WarrantyClaimResponse[];
+}
 
-  // If you don't mutate requests, use a plain variable instead of state
-  const requests: WarrantyRequest[] = completedRequests;
+export function ArchiveReports({ claims }: ArchiveReportsProps) {
+  // Filter completed requests only
+  const completedRequests = claims.filter((r) => r.status === "COMPLETED");
 
   const [searchVin, setSearchVin] = useState("");
   const [searchCode, setSearchCode] = useState("");
   const [selectedRequest, setSelectedRequest] =
-    useState<WarrantyRequest | null>(null);
+    useState<WarrantyClaimResponse | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState("");
 
-  const handleViewDetails = (request: WarrantyRequest) => {
+  const handleViewDetails = (request: WarrantyClaimResponse) => {
     setSelectedRequest(request);
     setIsDetailOpen(true);
   };
@@ -68,11 +66,10 @@ export function ArchiveReports() {
     setIsExportDialogOpen(true);
   };
 
-  const filteredRequests = requests.filter((req) => {
+  const filteredRequests = completedRequests.filter((req) => {
     if (searchVin && !req.vin.toLowerCase().includes(searchVin.toLowerCase()))
       return false;
-    if (searchCode && !req.id.toLowerCase().includes(searchCode.toLowerCase()))
-      return false;
+    if (searchCode && !String(req.claimID).includes(searchCode)) return false;
     return true;
   });
 
@@ -163,46 +160,54 @@ export function ArchiveReports() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRequests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell>{request.id}</TableCell>
-                    <TableCell>{request.vin}</TableCell>
-                    <TableCell>{request.assignedTo || "-"}</TableCell>
-                    <TableCell>
-                      {request.completedDate
-                        ? new Date(request.completedDate).toLocaleDateString(
-                            "vi-VN"
-                          )
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-800 border-green-200"
-                      >
-                        ✅ {request.result || "OK"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-muted-foreground">
-                          {request.attachments.length} files
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewDetails(request)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Xem
-                      </Button>
+                {filteredRequests.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        Không tìm thấy hồ sơ nào phù hợp.
+                      </p>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredRequests.map((request) => (
+                    <TableRow key={request.claimID}>
+                      <TableCell>#{request.claimID}</TableCell>
+                      <TableCell>{request.vin}</TableCell>
+                      <TableCell>{request.serviceCenterName || "-"}</TableCell>
+                      <TableCell>
+                        {new Date(request.creationDate).toLocaleDateString(
+                          "vi-VN"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-800 border-green-200"
+                        >
+                          ✅ {request.result || "OK"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm text-muted-foreground">
+                            {request.attachments?.length || 0} files
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(request)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Xem
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </ScrollArea>
@@ -245,7 +250,9 @@ export function ArchiveReports() {
           {selectedRequest && (
             <ScrollArea className="max-h-[80vh] pr-2">
               <DialogHeader>
-                <DialogTitle>Hồ sơ bảo hành - {selectedRequest.id}</DialogTitle>
+                <DialogTitle>
+                  Hồ sơ bảo hành - #{selectedRequest.claimID}
+                </DialogTitle>
               </DialogHeader>
 
               <div className="space-y-6 py-4">
@@ -262,27 +269,25 @@ export function ArchiveReports() {
                       Model
                     </label>
                     <div className="mt-1 font-medium">
-                      {selectedRequest.model}
+                      {selectedRequest.modelName}
                     </div>
                   </div>
                   <div>
                     <label className="text-muted-foreground text-sm">
-                      Người xử lý
+                      Khách hàng
                     </label>
                     <div className="mt-1 font-medium">
-                      {selectedRequest.assignedTo}
+                      {selectedRequest.customerName}
                     </div>
                   </div>
                   <div>
                     <label className="text-muted-foreground text-sm">
-                      Ngày hoàn tất
+                      Ngày tạo
                     </label>
                     <div className="mt-1 font-medium">
-                      {selectedRequest.completedDate
-                        ? new Date(
-                            selectedRequest.completedDate
-                          ).toLocaleDateString("vi-VN")
-                        : "-"}
+                      {new Date(
+                        selectedRequest.creationDate
+                      ).toLocaleDateString("vi-VN")}
                     </div>
                   </div>
                 </div>
@@ -291,29 +296,48 @@ export function ArchiveReports() {
 
                 {/* Technical Report */}
                 <div>
-                  <h4 className="mb-3 font-semibold">📄 Báo cáo kỹ thuật</h4>
+                  <h4 className="mb-3 font-semibold">📄 Thông tin bảo hành</h4>
                   <div className="space-y-3 text-sm">
                     <div>
-                      <label className="text-muted-foreground">
-                        Mô tả sự cố
-                      </label>
-                      <p className="mt-1">{selectedRequest.issueDescription}</p>
+                      <label className="text-muted-foreground">Mô tả</label>
+                      <p className="mt-1">
+                        {selectedRequest.description || "-"}
+                      </p>
                     </div>
                     <div>
                       <label className="text-muted-foreground">
-                        Phụ tùng thay thế
+                        Phụ tùng bị ảnh hưởng
                       </label>
-                      <ul className="mt-1 space-y-1">
-                        {selectedRequest.parts.map((part, index) => (
-                          <li
-                            key={index}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <div className="w-2 h-2 bg-primary rounded-full" />
-                            {part}
-                          </li>
-                        ))}
-                      </ul>
+                      {selectedRequest.affectedParts &&
+                      selectedRequest.affectedParts.length > 0 ? (
+                        <ul className="mt-1 space-y-2">
+                          {selectedRequest.affectedParts.map((part, index) => (
+                            <li
+                              key={index}
+                              className="flex items-start gap-2 p-2 bg-muted/30 rounded"
+                            >
+                              <div className="w-2 h-2 bg-primary rounded-full mt-1" />
+                              <div className="flex-1">
+                                <div className="font-medium">
+                                  {part.partTypeName}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  SN: {part.partSerialNumber}
+                                </div>
+                                {part.description && (
+                                  <div className="mt-1 text-muted-foreground">
+                                    {part.description}
+                                  </div>
+                                )}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-1 text-muted-foreground">
+                          Chưa có thông tin
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -347,42 +371,40 @@ export function ArchiveReports() {
 
                 <Separator />
 
-                {/* Manufacturer Notes */}
+                {/* Result */}
                 <div>
-                  <h4 className="mb-3 font-semibold">📝 Ghi chú hãng</h4>
+                  <h4 className="mb-3 font-semibold">📝 Kết quả xử lý</h4>
                   <Card className="p-4 bg-muted">
                     <p className="text-sm">
-                      {selectedRequest.manufacturerResponse ||
-                        "Không có ghi chú từ hãng"}
+                      {selectedRequest.result || "Chưa có kết quả"}
                     </p>
                   </Card>
                 </div>
 
                 <Separator />
 
-                {/* Edit Log */}
+                {/* Service Center Info */}
                 <div>
-                  <h4 className="mb-3 font-semibold">📋 Log chỉnh sửa</h4>
-                  <div className="space-y-2">
-                    {selectedRequest.responseHistory.map((log, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 p-3 border rounded-lg hover:bg-accent transition"
-                      >
-                        <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                        <div className="flex-1 text-sm">
-                          <div className="flex justify-between items-start">
-                            <span className="font-medium">{log.from}</span>
-                            <span className="text-muted-foreground">
-                              {new Date(log.date).toLocaleDateString("vi-VN")}
-                            </span>
-                          </div>
-                          <p className="text-muted-foreground mt-1">
-                            {log.message}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                  <h4 className="mb-3 font-semibold">🏢 Trung tâm dịch vụ</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tên:</span>
+                      <span className="font-medium">
+                        {selectedRequest.serviceCenterName}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Địa chỉ:</span>
+                      <span className="font-medium">
+                        {selectedRequest.serviceCenterAddress}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Điện thoại:</span>
+                      <span className="font-medium">
+                        {selectedRequest.serviceCenterPhone}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -391,7 +413,8 @@ export function ArchiveReports() {
                 {/* Attachments */}
                 <div>
                   <h4 className="mb-3 font-semibold">📎 File đính kèm</h4>
-                  {selectedRequest.attachments.length > 0 ? (
+                  {selectedRequest.attachments &&
+                  selectedRequest.attachments.length > 0 ? (
                     <div className="space-y-2">
                       {selectedRequest.attachments.map((file, index) => (
                         <div
@@ -401,13 +424,17 @@ export function ArchiveReports() {
                           <div className="flex items-center gap-3">
                             <FileText className="w-5 h-5 text-blue-600" />
                             <div>
-                              <div className="font-medium">{file.name}</div>
+                              <div className="font-medium">{file.fileName}</div>
                               <div className="text-xs text-muted-foreground uppercase">
-                                {file.type}
+                                {file.fileType}
                               </div>
                             </div>
                           </div>
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(file.fileUrl, "_blank")}
+                          >
                             <Download className="w-4 h-4 mr-2" />
                             Tải về
                           </Button>

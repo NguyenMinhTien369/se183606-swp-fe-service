@@ -8,158 +8,137 @@ import { Car, FileText, Bell } from "lucide-react";
 import { VehicleSearch } from "./features/VehicleSearch";
 import { VehicleDetails } from "./features/VehicleDetails";
 import { CreateWarrantyForm } from "./features/CreateWarrantyForm";
-import { SubmitConfirmationDialog } from "./features/SubmitConfirmationDialog";
 import { WarrantyList } from "./features/WarrantyList";
 import { WarrantyDetailsDialog } from "./features/WarrantyDetailsDialog";
 import { ManufacturerResponsePanel } from "./features/ManufacturerResponsePanel";
 
-import type {
-  Vehicle,
-  Part,
-  WarrantyHistory,
-  WarrantyClaim,
-} from "./types/warranty";
-import {
-  mockVehicles,
-  mockParts,
-  mockWarrantyHistory,
-  mockWarrantyClaims,
-} from "./data/mockData";
+import type { VehicleInfo, WarrantyClaimResponse } from "./types/warranty";
+import { warrantyClaimAPI } from "@/utility/index";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("search");
-  const [searchedVin, setSearchedVin] = useState<string | null>(null);
-  const [currentVehicle, setCurrentVehicle] = useState<Vehicle | null>(null);
-  const [currentParts, setCurrentParts] = useState<Part[]>([]);
-  const [currentHistory, setCurrentHistory] = useState<WarrantyHistory[]>([]);
+  const [currentVehicleInfo, setCurrentVehicleInfo] =
+    useState<VehicleInfo | null>(null);
+  const [warrantyHistory, setWarrantyHistory] = useState<
+    WarrantyClaimResponse[]
+  >([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
-  const [pendingClaim, setPendingClaim] =
-    useState<Partial<WarrantyClaim> | null>(null);
-  const [warrantyClaims, setWarrantyClaims] =
-    useState<WarrantyClaim[]>(mockWarrantyClaims);
-  const [selectedClaim, setSelectedClaim] = useState<WarrantyClaim | null>(
-    null
+  const [warrantyClaims, setWarrantyClaims] = useState<WarrantyClaimResponse[]>(
+    []
   );
+  const [selectedClaim, setSelectedClaim] =
+    useState<WarrantyClaimResponse | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
-  // Kiểm tra phản hồi mới từ hãng
+  // Hardcoded serviceCenterID - in production, get from auth context
+  const SERVICE_CENTER_ID = 1;
+
+  // Load all warranty claims on mount
   useEffect(() => {
-    const newApprovals = warrantyClaims.filter(
-      (c) =>
-        c.manufacturerResponse &&
-        c.manufacturerResponse.result === "approved" &&
-        c.status === "approved"
-    );
+    loadWarrantyClaims();
+  }, []);
 
-    if (newApprovals.length > 0 && activeTab === "tracking") {
-      newApprovals.forEach((claim) => {
-        alert(
-          `Hãng đã phê duyệt yêu cầu ${claim.requestCode}. Bạn có thể chuyển sang bước thực hiện bảo hành.`
-        );
-      });
+  const loadWarrantyClaims = async () => {
+    try {
+      const response = await warrantyClaimAPI.getClaimsByServiceCenter(
+        SERVICE_CENTER_ID
+      );
+      setWarrantyClaims(response.data.result || []);
+    } catch (error) {
+      console.error("Error loading warranty claims:", error);
+      alert("Không thể tải danh sách yêu cầu bảo hành");
     }
-  }, [activeTab, warrantyClaims]);
+  };
 
-  const handleSearch = (vin: string) => {
-    const vehicle = mockVehicles[vin];
-    if (vehicle) {
-      setCurrentVehicle(vehicle);
-      setCurrentParts(mockParts[vin] || []);
-      setCurrentHistory(mockWarrantyHistory[vin] || []);
-      setSearchedVin(vin);
+  const handleSearch = async (
+    vehicleInfo: VehicleInfo | null,
+    error?: string
+  ) => {
+    if (error) {
+      setCurrentVehicleInfo(null);
+      setWarrantyHistory([]);
       setShowCreateForm(false);
-      alert(`Đã tìm thấy thông tin xe ${vehicle.model}`);
-    } else {
-      setCurrentVehicle(null);
-      setCurrentParts([]);
-      setCurrentHistory([]);
-      setSearchedVin(null);
-      alert("Không tìm thấy VIN trong hệ thống. Vui lòng thử lại.");
+      return;
+    }
+
+    if (vehicleInfo) {
+      setCurrentVehicleInfo(vehicleInfo);
+      setShowCreateForm(false);
+
+      // Load warranty history for this VIN (filter from service center claims)
+      try {
+        const claimsResponse = await warrantyClaimAPI.getClaimsByServiceCenter(
+          SERVICE_CENTER_ID
+        );
+        const allClaims = claimsResponse.data.result || [];
+        const vehicleClaims = allClaims.filter(
+          (claim: WarrantyClaimResponse) => claim.vin === vehicleInfo.vin
+        );
+        setWarrantyHistory(vehicleClaims);
+      } catch (error) {
+        console.error("Error loading warranty history:", error);
+        setWarrantyHistory([]);
+      }
+
+      alert(`Đã tìm thấy thông tin xe ${vehicleInfo.modelName}`);
     }
   };
 
   const handleCreateWarranty = () => setShowCreateForm(true);
   const handleCancelCreate = () => setShowCreateForm(false);
 
-  const handleSaveDraft = (claim: Partial<WarrantyClaim>) => {
-    const newClaim: WarrantyClaim = {
-      ...claim,
-      id: String(Date.now()),
-      status: "pending",
-      logs: [
-        {
-          id: String(Date.now()),
-          user: "Kỹ thuật viên",
-          action: "Lưu bản nháp",
-          timestamp: new Date().toISOString(),
-        },
-      ],
-    } as WarrantyClaim;
+  const handleCreateSuccess = async (claimID: number, isDraft: boolean) => {
+    setShowCreateForm(false);
+    setActiveTab("tracking");
 
-    setWarrantyClaims((prev) => [...prev, newClaim]);
-    alert("Đã lưu bản nháp yêu cầu bảo hành.");
+    // Reload warranty claims list
+    await loadWarrantyClaims();
+
+    const message = isDraft
+      ? `Đã lưu bản nháp thành công! Claim ID: ${claimID}`
+      : `Yêu cầu bảo hành đã được gửi thành công! Claim ID: ${claimID}`;
+
+    // Show success message (already shown in CreateWarrantyForm, this is backup)
+    console.log(message);
   };
 
-  const handleSubmitToManufacturer = (claim: Partial<WarrantyClaim>) => {
-    setPendingClaim(claim);
-    setShowSubmitDialog(true);
-  };
-
-  const confirmSubmit = () => {
-    if (pendingClaim) {
-      const newClaim: WarrantyClaim = {
-        ...pendingClaim,
-        id: String(Date.now()),
-        status: "pending",
-        logs: [
-          {
-            id: String(Date.now()),
-            user: "Kỹ thuật viên",
-            action: "Gửi yêu cầu lên hãng",
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      } as WarrantyClaim;
-
-      setWarrantyClaims((prev) => [...prev, newClaim]);
-      setShowSubmitDialog(false);
-      setPendingClaim(null);
-      setShowCreateForm(false);
-      setActiveTab("tracking");
-
-      alert("Yêu cầu bảo hành đã được gửi lên hãng thành công!");
-    }
-  };
-
-  const handleEdit = (claim: WarrantyClaim) => {
-    if (claim.status !== "pending") {
-      alert("Không thể chỉnh sửa. Yêu cầu đã được hãng xử lý.");
+  const handleEdit = (claim: WarrantyClaimResponse) => {
+    if (claim.status !== "PENDING") {
+      alert("Không thể chỉnh sửa. Yêu cầu đã được xử lý.");
       return;
     }
     alert("Chức năng chỉnh sửa đang được phát triển.");
   };
 
-  const handleDelete = (claimId: string) => {
-    const claim = warrantyClaims.find((c) => c.id === claimId);
-    if (claim && claim.status !== "pending") {
-      alert("Không thể xóa. Yêu cầu đã được hãng xử lý.");
+  const handleDelete = async (claimId: number) => {
+    const claim = warrantyClaims.find((c) => c.claimID === claimId);
+    if (claim && claim.status !== "PENDING") {
+      alert("Không thể xóa. Yêu cầu đã được xử lý.");
       return;
     }
 
-    setWarrantyClaims((prev) => prev.filter((c) => c.id !== claimId));
-    alert("Đã xóa yêu cầu bảo hành.");
+    if (!confirm("Bạn có chắc chắn muốn xóa yêu cầu này?")) {
+      return;
+    }
+
+    try {
+      await warrantyClaimAPI.deleteClaim(claimId);
+      alert("Đã xóa yêu cầu bảo hành thành công.");
+      await loadWarrantyClaims();
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message || "Không thể xóa yêu cầu.";
+      alert(errorMsg);
+      console.error("Error deleting claim:", error);
+    }
   };
 
-  const handleViewDetails = (claim: WarrantyClaim) => {
+  const handleViewDetails = (claim: WarrantyClaimResponse) => {
     setSelectedClaim(claim);
     setShowDetailsDialog(true);
   };
 
-  const rejectedClaims = warrantyClaims.filter(
-    (c) =>
-      c.manufacturerResponse && c.manufacturerResponse.result === "rejected"
-  );
+  const rejectedClaims = warrantyClaims.filter((c) => c.status === "REJECTED");
 
   return (
     <div className="min-h-screen bg-background">
@@ -200,26 +179,25 @@ export default function App() {
           <TabsContent value="search" className="space-y-6">
             <VehicleSearch onSearch={handleSearch} />
 
-            {currentVehicle && !showCreateForm && (
+            {currentVehicleInfo && !showCreateForm && (
               <VehicleDetails
-                vehicle={currentVehicle}
-                parts={currentParts}
-                warrantyHistory={currentHistory}
+                vehicleInfo={currentVehicleInfo}
+                warrantyHistory={warrantyHistory}
                 onCreateWarranty={handleCreateWarranty}
               />
             )}
 
-            {showCreateForm && currentVehicle && (
+            {showCreateForm && currentVehicleInfo && (
               <CreateWarrantyForm
-                vin={currentVehicle.vin}
-                parts={currentParts}
-                onSave={handleSaveDraft}
-                onSubmit={handleSubmitToManufacturer}
+                vin={currentVehicleInfo.vin}
+                installedParts={currentVehicleInfo.installedParts}
+                serviceCenterID={SERVICE_CENTER_ID}
+                onSuccess={handleCreateSuccess}
                 onCancel={handleCancelCreate}
               />
             )}
 
-            {!currentVehicle && !showCreateForm && (
+            {!currentVehicleInfo && !showCreateForm && (
               <div className="text-center py-12 text-muted-foreground">
                 <Car className="h-16 w-16 mx-auto mb-4 opacity-50" />
                 <p>Nhập VIN để bắt đầu tra cứu thông tin xe</p>
@@ -262,19 +240,6 @@ export default function App() {
       </main>
 
       {/* Dialogs */}
-      <SubmitConfirmationDialog
-        open={showSubmitDialog}
-        onConfirm={confirmSubmit}
-        onCancel={() => setShowSubmitDialog(false)}
-        hasVin={!!pendingClaim?.vin}
-        hasPartSelected={!!pendingClaim?.parts && pendingClaim.parts.length > 0}
-        hasReportAndImages={
-          !!pendingClaim?.technicalReport &&
-          !!pendingClaim?.images &&
-          pendingClaim.images.length > 0
-        }
-      />
-
       <WarrantyDetailsDialog
         claim={selectedClaim}
         open={showDetailsDialog}

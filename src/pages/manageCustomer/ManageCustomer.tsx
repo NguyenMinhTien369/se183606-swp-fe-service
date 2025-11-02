@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { Car, ArrowLeft } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,37 +36,33 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-slate-50 to-background text-foreground">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card shadow-sm sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {selectedCustomer && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleBackToSearch}
-                className="gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Quay lại
-              </Button>
-            )}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Car className="h-8 w-8" />
             <div>
-              <h1 className="text-xl font-semibold">
-                Hệ thống quản lý khách hàng & xe
+              <h1 className="text-lg font-semibold">
+                Hệ thống quản lý bảo hành xe
               </h1>
-              {selectedCustomer && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Đang xem hồ sơ:{" "}
-                  <span className="font-medium text-foreground">
-                    {selectedCustomer.name}
-                  </span>{" "}
-                  - {selectedCustomer.vin}
-                </p>
-              )}
+              <p className="text-muted-foreground text-sm">
+                Ford Warranty Management System
+              </p>
             </div>
           </div>
+
+          {selectedCustomer && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToSearch}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại
+            </Button>
+          )}
         </div>
       </header>
 

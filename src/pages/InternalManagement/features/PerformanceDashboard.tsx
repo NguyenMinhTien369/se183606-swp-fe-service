@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -32,36 +32,84 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { mockTechnicians } from "../lib/mock-data";
 import { Info } from "lucide-react";
+import { claimAssignmentAPI } from "@/utility/index";
+import type { TechnicianPerformance } from "../types";
+import {
+  getPerformanceColor,
+  formatCompletionTime,
+} from "../lib/utils-warranty";
 
-export function PerformanceDashboard() {
+interface PerformanceDashboardProps {
+  serviceCenterID: number;
+}
+
+export function PerformanceDashboard({
+  serviceCenterID,
+}: PerformanceDashboardProps) {
   const [timePeriod, setTimePeriod] = useState("month");
-  const technicians = mockTechnicians;
+  const [performanceData, setPerformanceData] = useState<
+    TechnicianPerformance[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Tính hiệu suất từng kỹ thuật viên
-  const technicianData = technicians.map((tech) => ({
-    ...tech,
-    performance: Math.round(
-      (tech.completedOnTime / tech.requestsHandled) * 100
-    ),
-  }));
+  // Load performance data on mount
+  useEffect(() => {
+    loadPerformanceData();
+  }, [serviceCenterID]);
 
-  // Dữ liệu trạng thái cho biểu đồ tròn
+  const loadPerformanceData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await claimAssignmentAPI.getTechnicianPerformance(
+        serviceCenterID
+      );
+      setPerformanceData(response.data.result || []);
+    } catch (error) {
+      console.error("Error loading performance data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate aggregated stats
+  const totalAssigned = performanceData.reduce(
+    (sum, t) => sum + t.totalAssignedClaims,
+    0
+  );
+  const totalCompleted = performanceData.reduce(
+    (sum, t) => sum + t.completedOnTime,
+    0
+  );
+  const totalRejected = performanceData.reduce(
+    (sum, t) => sum + t.manufacturerRejected,
+    0
+  );
+  const avgCompletionTime =
+    performanceData.length > 0
+      ? Math.round(
+          performanceData.reduce((sum, t) => sum + t.totalHours, 0) /
+            performanceData.length
+        )
+      : 0;
+
+  // Data for pie chart
   const statusData = [
-    { name: "Hoàn thành đúng hạn", value: 45, color: "#22c55e" },
-    { name: "Hoàn thành trễ", value: 15, color: "#f59e0b" },
-    { name: "Đang xử lý", value: 20, color: "#3b82f6" },
-    { name: "Bị từ chối", value: 8, color: "#ef4444" },
-    { name: "Chờ phụ tùng", value: 12, color: "#a855f7" },
+    { name: "Hoàn thành đúng hạn", value: totalCompleted, color: "#22c55e" },
+    { name: "Bị từ chối", value: totalRejected, color: "#ef4444" },
+    {
+      name: "Chưa hoàn thành",
+      value: Math.max(0, totalAssigned - totalCompleted - totalRejected),
+      color: "#f59e0b",
+    },
   ];
 
-  // Dữ liệu so sánh hiệu suất cho biểu đồ cột
-  const performanceData = technicianData.map((tech) => ({
-    name: tech.name.split(" ").slice(-2).join(" "), // lấy 2 từ cuối
-    "Số yêu cầu": tech.requestsHandled,
+  // Data for bar chart
+  const chartData = performanceData.map((tech) => ({
+    name: tech.fullName.split(" ").slice(-2).join(" "), // Get last 2 words
+    "Tổng số": tech.totalAssignedClaims,
     "Hoàn thành": tech.completedOnTime,
-    "Bị từ chối": tech.rejected,
+    "Bị từ chối": tech.manufacturerRejected,
   }));
 
   return (
@@ -140,15 +188,15 @@ export function PerformanceDashboard() {
             So sánh hiệu suất kỹ thuật viên
           </h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={performanceData}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="Số yêu cầu" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Tổng số" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               <Bar dataKey="Hoàn thành" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Bị từ chối" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Đang xử lý" fill="#f59e0b" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -162,49 +210,72 @@ export function PerformanceDashboard() {
               <TableRow className="bg-muted/50">
                 <TableHead>Tên kỹ thuật viên</TableHead>
                 <TableHead>Chuyên môn</TableHead>
-                <TableHead className="text-center">Yêu cầu xử lý</TableHead>
-                <TableHead className="text-center">Hoàn thành</TableHead>
+                <TableHead className="text-center">Tổng phân công</TableHead>
+                <TableHead className="text-center">
+                  Hoàn thành đúng hạn
+                </TableHead>
                 <TableHead className="text-center">Bị từ chối</TableHead>
-                <TableHead className="text-center">Hiệu suất</TableHead>
-                <TableHead className="text-center">⏱️ Thời gian</TableHead>
+                <TableHead className="text-center">Tỷ lệ hoàn thành</TableHead>
+                <TableHead className="text-center">⏱️ Tổng giờ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {technicianData.map((tech) => (
-                <TableRow key={tech.id}>
-                  <TableCell className="font-medium">{tech.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="rounded-md">
-                      {tech.specialty}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {tech.requestsHandled}
-                  </TableCell>
-                  <TableCell className="text-center text-green-600 font-semibold">
-                    {tech.completedOnTime}
-                  </TableCell>
-                  <TableCell className="text-center text-red-600 font-semibold">
-                    {tech.rejected}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge
-                      className={`px-3 py-1 rounded-md text-sm font-semibold ${
-                        tech.performance >= 80
-                          ? "bg-green-100 text-green-800"
-                          : tech.performance >= 60
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {tech.performance}%
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground">
-                    {tech.totalHours}h
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-muted-foreground">Đang tải dữ liệu...</p>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : performanceData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Chưa có dữ liệu hiệu suất
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                performanceData.map((tech) => {
+                  const completionRate =
+                    tech.totalAssignedClaims > 0
+                      ? (tech.completedOnTime / tech.totalAssignedClaims) * 100
+                      : 0;
+
+                  return (
+                    <TableRow key={tech.userID}>
+                      <TableCell className="font-medium">
+                        {tech.fullName}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="rounded-md">
+                          Kỹ thuật viên
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {tech.totalAssignedClaims}
+                      </TableCell>
+                      <TableCell className="text-center text-green-600 font-semibold">
+                        {tech.completedOnTime}
+                      </TableCell>
+                      <TableCell className="text-center text-red-600 font-semibold">
+                        {tech.manufacturerRejected}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          className={`px-3 py-1 rounded-md text-sm font-semibold ${getPerformanceColor(
+                            completionRate
+                          )}`}
+                        >
+                          {completionRate.toFixed(0)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">
+                        {formatCompletionTime(tech.totalHours)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </ScrollArea>
@@ -213,12 +284,11 @@ export function PerformanceDashboard() {
       {/* Thống kê nhanh */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-5 border rounded-xl shadow-sm">
-          <div className="text-sm text-muted-foreground mb-1">Tổng yêu cầu</div>
+          <div className="text-sm text-muted-foreground mb-1">
+            Tổng phân công
+          </div>
           <div className="flex items-end gap-2">
-            <span className="text-3xl font-semibold">51</span>
-            <span className="text-green-600 text-sm mb-1 font-medium">
-              +12%
-            </span>
+            <span className="text-3xl font-semibold">{totalAssigned}</span>
           </div>
         </Card>
 
@@ -227,25 +297,37 @@ export function PerformanceDashboard() {
             Hoàn thành đúng hạn
           </div>
           <div className="flex items-end gap-2">
-            <span className="text-3xl font-semibold">45</span>
-            <span className="text-green-600 text-sm mb-1 font-medium">88%</span>
+            <span className="text-3xl font-semibold">{totalCompleted}</span>
+            <span className="text-green-600 text-sm mb-1 font-medium">
+              {totalAssigned > 0
+                ? Math.round((totalCompleted / totalAssigned) * 100)
+                : 0}
+              %
+            </span>
           </div>
         </Card>
 
         <Card className="p-5 border rounded-xl shadow-sm">
           <div className="text-sm text-muted-foreground mb-1">Bị từ chối</div>
           <div className="flex items-end gap-2">
-            <span className="text-3xl font-semibold">6</span>
-            <span className="text-red-600 text-sm mb-1 font-medium">12%</span>
+            <span className="text-3xl font-semibold">{totalRejected}</span>
+            <span className="text-red-600 text-sm mb-1 font-medium">
+              {totalAssigned > 0
+                ? Math.round((totalRejected / totalAssigned) * 100)
+                : 0}
+              %
+            </span>
           </div>
         </Card>
 
         <Card className="p-5 border rounded-xl shadow-sm">
-          <div className="text-sm text-muted-foreground mb-1">Thời gian TB</div>
+          <div className="text-sm text-muted-foreground mb-1">
+            Tổng giờ trung bình
+          </div>
           <div className="flex items-end gap-2">
-            <span className="text-3xl font-semibold">40.6h</span>
-            <span className="text-blue-600 text-sm mb-1 font-medium">
-              ~2 ngày
+            <span className="text-3xl font-semibold">{avgCompletionTime}</span>
+            <span className="text-muted-foreground text-sm mb-1 font-medium">
+              giờ
             </span>
           </div>
         </Card>

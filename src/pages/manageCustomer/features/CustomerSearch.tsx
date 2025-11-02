@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Customer } from "../types/index";
+import type { Customer, CustomerResponse } from "../types/index";
+import { flattenCustomerData } from "../types/index";
 import { Search, X, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -47,14 +48,24 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
       setLoading(true);
       setError("");
       const response = await customerAPI.getCustomers();
-      const customersData = response.data.result || [];
-      setCustomers(customersData);
-      setFilteredCustomers(customersData);
+
+      // Backend trả về CustomerResponse[] với nested vehicles
+      const backendCustomers: CustomerResponse[] = response.data.result || [];
+
+      // Flatten: 1 customer có nhiều vehicle → tạo nhiều rows
+      const flattenedCustomers: Customer[] = backendCustomers.flatMap(
+        (backendCustomer) => flattenCustomerData(backendCustomer)
+      );
+
+      console.log("✅ Flattened Customers:", flattenedCustomers);
+
+      setCustomers(flattenedCustomers);
+      setFilteredCustomers(flattenedCustomers);
     } catch (err: any) {
       setError(
         err.response?.data?.message || "Không thể tải danh sách khách hàng"
       );
-      console.error("Error loading customers:", err);
+      console.error("❌ Error loading customers:", err);
     } finally {
       setLoading(false);
     }
@@ -70,26 +81,45 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
       setLoading(true);
       setError("");
 
-      // Tìm kiếm theo tên trước
-      const response = await customerAPI.searchCustomersByName(searchTerm);
-      const searchResults = response.data.result || [];
+      // API mới hỗ trợ search theo name, phone, hoặc vin
+      // Kiểm tra xem searchTerm có phải là số điện thoại không (bắt đầu bằng 0 và có 10 số)
+      const isPhone = /^0\d{9}$/.test(searchTerm);
 
-      // Nếu không tìm thấy theo tên, thử tìm theo VIN hoặc serial number
-      if (searchResults.length === 0) {
+      // Tạo params dựa trên loại search term
+      const searchParams = isPhone
+        ? { phone: searchTerm }
+        : searchTerm.length >= 10 &&
+          /^[A-Z0-9]+$/.test(searchTerm.toUpperCase())
+        ? { vin: searchTerm } // VIN thường là chữ in hoa + số, dài
+        : { name: searchTerm }; // Mặc định search theo tên
+
+      const response = await customerAPI.searchCustomers(searchParams);
+      const backendResults: CustomerResponse[] = response.data.result || [];
+
+      // Nếu không tìm thấy kết quả, thử search vehicle
+      if (backendResults.length === 0) {
         try {
           const vehicleResponse = await customerAPI.searchVehicle({
             vin: searchTerm,
             serialNumber: searchTerm,
           });
-          // Backend trả về vehicle data, cần map sang customer format
-          setFilteredCustomers(
-            vehicleResponse.data.result ? [vehicleResponse.data.result] : []
-          );
+
+          // Backend có thể trả về Vehicle hoặc Customer
+          const vehicleResult = vehicleResponse.data.result;
+          if (vehicleResult) {
+            // TODO: Cần xử lý response từ searchVehicle API
+            console.log("🔍 Vehicle search result:", vehicleResult);
+          }
+          setFilteredCustomers([]);
         } catch {
           setFilteredCustomers([]);
         }
       } else {
-        setFilteredCustomers(searchResults);
+        // Flatten backend results
+        const flattenedResults = backendResults.flatMap((customer) =>
+          flattenCustomerData(customer)
+        );
+        setFilteredCustomers(flattenedResults);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Lỗi khi tìm kiếm");
@@ -129,7 +159,7 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
           {/* 🔍 Thanh tìm kiếm */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
             <Input
-              placeholder="Nhập Số VIN / Tên khách hàng / Serial Number..."
+              placeholder="Nhập Số VIN / Tên khách hàng / Số điện thoại / Serial Number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={handleKeyPress}
@@ -181,10 +211,10 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
                   <TableHead>Họ tên KH</TableHead>
                   <TableHead>Số điện thoại</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Địa chỉ</TableHead>
+                  <TableHead>CMND/CCCD</TableHead>
                   <TableHead>Số VIN</TableHead>
                   <TableHead>Model</TableHead>
-                  <TableHead>Năm SX</TableHead>
+                  <TableHead>Biển số</TableHead>
                   <TableHead className="text-right">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
@@ -217,13 +247,19 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
                       key={customer.id}
                       className="hover:bg-muted/30 transition-colors"
                     >
-                      <TableCell>{customer.name}</TableCell>
+                      <TableCell className="font-medium">
+                        {customer.name}
+                      </TableCell>
                       <TableCell>{customer.phone}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>{customer.address}</TableCell>
-                      <TableCell>{customer.vin}</TableCell>
+                      <TableCell className="text-sm">
+                        {customer.email}
+                      </TableCell>
+                      <TableCell>{customer.cmnd}</TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {customer.vin}
+                      </TableCell>
                       <TableCell>{customer.model}</TableCell>
-                      <TableCell>{customer.year}</TableCell>
+                      <TableCell>{customer.licensePlate}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="secondary"
@@ -232,7 +268,7 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
                           onClick={() => handleSelect(customer)}
                         >
                           <CheckCircle2 className="h-4 w-4" />
-                          Chọn
+                          Xem
                         </Button>
                       </TableCell>
                     </TableRow>

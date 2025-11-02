@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, QrCode } from "lucide-react";
+import { Search, QrCode, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,17 +11,41 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { warrantyClaimAPI } from "@/utility/index";
+import type { VehicleInfo } from "../types/warranty";
 
 interface VehicleSearchProps {
-  onSearch: (vin: string) => void;
+  onSearch: (vehicleInfo: VehicleInfo | null, error?: string) => void;
 }
 
 export function VehicleSearch({ onSearch }: VehicleSearchProps) {
   const [vin, setVin] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = () => {
-    if (vin.trim()) {
-      onSearch(vin.trim());
+  const handleSearch = async () => {
+    if (!vin.trim()) {
+      onSearch(null, "Vui lòng nhập VIN");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await warrantyClaimAPI.getVehicleInfoByVin(vin.trim());
+      const vehicleData: VehicleInfo = response.data.result;
+
+      if (vehicleData) {
+        onSearch(vehicleData);
+      } else {
+        onSearch(null, "Không tìm thấy thông tin xe với VIN này");
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.response?.data?.message ||
+        "Không thể tra cứu thông tin xe. Vui lòng thử lại.";
+      onSearch(null, errorMessage);
+      console.error("Error searching vehicle:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,10 +72,19 @@ export function VehicleSearch({ onSearch }: VehicleSearchProps) {
           </div>
 
           {/* Nút tìm kiếm */}
-          <Button onClick={handleSearch}>Tìm kiếm</Button>
+          <Button onClick={handleSearch} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Đang tìm...
+              </>
+            ) : (
+              "Tìm kiếm"
+            )}
+          </Button>
 
           {/* Nút quét QR */}
-          <Button variant="outline" size="icon">
+          <Button variant="outline" size="icon" disabled={loading}>
             <QrCode className="h-4 w-4" />
           </Button>
         </div>
