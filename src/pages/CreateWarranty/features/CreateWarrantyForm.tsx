@@ -98,7 +98,19 @@ export function CreateWarrantyForm({
     formData.append("vin", vin);
     formData.append("serviceCenterID", serviceCenterID.toString());
     formData.append("description", description);
-    formData.append("claimParts", JSON.stringify(selectedParts));
+
+    // ✅ FIX: Gửi từng claimPart như array elements cho Spring Boot
+    selectedParts.forEach((part, index) => {
+      formData.append(
+        `claimParts[${index}].partSerialNumber`,
+        part.partSerialNumber
+      );
+      formData.append(
+        `claimParts[${index}].description`,
+        part.description || ""
+      );
+    });
+
     formData.append("isDraft", isDraft.toString());
 
     attachmentFiles.forEach((file) => {

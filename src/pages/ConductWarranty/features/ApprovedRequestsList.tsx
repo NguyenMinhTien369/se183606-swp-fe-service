@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -30,39 +30,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, Filter, AlertTriangle, CheckCircle } from "lucide-react";
-
-const mockRequests = [
-  {
-    id: "CLM-2025-031",
-    vin: "XCF12345",
-    model: "Ranger XLS",
-    parts: "Turbo Kit",
-    partCode: "8G1A-6K682",
-    status: "approved",
-    approvalDate: "03/10/2025",
-    quantity: 1,
-  },
-  {
-    id: "CLM-2025-032",
-    vin: "XCF12346",
-    model: "Everest Titanium",
-    parts: "Brake Pad Set",
-    partCode: "7D0-698-151",
-    status: "approved",
-    approvalDate: "04/10/2025",
-    quantity: 4,
-  },
-  {
-    id: "CLM-2025-033",
-    vin: "XCF12347",
-    model: "Territory Trend",
-    parts: "Air Filter",
-    partCode: "9C1A-9601-AA",
-    status: "approved",
-    approvalDate: "05/10/2025",
-    quantity: 1,
-  },
-];
+import { claimAssignmentAPI } from "@/utility/index";
+import type { AssignmentProgressResponse } from "../types";
 
 interface ApprovedRequestsListProps {
   onSelectRequest?: (request: any) => void;
@@ -73,8 +42,15 @@ export function ApprovedRequestsList({
   onSelectRequest,
   onNextStep,
 }: ApprovedRequestsListProps) {
-  const [requests, setRequests] = useState(mockRequests);
-  const [selectedRequestData, setSelectedRequestData] = useState<any>(null);
+  // Get technician ID from auth context (hardcoded for now)
+  const TECHNICIAN_ID = 1; // TODO: Get from AuthContext
+
+  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedRequestData, setSelectedRequestData] =
+    useState<AssignmentProgressResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState<string | null>(null);
   const [filters, setFilters] = useState({
@@ -92,51 +68,90 @@ export function ApprovedRequestsList({
     discrepancyDescription: "",
   });
 
-  const filteredRequests = requests.filter((request) => {
+  // Load assignments on mount
+  useEffect(() => {
+    loadAssignments();
+  }, []);
+
+  const loadAssignments = async () => {
+    setIsLoading(true);
+    try {
+      const response = await claimAssignmentAPI.getAssignmentsByTechnician(
+        TECHNICIAN_ID
+      );
+      // Filter only ASSIGNED status (ready to start repair)
+      const assignedClaims = response.data.result.filter(
+        (assignment: AssignmentProgressResponse) =>
+          assignment.status === "ASSIGNED"
+      );
+      setAssignments(assignedClaims);
+    } catch (error) {
+      console.error("Error loading assignments:", error);
+      setDialogMessage("❌ Lỗi khi tải danh sách yêu cầu. Vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredRequests = assignments.filter((assignment) => {
     return (
       (filters.vin === "" ||
-        request.vin.toLowerCase().includes(filters.vin.toLowerCase())) &&
+        assignment.vin.toLowerCase().includes(filters.vin.toLowerCase())) &&
       (filters.requestCode === "" ||
-        request.id.toLowerCase().includes(filters.requestCode.toLowerCase())) &&
-      (filters.parts === "" ||
-        request.parts.toLowerCase().includes(filters.parts.toLowerCase()))
+        assignment.claimCode.toString().includes(filters.requestCode))
     );
   });
 
-  const handleViewDetails = (request: any) => {
-    setSelectedRequestData(request);
-    setPartConfirmation((prev) => ({ ...prev, quantity: request.quantity }));
+  const handleViewDetails = (assignment: AssignmentProgressResponse) => {
+    setSelectedRequestData(assignment);
     setIsModalOpen(true);
   };
 
-  const handleConfirmParts = () => {
+  const handleConfirmParts = async () => {
     if (!partConfirmation.serialNumber) {
       setDialogMessage("⚠️ Vui lòng nhập số seri phụ tùng.");
       return;
     }
 
-    setRequests((prev) =>
-      prev.map((req) =>
-        req.id === selectedRequestData.id
-          ? { ...req, status: "received", receivedAt: new Date().toISOString() }
-          : req
-      )
-    );
+    if (!selectedRequestData) return;
 
-    setDialogMessage("✅ Đã xác nhận nhận phụ tùng thành công.");
-    setIsModalOpen(false);
-    onSelectRequest?.(selectedRequestData);
-    setPartConfirmation({
-      serialNumber: "",
-      quantity: 1,
-      notes: "",
-      isDiscrepancy: false,
-      discrepancyType: "",
-      discrepancyDescription: "",
-    });
+    try {
+      // Update assignment to IN_PROGRESS status
+      const formData = new FormData();
+      formData.append("status", "IN_PROGRESS");
+      formData.append("completionPercentage", "10");
+      formData.append(
+        "internalNotes",
+        `Đã nhận phụ tùng. Serial: ${partConfirmation.serialNumber}. ${partConfirmation.notes}`
+      );
+
+      await claimAssignmentAPI.updateAssignmentProgress(
+        selectedRequestData.assignmentID,
+        formData
+      );
+
+      setDialogMessage("✅ Đã xác nhận nhận phụ tùng thành công.");
+      setIsModalOpen(false);
+      onSelectRequest?.(selectedRequestData);
+
+      // Reload assignments
+      loadAssignments();
+
+      setPartConfirmation({
+        serialNumber: "",
+        quantity: 1,
+        notes: "",
+        isDiscrepancy: false,
+        discrepancyType: "",
+        discrepancyDescription: "",
+      });
+    } catch (error) {
+      console.error("Error confirming parts:", error);
+      setDialogMessage("❌ Lỗi khi xác nhận phụ tùng. Vui lòng thử lại.");
+    }
   };
 
-  const handleReportDiscrepancy = () => {
+  const handleReportDiscrepancy = async () => {
     if (
       !partConfirmation.discrepancyType ||
       !partConfirmation.discrepancyDescription
@@ -145,16 +160,40 @@ export function ApprovedRequestsList({
       return;
     }
 
-    setDialogMessage("📨 Đã gửi báo cáo sai lệch cho SC Staff.");
-    setIsModalOpen(false);
-    setPartConfirmation({
-      serialNumber: "",
-      quantity: 1,
-      notes: "",
-      isDiscrepancy: false,
-      discrepancyType: "",
-      discrepancyDescription: "",
-    });
+    if (!selectedRequestData) return;
+
+    try {
+      // Update assignment with discrepancy note to AWAITING_PARTS status
+      const formData = new FormData();
+      formData.append("status", "AWAITING_PARTS");
+      formData.append(
+        "internalNotes",
+        `BÁO CÁO SAI LỆCH - Loại: ${partConfirmation.discrepancyType}, Chi tiết: ${partConfirmation.discrepancyDescription}`
+      );
+
+      await claimAssignmentAPI.updateAssignmentProgress(
+        selectedRequestData.assignmentID,
+        formData
+      );
+
+      setDialogMessage("📨 Đã gửi báo cáo sai lệch cho SC Staff.");
+      setIsModalOpen(false);
+
+      // Reload assignments
+      loadAssignments();
+
+      setPartConfirmation({
+        serialNumber: "",
+        quantity: 1,
+        notes: "",
+        isDiscrepancy: false,
+        discrepancyType: "",
+        discrepancyDescription: "",
+      });
+    } catch (error) {
+      console.error("Error reporting discrepancy:", error);
+      setDialogMessage("❌ Lỗi khi gửi báo cáo sai lệch. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -234,43 +273,59 @@ export function ApprovedRequestsList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredRequests.map((request) => (
-              <TableRow
-                key={request.id}
-                className="cursor-pointer hover:bg-gray-50 transition-colors"
-              >
-                <TableCell className="font-medium">{request.id}</TableCell>
-                <TableCell>{request.vin}</TableCell>
-                <TableCell>{request.model}</TableCell>
-                <TableCell>{request.parts}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      request.status === "approved" ? "default" : "secondary"
-                    }
-                    className={`${
-                      request.status === "approved"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-blue-100 text-blue-800"
-                    }`}
-                  >
-                    {request.status === "approved"
-                      ? "🟢 Được chấp thuận"
-                      : "📦 Đã nhận phụ tùng"}
-                  </Badge>
-                </TableCell>
-                <TableCell>{request.approvalDate}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleViewDetails(request)}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                    <span className="text-muted-foreground">Đang tải...</span>
+                  </div>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredRequests.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    Không có yêu cầu nào được phân công
+                  </p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredRequests.map((assignment) => (
+                <TableRow
+                  key={assignment.assignmentID}
+                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <TableCell className="font-medium">
+                    #{assignment.claimCode}
+                  </TableCell>
+                  <TableCell>{assignment.vin}</TableCell>
+                  <TableCell>-</TableCell>{" "}
+                  {/* Model not in AssignmentProgressResponse */}
+                  <TableCell>-</TableCell>{" "}
+                  {/* Parts not in AssignmentProgressResponse */}
+                  <TableCell>
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      � Đã phân công
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(assignment.assignedDate).toLocaleDateString(
+                      "vi-VN"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewDetails(assignment)}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
 
@@ -287,10 +342,15 @@ export function ApprovedRequestsList({
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-lg p-3 border">
                   <p>
-                    <strong>Phụ tùng:</strong> {selectedRequestData.parts}
+                    <strong>Mã yêu cầu:</strong> #
+                    {selectedRequestData.claimCode}
                   </p>
                   <p>
-                    <strong>Mã:</strong> {selectedRequestData.partCode}
+                    <strong>VIN:</strong> {selectedRequestData.vin}
+                  </p>
+                  <p>
+                    <strong>Kỹ thuật viên:</strong>{" "}
+                    {selectedRequestData.technicianName}
                   </p>
                 </div>
 

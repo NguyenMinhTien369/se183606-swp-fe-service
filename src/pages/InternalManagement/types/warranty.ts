@@ -124,7 +124,7 @@ export interface ServiceCenterResponse {
 // Endpoint: POST /api/claim-assignments/assign
 export interface AssignTechnicianRequest {
   claimID: number;
-  primaryTechnicianID: number;
+  technicianIDs: number[]; // Backend yêu cầu array, không phải single number
   expectedCompletionDate?: string; // LocalDate format: YYYY-MM-DD
   internalNotes?: string;
 }

@@ -53,7 +53,7 @@ export function AssignTechnician({
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianUser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mainTechnician, setMainTechnician] = useState<number | null>(null);
+  const [mainTechnician, setMainTechnician] = useState<string>("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -109,14 +109,14 @@ export function AssignTechnician({
       return;
     }
     // Reset form
-    setMainTechnician(null);
+    setMainTechnician("");
     setExpectedCompletionDate("");
     setInternalNotes("");
     setIsModalOpen(true);
   };
 
   const handleConfirmAssign = async () => {
-    if (!mainTechnician) {
+    if (!mainTechnician || mainTechnician === "") {
       setAlertDialog({
         open: true,
         title: "Thiếu kỹ thuật viên chính",
@@ -133,7 +133,7 @@ export function AssignTechnician({
       const assignPromises = selectedRequests.map((claimID) =>
         claimAssignmentAPI.assignTechnician({
           claimID,
-          primaryTechnicianID: mainTechnician,
+          technicianIDs: [Number(mainTechnician)], // Backend yêu cầu array
           expectedCompletionDate: expectedCompletionDate || undefined,
           internalNotes: internalNotes || undefined,
         })
@@ -141,7 +141,7 @@ export function AssignTechnician({
 
       await Promise.all(assignPromises);
 
-      const tech = technicians.find((t) => t.userID === mainTechnician);
+      const tech = technicians.find((t) => t.userID === Number(mainTechnician));
 
       setAlertDialog({
         open: true,
@@ -152,7 +152,7 @@ export function AssignTechnician({
 
       setIsModalOpen(false);
       setSelectedRequests([]);
-      setMainTechnician(null);
+      setMainTechnician("");
       setExpectedCompletionDate("");
       setInternalNotes("");
 
@@ -160,11 +160,22 @@ export function AssignTechnician({
       onAssignSuccess();
     } catch (error: any) {
       console.error("Error assigning technician:", error);
+      console.error("Error response data:", error.response?.data);
+      console.error("Error response status:", error.response?.status);
+      console.error("Request payload:", {
+        claimID: selectedRequests[0],
+        technicianIDs: [Number(mainTechnician)],
+        expectedCompletionDate: expectedCompletionDate || undefined,
+        internalNotes: internalNotes || undefined,
+      });
+
       setAlertDialog({
         open: true,
         title: "Lỗi phân công",
         description:
           error.response?.data?.message ||
+          error.response?.data?.error ||
+          JSON.stringify(error.response?.data) ||
           "Không thể phân công kỹ thuật viên. Vui lòng thử lại.",
         type: "error",
       });
@@ -292,8 +303,8 @@ export function AssignTechnician({
                 Kỹ thuật viên chính *
               </label>
               <Select
-                value={mainTechnician?.toString()}
-                onValueChange={(value) => setMainTechnician(Number(value))}
+                value={mainTechnician}
+                onValueChange={(value) => setMainTechnician(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn kỹ thuật viên..." />
