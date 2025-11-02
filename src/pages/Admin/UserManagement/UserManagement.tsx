@@ -122,20 +122,20 @@ const UserManagement: React.FC = () => {
 
             if (modalMode === 'create') {
                 await userAPI.createUser(userData);
-                alert('✅ User created successfully!');
+                alert('User created successfully!');
             } else {
                 if (!userData.password) {
                     delete userData.password;
                 }
                 await userAPI.updateUser(selectedUser!.id, userData);
-                alert('✅ User updated successfully!');
+                alert('User updated successfully!');
             }
 
             handleCloseModal();
             fetchUsers();
         } catch (error: any) {
             console.error('Error saving user:', error);
-            alert('❌ Error: ' + (error.response?.data?.message || error.message));
+            alert('Error: ' + (error.response?.data?.message || error.message));
             throw error;
         } finally {
             setLoading(false);
@@ -146,11 +146,11 @@ const UserManagement: React.FC = () => {
         try {
             setLoading(true);
             await userAPI.deleteUser(userId);
-            alert('✅ User deleted successfully!');
+            alert('User deleted successfully!');
             fetchUsers();
         } catch (error: any) {
             console.error('Error deleting user:', error);
-            alert('❌ Cannot delete user: ' + (error.response?.data?.message || error.message));
+            alert('Cannot delete user: ' + (error.response?.data?.message || error.message));
         } finally {
             setLoading(false);
         }
@@ -177,8 +177,8 @@ const UserManagement: React.FC = () => {
             {/* Header */}
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>User Management</h1>
-                    <p className={styles.subtitle}>Manage user accounts and permissions</p>
+                    <h1 className={styles.title}>Quản lý người dùng</h1>
+                    <p className={styles.subtitle}>Quản lý tài khoản người dùng và quyền</p>
                 </div>
                 <button onClick={() => handleOpenModal('create')} className={styles.createButton}>
                     <FaPlus /> Create User

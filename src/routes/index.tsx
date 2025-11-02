@@ -17,8 +17,7 @@ import {
   UserManagement,
   RolePermissions,
   ProductManagement,
-  WarrantyApproval,
-  Analytics
+  WarrantyApproval
 } from "@/pages/Admin";
 import { EVMDashboard, CampaignManagement, WarrantyClaims } from "@/pages/EVM_Staff";
 import { SCStaffDashboard } from "@/pages/SC_Staff";
@@ -96,7 +95,6 @@ function Routers() {
         { path: "role-permissions", element: <RolePermissions /> },
         { path: "products", element: <ProductManagement /> },
         { path: "warranty-approval", element: <WarrantyApproval /> },
-        { path: "analytics", element: <Analytics /> },
         { path: "*", element: <NotFound /> },
       ],
     },

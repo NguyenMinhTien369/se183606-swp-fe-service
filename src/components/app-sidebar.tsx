@@ -2,7 +2,7 @@ import * as React from "react";
 import {
   Users, ClipboardPlus, Building2, Wrench,
   LayoutDashboard, Shield, Package,
-  CheckCircle, BarChart3, Megaphone
+  CheckCircle, Megaphone
 } from "lucide-react";
 import { NavLink } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
@@ -61,11 +61,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Warranty Approval",
           icon: <CheckCircle className="size-4" />,
           to: ROUTERS_PATH.ADMIN_WARRANTY_APPROVAL,
-        },
-        {
-          title: "Analytics",
-          icon: <BarChart3 className="size-4" />,
-          to: ROUTERS_PATH.ADMIN_ANALYTICS,
         },
       ];
     }

@@ -37,7 +37,6 @@ export const ROLE_ACCESSIBLE_ROUTES: Record<string, string[]> = {
     "/admin/role-permissions", // Quản lý phân quyền
     "/admin/products", // Quản lý products
     "/admin/warranty-approval", // Duyệt bảo hành
-    "/admin/analytics", // Thống kê phân tích
   ],
   [ROLES.EVM_STAFF]: [
     "/evm/dashboard", // EVM Dashboard
@@ -68,7 +67,6 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "manage_products",
     "manage_vehicles",
     "manage_service_centers",
-    "view_analytics",
     "approve_warranty_claims",
     "manage_system_settings",
   ],

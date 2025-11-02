@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/pages/Login/feature/AuthContext';
 import {
     FaUsers, FaFileAlt, FaBoxOpen, FaCar,
     FaChartLine, FaClipboardList, FaTachometerAlt
 } from 'react-icons/fa';
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { warrantyClaimAPI, userAPI, productModelAPI, vehicleAPI } from '@/utility';
 import styles from './AdminDashboard.module.css';
 
 interface Stats {
@@ -41,32 +42,135 @@ interface StatCard {
 
 export default function AdminDashboard() {
     const { user } = useAuth();
-    const [stats] = useState<Stats>({
-        totalUsers: 128,
-        totalClaims: 456,
-        totalProducts: 89,
-        totalVehicles: 342,
-        pendingClaims: 23,
-        approvedClaims: 398,
-        rejectedClaims: 35,
-        activeTechnicians: 15
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<Stats>({
+        totalUsers: 0,
+        totalClaims: 0,
+        totalProducts: 0,
+        totalVehicles: 0,
+        pendingClaims: 0,
+        approvedClaims: 0,
+        rejectedClaims: 0,
+        activeTechnicians: 0
     });
+    const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [claimsByStatus, setClaimsByStatus] = useState<ClaimStatus[]>([]);
 
-    // Mock data for charts
-    const monthlyData: MonthlyData[] = [
-        { month: 'Jan', claims: 30, completed: 25 },
-        { month: 'Feb', claims: 45, completed: 40 },
-        { month: 'Mar', claims: 35, completed: 32 },
-        { month: 'Apr', claims: 50, completed: 45 },
-        { month: 'May', claims: 65, completed: 58 },
-        { month: 'Jun', claims: 55, completed: 52 }
-    ];
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
 
-    const claimsByStatus: ClaimStatus[] = [
-        { name: 'Pending', value: 23, color: '#f59e0b' },
-        { name: 'Approved', value: 398, color: '#10b981' },
-        { name: 'Rejected', value: 35, color: '#ef4444' }
-    ];
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch all data in parallel
+            const [usersRes, claimsRes, productsRes, vehiclesRes] = await Promise.all([
+                userAPI.getUsers(),
+                warrantyClaimAPI.getClaimsByServiceCenter(1), // TODO: Get service center ID from auth
+                productModelAPI.getAllProductModels(),
+                vehicleAPI.getAllVehicles()
+            ]);
+
+            const users = usersRes.data.result || [];
+            const claims = claimsRes.data.result || [];
+            const products = productsRes.data.result || [];
+            const vehicles = vehiclesRes.data.result || [];
+
+            // Calculate statistics
+            const statusCounts = claims.reduce((acc: any, claim: any) => {
+                const status = claim.status?.toUpperCase() || 'UNKNOWN';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+
+            const pending = statusCounts['PENDING'] || statusCounts['WAITING_FOR_APPROVAL'] || 0;
+            const approved = statusCounts['APPROVED'] || 0;
+            const rejected = statusCounts['REJECTED'] || 0;
+
+            // Count technicians
+            const technicians = users.filter((u: any) =>
+                u.role?.name === 'TECHNICIAN' || u.role?.name === 'SC_TECHNICIAN'
+            );
+
+            // Calculate monthly data (last 6 months)
+            const monthlyStats = calculateMonthlyData(claims);
+            setMonthlyData(monthlyStats);
+
+            // Set claims by status for pie chart
+            const statusData: ClaimStatus[] = [
+                { name: 'Chờ duyệt', value: pending, color: '#f59e0b' },
+                { name: 'Đã duyệt', value: approved, color: '#10b981' },
+                { name: 'Từ chối', value: rejected, color: '#ef4444' }
+            ].filter(item => item.value > 0);
+
+            setClaimsByStatus(statusData);
+
+            setStats({
+                totalUsers: users.length,
+                totalClaims: claims.length,
+                totalProducts: products.length,
+                totalVehicles: vehicles.length,
+                pendingClaims: pending,
+                approvedClaims: approved,
+                rejectedClaims: rejected,
+                activeTechnicians: technicians.length
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateMonthlyData = (claims: any[]): MonthlyData[] => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const monthlyMap = new Map<string, { claims: number; completed: number }>();
+
+        // Initialize last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthKey = `${months[date.getMonth()]}`;
+            monthlyMap.set(monthKey, { claims: 0, completed: 0 });
+        }
+
+        // Count claims per month
+        claims.forEach((claim: any) => {
+            if (claim.claimDate) {
+                const claimDate = new Date(claim.claimDate);
+                const monthKey = months[claimDate.getMonth()];
+
+                if (monthlyMap.has(monthKey)) {
+                    const data = monthlyMap.get(monthKey)!;
+                    data.claims++;
+
+                    if (claim.status?.toUpperCase() === 'APPROVED' ||
+                        claim.status?.toUpperCase() === 'COMPLETED' ||
+                        claim.status?.toUpperCase() === 'RESOLVED') {
+                        data.completed++;
+                    }
+                    monthlyMap.set(monthKey, data);
+                }
+            }
+        });
+
+        return Array.from(monthlyMap.entries()).map(([month, data]) => ({
+            month,
+            claims: data.claims,
+            completed: data.completed
+        }));
+    };
+
+    if (loading) {
+        return (
+            <div className={styles.dashboard}>
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+                    Đang tải dữ liệu...
+                </div>
+            </div>
+        );
+    }
 
     const statCards: StatCard[] = [
         {
@@ -74,23 +178,23 @@ export default function AdminDashboard() {
             value: stats.totalUsers,
             icon: FaUsers,
             color: 'bg-blue-500',
-            change: '+12%',
-            changeType: 'increase'
+            change: `${stats.activeTechnicians} KTV`,
+            changeType: 'info'
         },
         {
             title: 'Yêu cầu bảo hành',
             value: stats.totalClaims,
             icon: FaFileAlt,
             color: 'bg-green-500',
-            change: '+8%',
-            changeType: 'increase'
+            change: `${stats.pendingClaims} chờ`,
+            changeType: 'warning'
         },
         {
             title: 'Sản phẩm',
             value: stats.totalProducts,
             icon: FaBoxOpen,
             color: 'bg-purple-500',
-            change: '+5%',
+            change: 'Đã đăng ký',
             changeType: 'increase'
         },
         {
@@ -98,7 +202,7 @@ export default function AdminDashboard() {
             value: stats.totalVehicles,
             icon: FaCar,
             color: 'bg-orange-500',
-            change: '+15%',
+            change: 'Tổng xe',
             changeType: 'increase'
         }
     ];

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/pages/Login/feature/AuthContext';
+import type { Stats, Claim, TrendData, CampaignStat } from './types';
 import {
     FaTachometerAlt, FaClipboardList, FaBullhorn,
     FaCheckCircle, FaClock, FaTimes, FaExclamationTriangle,
@@ -7,37 +8,6 @@ import {
 } from 'react-icons/fa';
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import styles from './EVMDashboard.module.css';
-
-interface Stats {
-    totalClaims: number;
-    pendingClaims: number;
-    approvedClaims: number;
-    rejectedClaims: number;
-    activeCampaigns: number;
-    totalParts: number;
-    lowStockParts: number;
-}
-
-interface Claim {
-    id: number;
-    claimNumber: string;
-    customer: { fullName: string };
-    vehicle: { model: string; vin: string };
-    status: string;
-    createdDate: string;
-}
-
-interface TrendData {
-    month: string;
-    claims: number;
-    approved: number;
-}
-
-interface CampaignStat {
-    name: string;
-    value: number;
-    color: string;
-}
 
 const EVMDashboard: React.FC = () => {
     const { user } = useAuth();
@@ -60,13 +30,6 @@ const EVMDashboard: React.FC = () => {
 
     const fetchDashboardData = async () => {
         try {
-
-            // TODO: Replace with actual API calls
-            // const claimsRes = await warrantyClaimAPI.getClaims({ pageSize: 5 });
-            // const campaignsRes = await campaignAPI.getCampaigns();
-            // const partsRes = await partAPI.getParts();
-
-            // Mock data for now
             setRecentClaims([
                 {
                     id: 1,

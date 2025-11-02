@@ -31,7 +31,6 @@ const RolePermissions: React.FC = () => {
             'manage_products': 'Add, edit, and remove products and vehicles',
             'manage_vehicles': 'Manage vehicle information and registration',
             'manage_service_centers': 'Control service center configurations',
-            'view_analytics': 'Access system analytics and reports',
             'approve_warranty_claims': 'Review and approve warranty claims',
             'manage_system_settings': 'Modify system-wide settings',
             'manage_campaigns': 'Create and manage marketing campaigns',

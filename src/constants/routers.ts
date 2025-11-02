@@ -7,7 +7,6 @@ const ROUTERS_PATH = {
   ADMIN_ROLE_PERMISSIONS: "/admin/role-permissions",
   ADMIN_PRODUCTS: "/admin/products",
   ADMIN_WARRANTY_APPROVAL: "/admin/warranty-approval",
-  ADMIN_ANALYTICS: "/admin/analytics",
 
   // EVM Staff Routes
   EVM_DASHBOARD: "/evm/dashboard",

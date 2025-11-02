@@ -204,6 +204,19 @@ export const claimAssignmentAPI = {
     axiosInstance.delete(`/claim-assignments/${assignmentID}`),
   searchAssignments: (params: SearchAssignmentsParams) =>
     axiosInstance.get("/claim-assignments/search", { params }),
+  getTechnicianPerformance: (serviceCenterID: number) =>
+    axiosInstance.get(`/claim-assignments/performance/${serviceCenterID}`),
+};
+
+// ==================== VEHICLE API ====================
+export const vehicleAPI = {
+  getAllVehicles: () => axiosInstance.get("/vehicles"),
+  getVehicleByVin: (vin: string) => axiosInstance.get(`/vehicles/${vin}`),
+  getVehiclesByCustomerId: (customerId: number) =>
+    axiosInstance.get(`/vehicles/customer/${customerId}`),
+  registerVehicle: (data: any) => axiosInstance.post("/vehicles", data),
+  updateVehicleNotes: (vin: string, notes: string) =>
+    axiosInstance.put(`/vehicles/${vin}/notes`, { notes }),
 };
 
 // ==================== SERVICE CENTER API ====================
@@ -274,4 +287,16 @@ export const customerAPI = {
     axiosInstance.get("/customers/search", { params: { name } }),
   searchVehicle: (payload: VehicleSearchRequest) =>
     axiosInstance.post("/customers/vehicles/search", payload),
+};
+
+// ==================== PRODUCT MODEL API ====================
+export const productModelAPI = {
+  getAllProductModels: () => axiosInstance.get("/product-models"),
+  getProductModelById: (modelId: number) =>
+    axiosInstance.get(`/product-models/${modelId}`),
+  createProductModel: (data: {
+    modelName: string;
+    color?: string;
+    productionYear?: number;
+  }) => axiosInstance.post("/product-models", data),
 };

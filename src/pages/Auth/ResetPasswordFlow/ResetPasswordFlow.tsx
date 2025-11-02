@@ -32,7 +32,7 @@ const ResetPasswordFlow = () => {
             console.log('OTP Response:', response.data);
 
             if (response.data.code === 0 || response.data.code === 200) {
-                setSuccess('✅ Mã OTP đã được gửi đến email của bạn!');
+                setSuccess('Mã OTP đã được gửi đến email của bạn!');
                 setStep(2);
             } else {
                 setError(response.data.message || 'Không thể gửi OTP!');
@@ -102,9 +102,9 @@ const ResetPasswordFlow = () => {
         setSuccess('');
 
         const fullOtp = otpDigits.join('');
-        console.log('🔍 OTP Digits:', otpDigits);
-        console.log('🔍 Full OTP:', fullOtp);
-        console.log('🔍 OTP Length:', fullOtp.length);
+        console.log('OTP Digits:', otpDigits);
+        console.log('Full OTP:', fullOtp);
+        console.log('OTP Length:', fullOtp.length);
 
         if (!fullOtp || fullOtp.length !== 6) {
             setError('Vui lòng nhập đủ 6 chữ số!');
@@ -115,22 +115,22 @@ const ResetPasswordFlow = () => {
 
         try {
             const payload = { email, otpCode: fullOtp };
-            console.log('📤 Sending Verify OTP Request:', payload);
+            console.log('Sending Verify OTP Request:', payload);
 
             const response = await authAPI.verifyOtp(payload);
-            console.log('📥 Verify OTP Response:', response.data);
+            console.log('Verify OTP Response:', response.data);
 
             if (response.data.code === 0 || response.data.code === 200) {
-                setSuccess('✅ Xác thực OTP thành công!');
+                setSuccess('Xác thực OTP thành công!');
                 setOtp(fullOtp); // Save verified OTP for password reset
                 setStep(3);
             } else {
-                console.error('❌ Verify OTP Failed:', response.data);
+                console.error('Verify OTP Failed:', response.data);
                 setError(response.data.message || 'Mã OTP không đúng!');
             }
         } catch (err: any) {
-            console.error('❌ Verify OTP Error:', err);
-            console.error('❌ Error Response:', err.response?.data);
+            console.error('Verify OTP Error:', err);
+            console.error('Error Response:', err.response?.data);
             setError(err.response?.data?.message || 'Mã OTP không đúng hoặc đã hết hạn!');
         } finally {
             setLoading(false);
@@ -162,23 +162,23 @@ const ResetPasswordFlow = () => {
                 newPassword,
                 confirmPassword
             };
-            console.log('📤 Sending Reset Password Request:', payload);
+            console.log('Sending Reset Password Request:', payload);
 
             const response = await authAPI.resetPassword(payload);
-            console.log('📥 Reset Password Response:', response.data);
+            console.log('Reset Password Response:', response.data);
 
             if (response.data.code === 0 || response.data.code === 200) {
-                setSuccess('✅ Đổi mật khẩu thành công!');
+                setSuccess('Đổi mật khẩu thành công!');
                 setTimeout(() => {
                     navigate('/login');
                 }, 2000);
             } else {
-                console.error('❌ Reset Password Failed:', response.data);
+                console.error('Reset Password Failed:', response.data);
                 setError(response.data.message || 'Không thể đổi mật khẩu!');
             }
         } catch (err: any) {
-            console.error('❌ Reset Password Error:', err);
-            console.error('❌ Error Response:', err.response?.data);
+            console.error('Reset Password Error:', err);
+            console.error('Error Response:', err.response?.data);
             setError(err.response?.data?.message || 'Đã có lỗi xảy ra!');
         } finally {
             setLoading(false);
@@ -247,7 +247,7 @@ const ResetPasswordFlow = () => {
                         </div>
 
                         <button type="submit" className={styles.button} disabled={loading}>
-                            {loading ? '⏳ Đang gửi...' : '📧 Gửi mã OTP'}
+                            {loading ? 'Đang gửi...' : 'Gửi mã OTP'}
                         </button>
                     </form>
                 )}
@@ -337,7 +337,7 @@ const ResetPasswordFlow = () => {
                         </div>
 
                         <button type="submit" className={styles.button} disabled={loading}>
-                            {loading ? '⏳ Đang xử lý...' : '🔒 Đặt lại mật khẩu'}
+                            {loading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
                         </button>
                     </form>
                 )}
