@@ -148,6 +148,7 @@ const ProductManagement = () => {
                         modelName: vehicleForm.model,
                         color: 'Default', // You may want to add a color field to the form
                         productionYear: vehicleForm.year,
+                        warrantyPeriod: 36, // Default 36 months warranty
                     });
                     alert('✅ Thêm model xe thành công!');
                 } else if (modalMode === 'edit' && selectedItem) {

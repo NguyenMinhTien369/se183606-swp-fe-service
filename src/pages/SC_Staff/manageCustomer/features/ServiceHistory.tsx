@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Customer, ServiceHistory } from "../types/index";
 import { Save, ClipboardList, Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,17 +11,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
-import { Textarea } from "../../../../components/ui/textarea";
-import { Button } from "../../../../components/ui/button";
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../../components/ui/dialog";
-import { serviceHistoryAPI } from "../../../../utility/index";
+} from "@/components/ui/dialog";
+import { serviceHistoryAPI } from "@/utility/index";
 
 export function Screen22ServiceHistory({ customer }: { customer: Customer }) {
   const [notes, setNotes] = useState("");

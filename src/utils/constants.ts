@@ -48,6 +48,8 @@ export const ROLE_ACCESSIBLE_ROUTES: Record<string, string[]> = {
     "/sc-staff/dashboard", // SC Staff Dashboard
     "/sc-staff/manage-customer", // Quản lý khách hàng
     "/sc-staff/internal-management", // Quản lý nội bộ
+    "/technician/create-warranty", // Tạo bảo hành
+    "/technician/conduct-warranty", // Thực hiện bảo hành
   ],
   [ROLES.SC_TECHNICIAN]: [
     "/technician/dashboard", // Technician Dashboard
@@ -72,6 +74,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   [ROLES.EVM_STAFF]: [
     "manage_campaigns",
+    "manage_products",
     "view_warranty_claims",
     "manage_parts",
     "view_reports",

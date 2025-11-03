@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Bell, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   Dialog,
@@ -8,8 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../../../../components/ui/dialog";
-import { Button } from "../../../../components/ui/button";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -17,25 +17,28 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
-import { Card } from "../../../../components/ui/card";
-import { Badge } from "../../../../components/ui/badge";
-import { Progress } from "../../../../components/ui/progress";
-import { Textarea } from "../../../../components/ui/textarea";
-import { ScrollArea } from "../../../../components/ui/scroll-area";
-import { mockWarrantyRequests } from "../lib/mock-data";
-import { getStatusLabel, getStatusColor } from "../lib/utils-warranty";
-import type { WarrantyRequest } from "../types/warranty";
+} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { claimAssignmentAPI } from "@/utility/index";
+import type { AssignmentProgress } from "../types";
+import {
+  getAssignmentStatusLabel,
+  getAssignmentStatusColor,
+} from "../lib/utils-warranty";
 
-export function TrackProgress() {
-  const [requests, setRequests] = useState(
-    mockWarrantyRequests.filter((r) =>
-      ["assigned", "receiving_parts", "in_progress"].includes(r.status)
-    )
-  );
+interface TrackProgressProps {
+  serviceCenterID: number;
+}
 
+export function TrackProgress({ serviceCenterID }: TrackProgressProps) {
+  const [assignments, setAssignments] = useState<AssignmentProgress[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] =
-    useState<WarrantyRequest | null>(null);
+    useState<AssignmentProgress | null>(null);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isAlertDialogOpen, setIsAlertDialogOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState<{
@@ -49,12 +52,37 @@ export function TrackProgress() {
   });
   const [newNote, setNewNote] = useState("");
 
-  const handleAddNote = (request: WarrantyRequest) => {
+  // Load assignments on mount
+  useEffect(() => {
+    loadAssignments();
+  }, [serviceCenterID]);
+
+  const loadAssignments = async () => {
+    setIsLoading(true);
+    try {
+      const response = await claimAssignmentAPI.getAssignmentsProgress(
+        serviceCenterID
+      );
+      setAssignments(response.data.result || []);
+    } catch (error) {
+      console.error("Error loading assignments:", error);
+      setAlertMessage({
+        title: "Lỗi",
+        message: "Không thể tải danh sách phân công",
+        type: "error",
+      });
+      setIsAlertDialogOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddNote = (request: AssignmentProgress) => {
     setSelectedRequest(request);
     setIsNoteModalOpen(true);
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!selectedRequest || !newNote.trim()) {
       setAlertMessage({
         title: "Thiếu thông tin",
@@ -65,28 +93,45 @@ export function TrackProgress() {
       return;
     }
 
-    const updatedRequests = requests.map((req) =>
-      req.id === selectedRequest.id ? { ...req, notes: newNote } : req
-    );
+    try {
+      // Create FormData for update
+      const formData = new FormData();
+      formData.append("internalNotes", newNote);
 
-    setRequests(updatedRequests);
+      await claimAssignmentAPI.updateAssignmentProgress(
+        selectedRequest.assignmentID,
+        formData
+      );
 
-    setAlertMessage({
-      title: "Thành công",
-      message: `Đã thêm ghi chú cho yêu cầu ${selectedRequest.id}.`,
-      type: "success",
-    });
-    setIsAlertDialogOpen(true);
+      setAlertMessage({
+        title: "Thành công",
+        message: `Đã thêm ghi chú cho phân công #${selectedRequest.assignmentID}.`,
+        type: "success",
+      });
+      setIsAlertDialogOpen(true);
 
-    setIsNoteModalOpen(false);
-    setNewNote("");
-    setSelectedRequest(null);
+      // Reload data
+      await loadAssignments();
+
+      setIsNoteModalOpen(false);
+      setNewNote("");
+      setSelectedRequest(null);
+    } catch (error: any) {
+      console.error("Error saving note:", error);
+      setAlertMessage({
+        title: "Lỗi",
+        message: error.response?.data?.message || "Không thể lưu ghi chú",
+        type: "error",
+      });
+      setIsAlertDialogOpen(true);
+    }
   };
 
-  const handleSendReminder = (request: WarrantyRequest) => {
+  const handleSendReminder = (request: AssignmentProgress) => {
+    // This is a UI-only feature, could integrate with notification system
     setAlertMessage({
       title: "Đã gửi nhắc nhở",
-      message: `Nhắc nhở đã được gửi đến ${request.assignedTo} cho yêu cầu ${request.id}.`,
+      message: `Nhắc nhở đã được gửi đến ${request.technicianName} cho phân công #${request.assignmentID}.`,
       type: "success",
     });
     setIsAlertDialogOpen(true);
@@ -118,62 +163,89 @@ export function TrackProgress() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((request) => (
-                <TableRow key={request.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{request.id}</TableCell>
-                  <TableCell>{request.vin}</TableCell>
-                  <TableCell>{request.assignedTo || "-"}</TableCell>
-                  <TableCell>
-                    {request.assignedDate
-                      ? new Date(request.assignedDate).toLocaleDateString(
-                          "vi-VN"
-                        )
-                      : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(request.status)}>
-                      {getStatusLabel(request.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-2 min-w-[200px]">
-                      <div className="flex items-center justify-between">
-                        <span>{request.progress || 0}%</span>
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <Progress
-                        value={request.progress || 0}
-                        className="h-2 rounded-full"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">
-                    {request.notes ? (
-                      <span className="block text-sm">{request.notes}</span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleAddNote(request)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleSendReminder(request)}
-                      >
-                        <Bell className="w-4 h-4" />
-                      </Button>
-                    </div>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <p className="text-muted-foreground">Đang tải dữ liệu...</p>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : assignments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Không có phân công nào đang xử lý
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                assignments.map((assignment) => (
+                  <TableRow
+                    key={assignment.assignmentID}
+                    className="hover:bg-muted/50"
+                  >
+                    <TableCell className="font-medium">
+                      #{assignment.claimCode}
+                    </TableCell>
+                    <TableCell>{assignment.vin}</TableCell>
+                    <TableCell>{assignment.technicianName || "-"}</TableCell>
+                    <TableCell>
+                      {assignment.assignedDate
+                        ? new Date(assignment.assignedDate).toLocaleDateString(
+                          "vi-VN"
+                        )
+                        : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={getAssignmentStatusColor(assignment.status)}
+                      >
+                        {getAssignmentStatusLabel(assignment.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2 min-w-[200px]">
+                        <div className="flex items-center justify-between">
+                          <span>{assignment.completionPercentage || 0}%</span>
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                        <Progress
+                          value={assignment.completionPercentage || 0}
+                          className="h-2 rounded-full"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {assignment.internalNotes ? (
+                        <span className="block text-sm">
+                          {assignment.internalNotes}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleAddNote(assignment)}
+                          title="Thêm ghi chú"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleSendReminder(assignment)}
+                          title="Gửi nhắc nhở"
+                        >
+                          <Bell className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </ScrollArea>
@@ -209,10 +281,19 @@ export function TrackProgress() {
             <div className="space-y-4 py-4">
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">
+                  Mã phân công
+                </label>
+                <div className="p-3 bg-muted rounded-md font-medium">
+                  #{selectedRequest.assignmentID}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">
                   Mã yêu cầu
                 </label>
                 <div className="p-3 bg-muted rounded-md font-medium">
-                  {selectedRequest.id}
+                  #{selectedRequest.claimCode}
                 </div>
               </div>
 
@@ -230,13 +311,24 @@ export function TrackProgress() {
                   Kỹ thuật viên
                 </label>
                 <div className="p-3 bg-muted rounded-md font-medium">
-                  {selectedRequest.assignedTo}
+                  {selectedRequest.technicianName}
                 </div>
               </div>
 
+              {selectedRequest.internalNotes && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 block">
+                    Ghi chú hiện tại
+                  </label>
+                  <div className="p-3 bg-muted rounded-md text-sm">
+                    {selectedRequest.internalNotes}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="text-sm mb-1 block font-medium">
-                  Ghi chú *
+                  Ghi chú mới *
                 </label>
                 <Textarea
                   placeholder="Nhập ghi chú nội bộ..."

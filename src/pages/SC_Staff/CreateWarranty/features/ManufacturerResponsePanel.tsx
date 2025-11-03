@@ -1,11 +1,11 @@
-import type { WarrantyClaim } from "../types/warranty";
+import type { WarrantyClaimResponse } from "../types/warranty";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../../components/ui/card";
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,38 +13,56 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
-import { Badge } from "../../../../components/ui/badge";
-import { CheckCircle, XCircle, Clock } from "lucide-react";
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, XCircle, Clock, FileCheck } from "lucide-react";
 
 interface ManufacturerResponsePanelProps {
-  claims: WarrantyClaim[];
-  onViewDetails: (claim: WarrantyClaim) => void;
+  claims: WarrantyClaimResponse[];
+  onViewDetails: (claim: WarrantyClaimResponse) => void;
 }
 
 export function ManufacturerResponsePanel({
   claims,
   onViewDetails,
 }: ManufacturerResponsePanelProps) {
-  const claimsWithResponse = claims.filter((c) => c.manufacturerResponse);
+  // Filter claims that have been processed (APPROVED, REJECTED, or COMPLETED)
+  const claimsWithResponse = claims.filter((c) =>
+    ["APPROVED", "REJECTED", "COMPLETED"].includes(c.status)
+  );
 
-  const getResultIcon = (result: "approved" | "rejected") => {
-    return result === "approved" ? (
-      <CheckCircle className="h-5 w-5 text-green-600" />
-    ) : (
-      <XCircle className="h-5 w-5 text-red-600" />
-    );
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "APPROVED":
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case "REJECTED":
+        return <XCircle className="h-5 w-5 text-red-600" />;
+      case "COMPLETED":
+        return <FileCheck className="h-5 w-5 text-blue-600" />;
+      default:
+        return <Clock className="h-5 w-5 text-yellow-600" />;
+    }
   };
 
-  const getResultBadge = (result: "approved" | "rejected") => {
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { label: string; className: string }> = {
+      APPROVED: {
+        label: "Đã chấp nhận",
+        className: "bg-green-100 text-green-800",
+      },
+      REJECTED: { label: "Đã từ chối", className: "bg-red-100 text-red-800" },
+      COMPLETED: {
+        label: "Đã hoàn thành",
+        className: "bg-blue-100 text-blue-800",
+      },
+    };
+    const { label, className } = config[status] || {
+      label: status,
+      className: "",
+    };
     return (
-      <Badge
-        variant="secondary"
-        className={`text-sm font-medium ${
-          result === "approved" ? "bg-green-100 text-green-800" : ""
-        }`}
-      >
-        {result === "approved" ? "Phê duyệt" : "Từ chối"}
+      <Badge variant="secondary" className={`text-sm font-medium ${className}`}>
+        {label}
       </Badge>
     );
   };
@@ -52,69 +70,68 @@ export function ManufacturerResponsePanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Phản hồi từ hãng</CardTitle>
+        <CardTitle>Phản hồi từ hệ thống</CardTitle>
         <CardDescription>
-          Kết quả xử lý từ hệ thống hãng ({claimsWithResponse.length} phản hồi)
+          Các yêu cầu đã được xử lý ({claimsWithResponse.length} yêu cầu)
         </CardDescription>
       </CardHeader>
       <CardContent>
         {claimsWithResponse.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-            <Clock className="h-12 w-12 mb-4" />
-            <p>Chưa có phản hồi nào từ hãng</p>
+            <Clock className="h-12 w-12 mb-4 opacity-50" />
+            <p>Chưa có yêu cầu nào được xử lý</p>
+            <p className="text-sm mt-2">
+              Các yêu cầu đã được chấp nhận/từ chối/hoàn thành sẽ hiển thị ở đây
+            </p>
           </div>
         ) : (
           <div className="border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[160px]">Mã yêu cầu</TableHead>
-                  <TableHead>Kết quả</TableHead>
-                  <TableHead>Ghi chú từ hãng</TableHead>
-                  <TableHead>Phụ tùng thay thế</TableHead>
-                  <TableHead>Ngày cập nhật</TableHead>
+                  <TableHead className="w-[120px]">Claim ID</TableHead>
+                  <TableHead className="w-[140px]">VIN</TableHead>
+                  <TableHead>Mô tả</TableHead>
+                  <TableHead className="w-[140px]">Trạng thái</TableHead>
+                  <TableHead className="w-[160px]">Kết quả</TableHead>
+                  <TableHead className="w-[120px]">Ngày tạo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {claimsWithResponse.map((claim) => (
                   <TableRow
-                    key={claim.id}
+                    key={claim.claimID}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => onViewDetails(claim)}
                   >
-                    <TableCell className="font-medium">
-                      {claim.requestCode}
+                    <TableCell className="font-mono font-medium">
+                      #{claim.claimID}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {claim.vin}
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      {claim.description}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {getResultIcon(claim.manufacturerResponse!.result)}
-                        {getResultBadge(claim.manufacturerResponse!.result)}
+                        {getStatusIcon(claim.status)}
+                        {getStatusBadge(claim.status)}
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-md truncate">
-                      {claim.manufacturerResponse!.notes}
-                    </TableCell>
                     <TableCell>
-                      {claim.manufacturerResponse!.replacementParts &&
-                      claim.manufacturerResponse!.replacementParts.length >
-                        0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {claim.manufacturerResponse!.replacementParts.map(
-                            (part, idx) => (
-                              <Badge key={idx} variant="secondary">
-                                {part}
-                              </Badge>
-                            )
-                          )}
+                      {claim.result ? (
+                        <div className="max-w-md truncate text-sm">
+                          {claim.result}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground text-sm">
+                          Chưa có kết quả
+                        </span>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {new Date(
-                        claim.manufacturerResponse!.updateDate
-                      ).toLocaleDateString("vi-VN")}
+                    <TableCell className="text-sm">
+                      {new Date(claim.creationDate).toLocaleDateString("vi-VN")}
                     </TableCell>
                   </TableRow>
                 ))}

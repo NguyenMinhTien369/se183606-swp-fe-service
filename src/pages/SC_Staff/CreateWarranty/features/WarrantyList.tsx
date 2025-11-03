@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { WarrantyClaim } from "../types/warranty";
+import type { WarrantyClaimResponse } from "../types/warranty";
 
 import {
   Card,
@@ -9,7 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../../components/ui/card";
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -17,30 +17,30 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
-import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../components/ui/select";
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../../../../components/ui/tooltip";
+} from "@/components/ui/tooltip";
 
 import { Edit, Search, Trash2 } from "lucide-react";
 
 interface WarrantyListProps {
-  claims: WarrantyClaim[];
-  onEdit: (claim: WarrantyClaim) => void;
-  onDelete: (claimId: string) => void;
-  onViewDetails: (claim: WarrantyClaim) => void;
+  claims: WarrantyClaimResponse[];
+  onEdit: (claim: WarrantyClaimResponse) => void;
+  onDelete: (claimId: number) => void;
+  onViewDetails: (claim: WarrantyClaimResponse) => void;
 }
 
 export function WarrantyList({
@@ -61,28 +61,33 @@ export function WarrantyList({
         variant: "default" | "secondary" | "destructive" | "outline";
       }
     > = {
-      pending: {
+      PENDING: {
         label: "🟡 Chờ duyệt",
         color: "bg-yellow-100 text-yellow-800",
         variant: "outline",
       },
-      approved: {
+      APPROVED: {
         label: "🟢 Được chấp nhận",
         color: "bg-green-100 text-green-800",
         variant: "default",
       },
-      completed: {
-        label: "🔵 Đã xử lý",
+      IN_PROGRESS: {
+        label: "🔵 Đang xử lý",
         color: "bg-blue-100 text-blue-800",
         variant: "secondary",
       },
-      rejected: {
+      COMPLETED: {
+        label: "✅ Đã hoàn thành",
+        color: "bg-green-100 text-green-800",
+        variant: "default",
+      },
+      REJECTED: {
         label: "🔴 Từ chối",
         color: "bg-red-100 text-red-800",
         variant: "destructive",
       },
     };
-    return configs[status] || configs.pending;
+    return configs[status] || configs.PENDING;
   };
 
   const filteredClaims = claims.filter((claim) => {
@@ -94,7 +99,7 @@ export function WarrantyList({
     return matchesVin && matchesStatus;
   });
 
-  const canEdit = (status: string) => status === "pending";
+  const canEdit = (status: string) => status === "PENDING";
 
   return (
     <Card className="border shadow-sm">
@@ -124,10 +129,11 @@ export function WarrantyList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="pending">Chờ duyệt</SelectItem>
-              <SelectItem value="approved">Được chấp nhận</SelectItem>
-              <SelectItem value="completed">Đã xử lý</SelectItem>
-              <SelectItem value="rejected">Từ chối</SelectItem>
+              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
+              <SelectItem value="APPROVED">Được chấp nhận</SelectItem>
+              <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
+              <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
+              <SelectItem value="REJECTED">Từ chối</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -137,12 +143,12 @@ export function WarrantyList({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Mã yêu cầu</TableHead>
+                <TableHead>Claim ID</TableHead>
                 <TableHead>VIN</TableHead>
-                <TableHead>Phụ tùng</TableHead>
-                <TableHead>Ngày gửi</TableHead>
+                <TableHead>Mô tả</TableHead>
+                <TableHead>Ngày tạo</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead>Người xử lý</TableHead>
+                <TableHead>Service Center</TableHead>
                 <TableHead className="text-center">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
@@ -164,17 +170,19 @@ export function WarrantyList({
 
                   return (
                     <TableRow
-                      key={claim.id}
+                      key={claim.claimID}
                       className="cursor-pointer hover:bg-muted/50 transition-colors"
                       onClick={() => onViewDetails(claim)}
                     >
-                      <TableCell>{claim.requestCode}</TableCell>
-                      <TableCell>{claim.vin}</TableCell>
+                      <TableCell className="font-mono">
+                        #{claim.claimID}
+                      </TableCell>
+                      <TableCell className="font-mono">{claim.vin}</TableCell>
                       <TableCell className="max-w-xs truncate">
-                        {claim.parts.join(", ")}
+                        {claim.description}
                       </TableCell>
                       <TableCell>
-                        {new Date(claim.createdDate).toLocaleDateString(
+                        {new Date(claim.creationDate).toLocaleDateString(
                           "vi-VN"
                         )}
                       </TableCell>
@@ -185,7 +193,7 @@ export function WarrantyList({
                           {statusConfig.label}
                         </span>
                       </TableCell>
-                      <TableCell>{claim.handler}</TableCell>
+                      <TableCell>{claim.serviceCenterName}</TableCell>
 
                       {/* Action buttons */}
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -205,8 +213,7 @@ export function WarrantyList({
                               {!editable && (
                                 <TooltipContent>
                                   <p>
-                                    Không thể chỉnh sửa – yêu cầu đã được hãng
-                                    xử lý
+                                    Không thể chỉnh sửa – yêu cầu đã được xử lý
                                   </p>
                                 </TooltipContent>
                               )}
@@ -220,16 +227,14 @@ export function WarrantyList({
                                   variant="ghost"
                                   size="icon"
                                   disabled={!editable}
-                                  onClick={() => onDelete(claim.id)}
+                                  onClick={() => onDelete(claim.claimID)}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
                               {!editable && (
                                 <TooltipContent>
-                                  <p>
-                                    Không thể xóa – yêu cầu đã được hãng xử lý
-                                  </p>
+                                  <p>Không thể xóa – yêu cầu đã được xử lý</p>
                                 </TooltipContent>
                               )}
                             </Tooltip>

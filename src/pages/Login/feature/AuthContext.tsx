@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const userData = {
-            userId: decodedToken?.userId,
+            userId: decodedToken?.userID || decodedToken?.userId, // Backend dùng "userID" (viết hoa)
             username: decodedToken?.sub,
             email: decodedToken?.email,
             fullName: decodedToken?.fullName,
@@ -149,7 +149,7 @@ credentials: là 1 tham số kiểu LoginCredentials chứa thông tin đăng nh
 
       // Tạo object user từ thông tin trong token
       const userData: User = {
-        userId: decodedToken?.userId,
+        userId: decodedToken?.userID || decodedToken?.userId, // Backend dùng "userID" (viết hoa)
         username: decodedToken?.sub,
         email: decodedToken?.email,
         fullName: decodedToken?.fullName,

@@ -43,22 +43,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           to: ROUTERS_PATH.ADMIN_DASHBOARD,
         },
         {
-          title: "User Management",
+          title: "Quản Lý Người Dùng",
           icon: <Users className="size-4" />,
           to: ROUTERS_PATH.ADMIN_USERS,
         },
         {
-          title: "Role Permissions",
+          title: "Quản Lý Quyền",
           icon: <Shield className="size-4" />,
           to: ROUTERS_PATH.ADMIN_ROLE_PERMISSIONS,
         },
         {
-          title: "Product Management",
+          title: "Quản Lý Sản Phẩm",
           icon: <Package className="size-4" />,
           to: ROUTERS_PATH.ADMIN_PRODUCTS,
         },
         {
-          title: "Warranty Approval",
+          title: "Quản Lý Đơn Bảo Hành",
           icon: <CheckCircle className="size-4" />,
           to: ROUTERS_PATH.ADMIN_WARRANTY_APPROVAL,
         },
@@ -74,12 +74,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           to: ROUTERS_PATH.EVM_DASHBOARD,
         },
         {
-          title: "Campaign Management",
+          title: "Quản Lý Sản Phẩm",
+          icon: <Package className="size-4" />,
+          to: "/evm/products",
+        },
+        {
+          title: "Quản Lý Chiến Dịch",
           icon: <Megaphone className="size-4" />,
           to: ROUTERS_PATH.EVM_CAMPAIGNS,
         },
         {
-          title: "Warranty Claims",
+          title: "Quản Lý Đơn Bảo Hành",
           icon: <CheckCircle className="size-4" />,
           to: ROUTERS_PATH.EVM_WARRANTY_CLAIMS,
         },
@@ -103,6 +108,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Quản Lí Nội Bộ",
           icon: <Building2 className="size-4" />,
           to: ROUTERS_PATH.INTERNAL_MANAGEMENT,
+        },
+        {
+          title: "Tạo Bảo Hành",
+          icon: <ClipboardPlus className="size-4" />,
+          to: ROUTERS_PATH.CREATE_WARRANTY,
+        },
+        {
+          title: "Thực Hiện Bảo Hành",
+          icon: <Wrench className="size-4" />,
+          to: ROUTERS_PATH.CONDUCT_WARRANTY,
         },
       ];
     }

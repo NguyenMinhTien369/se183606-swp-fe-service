@@ -1,14 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import {
-  UserPlus,
-  Plus,
-  X,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
-import { Button } from "../../../../components/ui/button";
+import { useState, useEffect } from "react";
+import { UserPlus, CheckCircle2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -16,44 +10,53 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../../../../components/ui/dialog";
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../../components/ui/select";
-import { Textarea } from "../../../../components/ui/textarea";
-import { Badge } from "../../../../components/ui/badge";
-import { Card } from "../../../../components/ui/card";
-import { Checkbox } from "../../../../components/ui/checkbox";
-import { ScrollArea } from "../../../../components/ui/scroll-area";
-import { mockWarrantyRequests, mockTechnicians } from "../lib/mock-data";
-import { getStatusLabel, getStatusColor } from "../lib/utils-warranty";
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import type { WarrantyClaimResponse, TechnicianUser } from "../types";
+import {
+  getClaimStatusLabel,
+  getClaimStatusColor,
+} from "../lib/utils-warranty";
+import { claimAssignmentAPI, userAPI } from "@/utility/index";
 
-type AssistantTechnician = {
-  id: string;
-  name: string;
-  specialty: string;
-};
+interface AssignTechnicianProps {
+  claims: WarrantyClaimResponse[];
+  onAssignSuccess: () => void;
+}
 
-export function AssignTechnician() {
-  const [requests, setRequests] = useState(
-    mockWarrantyRequests.filter((r) => r.status === "pending")
-  );
-  const [selectedRequests, setSelectedRequests] = useState<string[]>([]);
+export function AssignTechnician({
+  claims,
+  onAssignSuccess,
+}: AssignTechnicianProps) {
+  // Filter APPROVED claims (ready to assign)
+  const pendingRequests = claims.filter((r) => r.status === "APPROVED");
+
+  const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
+  const [technicians, setTechnicians] = useState<TechnicianUser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mainTechnician, setMainTechnician] = useState("");
-  const [assistants, setAssistants] = useState<AssistantTechnician[]>([]);
-  const [notes, setNotes] = useState("");
+  const [mainTechnician, setMainTechnician] = useState<string>("");
+  const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
+  const [internalNotes, setInternalNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [alertDialog, setAlertDialog] = useState<{
     open: boolean;
     title: string;
@@ -61,19 +64,33 @@ export function AssignTechnician() {
     type: "success" | "error";
   }>({ open: false, title: "", description: "", type: "success" });
 
-  const activeTechnicians = mockTechnicians.filter(
-    (t) => t.status === "active"
-  );
+  // Load technicians on mount
+  useEffect(() => {
+    loadTechnicians();
+  }, []);
+
+  const loadTechnicians = async () => {
+    try {
+      const response = await userAPI.getAllUsers();
+      // Filter users with role TECHNICIAN (roleID = 3)
+      const techUsers = response.data.result.filter(
+        (user: TechnicianUser) => user.role.roleID === 3
+      );
+      setTechnicians(techUsers);
+    } catch (error) {
+      console.error("Error loading technicians:", error);
+    }
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRequests(requests.map((r) => r.id));
+      setSelectedRequests(pendingRequests.map((r) => r.claimID));
     } else {
       setSelectedRequests([]);
     }
   };
 
-  const handleSelectRequest = (requestId: string, checked: boolean) => {
+  const handleSelectRequest = (requestId: number, checked: boolean) => {
     if (checked) {
       setSelectedRequests([...selectedRequests, requestId]);
     } else {
@@ -91,32 +108,15 @@ export function AssignTechnician() {
       });
       return;
     }
+    // Reset form
+    setMainTechnician("");
+    setExpectedCompletionDate("");
+    setInternalNotes("");
     setIsModalOpen(true);
   };
 
-  const handleAddAssistant = () => {
-    setAssistants([...assistants, { id: "", name: "", specialty: "" }]);
-  };
-
-  const handleRemoveAssistant = (index: number) => {
-    setAssistants(assistants.filter((_, i) => i !== index));
-  };
-
-  const handleAssistantChange = (index: number, techId: string) => {
-    const tech = activeTechnicians.find((t) => t.id === techId);
-    if (tech) {
-      const newAssistants = [...assistants];
-      newAssistants[index] = {
-        id: tech.id,
-        name: tech.name,
-        specialty: tech.specialty,
-      };
-      setAssistants(newAssistants);
-    }
-  };
-
-  const handleConfirmAssign = () => {
-    if (!mainTechnician) {
+  const handleConfirmAssign = async () => {
+    if (!mainTechnician || mainTechnician === "") {
       setAlertDialog({
         open: true,
         title: "Thiếu kỹ thuật viên chính",
@@ -126,34 +126,62 @@ export function AssignTechnician() {
       return;
     }
 
-    const tech = activeTechnicians.find((t) => t.id === mainTechnician);
+    setIsSubmitting(true);
 
-    const updatedRequests = requests.map((req) => {
-      if (selectedRequests.includes(req.id)) {
-        return {
-          ...req,
-          status: "assigned" as const,
-          assignedTo: tech?.name,
-          assignedDate: new Date().toISOString().split("T")[0],
-        };
-      }
-      return req;
-    });
+    try {
+      // Assign each selected claim to technician
+      const assignPromises = selectedRequests.map((claimID) =>
+        claimAssignmentAPI.assignTechnician({
+          claimID,
+          primaryTechnicianID: Number(mainTechnician), // Backend yêu cầu số, không phải array
+          expectedCompletionDate: expectedCompletionDate || undefined,
+          internalNotes: internalNotes || undefined,
+        })
+      );
 
-    setRequests(updatedRequests);
+      await Promise.all(assignPromises);
 
-    setAlertDialog({
-      open: true,
-      title: "Phân công thành công",
-      description: `Đã phân công ${tech?.name} xử lý ${selectedRequests.length} yêu cầu.`,
-      type: "success",
-    });
+      const tech = technicians.find((t) => t.userID === Number(mainTechnician));
 
-    setIsModalOpen(false);
-    setSelectedRequests([]);
-    setMainTechnician("");
-    setAssistants([]);
-    setNotes("");
+      setAlertDialog({
+        open: true,
+        title: "Phân công thành công",
+        description: `Đã phân công ${tech?.fullName} xử lý ${selectedRequests.length} yêu cầu.`,
+        type: "success",
+      });
+
+      setIsModalOpen(false);
+      setSelectedRequests([]);
+      setMainTechnician("");
+      setExpectedCompletionDate("");
+      setInternalNotes("");
+
+      // Refresh parent data
+      onAssignSuccess();
+    } catch (error: any) {
+      console.error("Error assigning technician:", error);
+      console.error("Error response data:", error.response?.data);
+      console.error("Error response status:", error.response?.status);
+      console.error("Request payload:", {
+        claimID: selectedRequests[0],
+        primaryTechnicianID: Number(mainTechnician),
+        expectedCompletionDate: expectedCompletionDate || undefined,
+        internalNotes: internalNotes || undefined,
+      });
+      setAlertDialog({
+        open: true,
+        title: "Lỗi phân công",
+        description:
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          JSON.stringify(error.response?.data) ||
+          "Không thể phân công kỹ thuật viên. Vui lòng thử lại.",
+
+        type: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -184,47 +212,62 @@ export function AssignTechnician() {
                 <TableHead className="w-12">
                   <Checkbox
                     checked={
-                      selectedRequests.length === requests.length &&
-                      requests.length > 0
+                      selectedRequests.length === pendingRequests.length &&
+                      pendingRequests.length > 0
                     }
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
                 <TableHead>Mã yêu cầu</TableHead>
                 <TableHead>VIN</TableHead>
-                <TableHead>Kỹ thuật viên tạo</TableHead>
+                <TableHead>Trung tâm</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead>Mô tả sự cố</TableHead>
+                <TableHead>Mô tả</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {requests.map((request) => (
-                <TableRow key={request.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedRequests.includes(request.id)}
-                      onCheckedChange={(checked) =>
-                        handleSelectRequest(request.id, checked as boolean)
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>{request.id}</TableCell>
-                  <TableCell>{request.vin}</TableCell>
-                  <TableCell>{request.technicianName}</TableCell>
-                  <TableCell>
-                    {new Date(request.createdDate).toLocaleDateString("vi-VN")}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(request.status)}>
-                      {getStatusLabel(request.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate text-muted-foreground">
-                    {request.issueDescription}
+              {pendingRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Không có yêu cầu nào cần phân công
+                    </p>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                pendingRequests.map((request) => (
+                  <TableRow key={request.claimID}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedRequests.includes(request.claimID)}
+                        onCheckedChange={(checked) =>
+                          handleSelectRequest(
+                            request.claimID,
+                            checked as boolean
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell>#{request.claimID}</TableCell>
+                    <TableCell>{request.vin}</TableCell>
+                    <TableCell>{request.serviceCenterName || "-"}</TableCell>
+                    <TableCell>
+                      {new Date(request.creationDate).toLocaleDateString(
+                        "vi-VN"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getClaimStatusColor(request.status)}>
+                        {getClaimStatusLabel(request.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="max-w-xs truncate text-muted-foreground">
+                      {request.description || "-"}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </ScrollArea>
@@ -248,7 +291,7 @@ export function AssignTechnician() {
               <div className="flex flex-wrap gap-2">
                 {selectedRequests.map((id) => (
                   <Badge key={id} variant="secondary" className="rounded-md">
-                    {id}
+                    #{id}
                   </Badge>
                 ))}
               </div>
@@ -259,68 +302,40 @@ export function AssignTechnician() {
               <label className="mb-2 block text-sm font-medium">
                 Kỹ thuật viên chính *
               </label>
-              <Select value={mainTechnician} onValueChange={setMainTechnician}>
+              <Select
+                value={mainTechnician}
+                onValueChange={(value) => setMainTechnician(value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn kỹ thuật viên..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {activeTechnicians.map((tech) => (
-                    <SelectItem key={tech.id} value={tech.id}>
-                      {tech.name} — {tech.specialty}
+                  {technicians.map((tech) => (
+                    <SelectItem
+                      key={tech.userID}
+                      value={tech.userID.toString()}
+                    >
+                      {tech.fullName} — {tech.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Assistant Technicians */}
+            {/* Expected Completion Date */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium">Kỹ thuật viên phụ</label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddAssistant}
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Thêm dòng
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {assistants.map((assistant, index) => (
-                  <div key={index} className="flex gap-2 items-center">
-                    <Select
-                      value={assistant.id}
-                      onValueChange={(value) =>
-                        handleAssistantChange(index, value)
-                      }
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Chọn kỹ thuật viên phụ..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {activeTechnicians
-                          .filter((t) => t.id !== mainTechnician)
-                          .map((tech) => (
-                            <SelectItem key={tech.id} value={tech.id}>
-                              {tech.name} — {tech.specialty}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveAssistant(index)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+              <label className="mb-2 block text-sm font-medium">
+                Ngày dự kiến hoàn thành
+              </label>
+              <Input
+                type="date"
+                value={expectedCompletionDate}
+                onChange={(e) => setExpectedCompletionDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]}
+              />
             </div>
 
-            {/* Assignment Date */}
+            {/* Assignment Date (Read-only) */}
             <div>
               <label className="mb-2 block text-sm font-medium">
                 Ngày phân công
@@ -330,23 +345,31 @@ export function AssignTechnician() {
               </div>
             </div>
 
-            {/* Notes */}
+            {/* Internal Notes */}
             <div>
-              <label className="mb-2 block text-sm font-medium">Ghi chú</label>
+              <label className="mb-2 block text-sm font-medium">
+                Ghi chú nội bộ
+              </label>
               <Textarea
                 placeholder="Nhập ghi chú cho kỹ thuật viên..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                value={internalNotes}
+                onChange={(e) => setInternalNotes(e.target.value)}
                 rows={4}
               />
             </div>
           </div>
 
           <DialogFooter className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsModalOpen(false)}
+              disabled={isSubmitting}
+            >
               Hủy bỏ
             </Button>
-            <Button onClick={handleConfirmAssign}>Xác nhận</Button>
+            <Button onClick={handleConfirmAssign} disabled={isSubmitting}>
+              {isSubmitting ? "Đang xử lý..." : "Xác nhận"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

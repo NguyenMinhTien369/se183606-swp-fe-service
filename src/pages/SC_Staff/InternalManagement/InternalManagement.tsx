@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ClipboardList,
   UserCog,
@@ -9,19 +9,48 @@ import {
   Archive,
 } from "lucide-react";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { Card } from "../../../components/ui/card";
-import { Separator } from "../../../components/ui/separator";
+import { Card } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 import { WarrantyRequestsList } from "../InternalManagement/features/WarrantyRequestsList";
 import { AssignTechnician } from "../InternalManagement/features/AssignTechnician";
 import { TrackProgress } from "../InternalManagement/features/TrackProgress";
 import { PerformanceDashboard } from "../InternalManagement/features/PerformanceDashboard";
 import { ArchiveReports } from "../InternalManagement/features/ArchiveReports";
+import { warrantyClaimAPI } from "@/utility/index";
+import type { WarrantyClaimResponse } from "../CreateWarranty/types/warranty";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("requests");
+  const [warrantyClaims, setWarrantyClaims] = useState<WarrantyClaimResponse[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Hardcoded serviceCenterID - in production, get from auth context
+  const SERVICE_CENTER_ID = 1;
+
+  // Load warranty claims on mount
+  useEffect(() => {
+    loadWarrantyClaims();
+  }, []);
+
+  const loadWarrantyClaims = async () => {
+    setIsLoading(true);
+    try {
+      const response = await warrantyClaimAPI.getClaimsByServiceCenter(
+        SERVICE_CENTER_ID
+      );
+      setWarrantyClaims(response.data.result || []);
+    } catch (error) {
+      console.error("Error loading warranty claims:", error);
+      alert("Không thể tải danh sách yêu cầu bảo hành");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -104,23 +133,30 @@ export default function App() {
 
             {/* Tabs Content */}
             <TabsContent value="requests" className="space-y-4">
-              <WarrantyRequestsList />
+              <WarrantyRequestsList
+                claims={warrantyClaims}
+                isLoading={isLoading}
+                onRefresh={loadWarrantyClaims}
+              />
             </TabsContent>
 
             <TabsContent value="assign" className="space-y-4">
-              <AssignTechnician />
+              <AssignTechnician
+                claims={warrantyClaims}
+                onAssignSuccess={loadWarrantyClaims}
+              />
             </TabsContent>
 
             <TabsContent value="progress" className="space-y-4">
-              <TrackProgress />
+              <TrackProgress serviceCenterID={SERVICE_CENTER_ID} />
             </TabsContent>
 
             <TabsContent value="performance" className="space-y-4">
-              <PerformanceDashboard />
+              <PerformanceDashboard serviceCenterID={SERVICE_CENTER_ID} />
             </TabsContent>
 
             <TabsContent value="archive" className="space-y-4">
-              <ArchiveReports />
+              <ArchiveReports claims={warrantyClaims} />
             </TabsContent>
           </Tabs>
         </Card>

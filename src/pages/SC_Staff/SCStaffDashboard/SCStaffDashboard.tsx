@@ -1,37 +1,210 @@
-import React from 'react';
-import { Users, Wrench, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/pages/Login/feature/AuthContext';
+import {
+    FaUsers, FaFileAlt, FaBoxOpen, FaCar,
+    FaChartLine, FaClipboardList, FaTachometerAlt
+} from 'react-icons/fa';
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { warrantyClaimAPI, userAPI, productModelAPI, vehicleAPI } from '@/utility';
 import styles from './SCStaffDashboard.module.css';
 
-const SCStaffDashboard: React.FC = () => {
-    // Mock data for charts
-    const customerTrendData = [
-        { month: 'Jan', customers: 45 },
-        { month: 'Feb', customers: 52 },
-        { month: 'Mar', customers: 48 },
-        { month: 'Apr', customers: 61 },
-        { month: 'May', customers: 55 },
-        { month: 'Jun', customers: 67 },
-    ];
+interface Stats {
+    totalUsers: number;
+    totalClaims: number;
+    totalProducts: number;
+    totalVehicles: number;
+    pendingClaims: number;
+    approvedClaims: number;
+    rejectedClaims: number;
+    activeTechnicians: number;
+}
 
-    const warrantyStatusData = [
-        { name: 'Pending', value: 12, color: '#f59e0b' },
-        { name: 'In Progress', value: 8, color: '#3b82f6' },
-        { name: 'Completed', value: 25, color: '#10b981' },
-        { name: 'Cancelled', value: 3, color: '#ef4444' },
-    ];
+interface MonthlyData {
+    month: string;
+    claims: number;
+    completed: number;
+}
 
-    const recentWarranties = [
-        { id: 'WR-001', customer: 'Nguyễn Văn A', vehicle: 'Tesla Model 3', status: 'In Progress', date: '2025-10-28' },
-        { id: 'WR-002', customer: 'Trần Thị B', vehicle: 'VinFast VF8', status: 'Pending', date: '2025-10-29' },
-        { id: 'WR-003', customer: 'Lê Văn C', vehicle: 'BYD Atto 3', status: 'Completed', date: '2025-10-27' },
-    ];
+interface ClaimStatus {
+    name: string;
+    value: number;
+    color: string;
+}
 
-    const stats = [
-        { title: 'Total Customers', value: '156', icon: <Users size={24} />, color: '#3b82f6', change: '+12%' },
-        { title: 'Active Warranties', value: '48', icon: <CheckCircle size={24} />, color: '#10b981', change: '+8%' },
-        { title: 'Pending Requests', value: '12', icon: <Clock size={24} />, color: '#f59e0b', change: '-5%' },
-        { title: 'Assigned Technicians', value: '8', icon: <Wrench size={24} />, color: '#8b5cf6', change: '+2' },
+interface StatCard {
+    title: string;
+    value: number;
+    icon: any;
+    color: string;
+    change: string;
+    changeType: string;
+}
+
+export default function SCStaffDashboard() {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<Stats>({
+        totalUsers: 0,
+        totalClaims: 0,
+        totalProducts: 0,
+        totalVehicles: 0,
+        pendingClaims: 0,
+        approvedClaims: 0,
+        rejectedClaims: 0,
+        activeTechnicians: 0
+    });
+    const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [claimsByStatus, setClaimsByStatus] = useState<ClaimStatus[]>([]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch all data in parallel
+            const [usersRes, claimsRes, productsRes, vehiclesRes] = await Promise.all([
+                userAPI.getUsers(),
+                warrantyClaimAPI.getClaimsByServiceCenter(1),
+                productModelAPI.getAllProductModels(),
+                vehicleAPI.getAllVehicles()
+            ]);
+
+            const users = usersRes.data.result || [];
+            const claims = claimsRes.data.result || [];
+            const products = productsRes.data.result || [];
+            const vehicles = vehiclesRes.data.result || [];
+
+            // Calculate statistics
+            const statusCounts = claims.reduce((acc: any, claim: any) => {
+                const status = claim.status?.toUpperCase() || 'UNKNOWN';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+
+            const pending = statusCounts['PENDING'] || statusCounts['WAITING_FOR_APPROVAL'] || 0;
+            const approved = statusCounts['APPROVED'] || 0;
+            const rejected = statusCounts['REJECTED'] || 0;
+
+            // Count technicians
+            const technicians = users.filter((u: any) =>
+                u.role?.roleName === 'ROLE_SC_TECHNICIAN'
+            );
+
+            // Calculate monthly data (last 6 months)
+            const monthlyStats = calculateMonthlyData(claims);
+            setMonthlyData(monthlyStats);
+
+            // Set claims by status for pie chart
+            const statusData: ClaimStatus[] = [
+                { name: 'Chờ duyệt', value: pending, color: '#f59e0b' },
+                { name: 'Đã duyệt', value: approved, color: '#10b981' },
+                { name: 'Từ chối', value: rejected, color: '#ef4444' }
+            ].filter(item => item.value > 0);
+
+            setClaimsByStatus(statusData);
+
+            setStats({
+                totalUsers: users.length,
+                totalClaims: claims.length,
+                totalProducts: products.length,
+                totalVehicles: vehicles.length,
+                pendingClaims: pending,
+                approvedClaims: approved,
+                rejectedClaims: rejected,
+                activeTechnicians: technicians.length
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateMonthlyData = (claims: any[]): MonthlyData[] => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const monthlyMap = new Map<string, { claims: number; completed: number }>();
+
+        // Initialize last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthKey = `${months[date.getMonth()]}`;
+            monthlyMap.set(monthKey, { claims: 0, completed: 0 });
+        }
+
+        // Count claims per month
+        claims.forEach((claim: any) => {
+            if (claim.creationDate) {
+                const claimDate = new Date(claim.creationDate);
+                const monthKey = months[claimDate.getMonth()];
+
+                if (monthlyMap.has(monthKey)) {
+                    const data = monthlyMap.get(monthKey)!;
+                    data.claims++;
+
+                    if (claim.status?.toUpperCase() === 'APPROVED' ||
+                        claim.status?.toUpperCase() === 'COMPLETED' ||
+                        claim.status?.toUpperCase() === 'RESOLVED') {
+                        data.completed++;
+                    }
+                    monthlyMap.set(monthKey, data);
+                }
+            }
+        });
+
+        return Array.from(monthlyMap.entries()).map(([month, data]) => ({
+            month,
+            claims: data.claims,
+            completed: data.completed
+        }));
+    };
+
+    if (loading) {
+        return (
+            <div className={styles.dashboard}>
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+                    Đang tải dữ liệu...
+                </div>
+            </div>
+        );
+    }
+
+    const statCards: StatCard[] = [
+        {
+            title: 'Tổng Khách Hàng',
+            value: stats.totalUsers,
+            icon: FaUsers,
+            color: 'bg-blue-500',
+            change: `${stats.activeTechnicians} KTV`,
+            changeType: 'info'
+        },
+        {
+            title: 'Yêu cầu bảo hành',
+            value: stats.totalClaims,
+            icon: FaFileAlt,
+            color: 'bg-green-500',
+            change: `${stats.pendingClaims} chờ`,
+            changeType: 'warning'
+        },
+        {
+            title: 'Sản phẩm',
+            value: stats.totalProducts,
+            icon: FaBoxOpen,
+            color: 'bg-purple-500',
+            change: 'Đã đăng ký',
+            changeType: 'increase'
+        },
+        {
+            title: 'Xe đăng ký',
+            value: stats.totalVehicles,
+            icon: FaCar,
+            color: 'bg-orange-500',
+            change: 'Tổng xe',
+            changeType: 'increase'
+        }
     ];
 
     return (
@@ -39,113 +212,96 @@ const SCStaffDashboard: React.FC = () => {
             {/* Header */}
             <div className={styles.header}>
                 <div className={styles.headerContent}>
-                    <div>
-                        <h1 className={styles.title}>SC Staff Dashboard</h1>
-                        <p className={styles.subtitle}>Welcome back! Here's your service center overview</p>
+                    <div className={styles.headerLeft}>
+                        <h1>
+                            <FaTachometerAlt />
+                            SC Staff Dashboard
+                        </h1>
+                        <p>Chào mừng trở lại, {user?.fullName || 'SC Staff'}!</p>
+                    </div>
+                    <div className={styles.headerRight}>
+                        <p>Hôm nay</p>
+                        <p>{new Date().toLocaleDateString('vi-VN')}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Statistics Cards */}
             <div className={styles.statsGrid}>
-                {stats.map((stat, index) => (
-                    <div key={index} className={styles.statCard}>
+                {statCards.map((card, index) => (
+                    <div key={index} className={styles.statCard} style={{ color: card.color === 'bg-blue-500' ? '#3b82f6' : card.color === 'bg-green-500' ? '#10b981' : card.color === 'bg-purple-500' ? '#a855f7' : '#f97316' }}>
                         <div className={styles.statCardHeader}>
-                            <div className={styles.statIcon} style={{ backgroundColor: stat.color }}>
-                                {stat.icon}
+                            <div className={styles.statIcon} style={{ background: card.color === 'bg-blue-500' ? '#3b82f6' : card.color === 'bg-green-500' ? '#10b981' : card.color === 'bg-purple-500' ? '#a855f7' : '#f97316' }}>
+                                <card.icon />
                             </div>
-                            <span className={styles.statChange} style={{ color: stat.change.startsWith('+') ? '#10b981' : '#ef4444' }}>
-                                {stat.change}
+                            <span className={styles.statChange}>
+                                {card.change}
                             </span>
                         </div>
-                        <div className={styles.statTitle}>{stat.title}</div>
-                        <div className={styles.statValue}>{stat.value}</div>
+                        <h3 className={styles.statTitle}>{card.title}</h3>
+                        <p className={styles.statValue}>{card.value}</p>
                     </div>
                 ))}
             </div>
 
             {/* Charts Row */}
             <div className={styles.chartsGrid}>
-                {/* Customer Trend Chart */}
+                {/* Area Chart - Claims Trend */}
                 <div className={styles.chartCard}>
-                    <h3 className={styles.chartTitle}>Customer Registration Trend</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={customerTrendData}>
+                    <h2 className={styles.chartTitle}>
+                        <FaChartLine />
+                        Xu hướng yêu cầu bảo hành
+                    </h2>
+                    <ResponsiveContainer width='100%' height={300}>
+                        <AreaChart data={monthlyData}>
                             <defs>
-                                <linearGradient id="colorCustomers" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                <linearGradient id='colorClaims' x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor='#14b8a6' stopOpacity={0.8} />
+                                    <stop offset='95%' stopColor='#14b8a6' stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id='colorCompleted' x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor='#10b981' stopOpacity={0.8} />
+                                    <stop offset='95%' stopColor='#10b981' stopOpacity={0} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="month" stroke="#6b7280" />
-                            <YAxis stroke="#6b7280" />
+                            <CartesianGrid strokeDasharray='3 3' />
+                            <XAxis dataKey='month' />
+                            <YAxis />
                             <Tooltip />
-                            <Area type="monotone" dataKey="customers" stroke="#3b82f6" strokeWidth={2} fill="url(#colorCustomers)" />
+                            <Legend />
+                            <Area type='monotone' dataKey='claims' stroke='#14b8a6' fillOpacity={1} fill='url(#colorClaims)' name='Yêu cầu' />
+                            <Area type='monotone' dataKey='completed' stroke='#10b981' fillOpacity={1} fill='url(#colorCompleted)' name='Hoàn thành' />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
 
-                {/* Warranty Status Distribution */}
+                {/* Pie Chart - Claims by Status */}
                 <div className={styles.chartCard}>
-                    <h3 className={styles.chartTitle}>Warranty Status Distribution</h3>
-                    <ResponsiveContainer width="100%" height={300}>
+                    <h2 className={styles.chartTitle}>
+                        <FaClipboardList />
+                        Trạng thái yêu cầu
+                    </h2>
+                    <ResponsiveContainer width='100%' height={300}>
                         <PieChart>
                             <Pie
-                                data={warrantyStatusData}
-                                cx="50%"
-                                cy="50%"
+                                data={claimsByStatus}
+                                cx='50%'
+                                cy='50%'
                                 labelLine={false}
                                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
+                                outerRadius={100}
+                                fill='#8884d8'
+                                dataKey='value'
                             >
-                                {warrantyStatusData.map((entry, index) => (
+                                {claimsByStatus.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
                             <Tooltip />
-                            <Legend />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
             </div>
-
-            {/* Recent Warranties Table */}
-            <div className={styles.tableCard}>
-                <h3 className={styles.tableTitle}>Recent Warranty Requests</h3>
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Warranty ID</th>
-                                <th>Customer</th>
-                                <th>Vehicle</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {recentWarranties.map((warranty) => (
-                                <tr key={warranty.id}>
-                                    <td className={styles.warrantyId}>{warranty.id}</td>
-                                    <td>{warranty.customer}</td>
-                                    <td>{warranty.vehicle}</td>
-                                    <td>
-                                        <span className={`${styles.badge} ${styles[`badge${warranty.status.replace(' ', '')}`]}`}>
-                                            {warranty.status}
-                                        </span>
-                                    </td>
-                                    <td>{warranty.date}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     );
-};
-
-export default SCStaffDashboard;
+}

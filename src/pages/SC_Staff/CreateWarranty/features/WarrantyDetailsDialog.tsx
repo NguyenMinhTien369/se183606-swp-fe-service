@@ -1,28 +1,29 @@
 "use client";
 
-import type { WarrantyClaim } from "../types/warranty";
+import type { WarrantyClaimResponse } from "../types/warranty";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../../components/ui/dialog";
-import { Badge } from "../../../../components/ui/badge";
-import { Separator } from "../../../../components/ui/separator";
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Calendar,
   FileText,
-  Image as ImageIcon,
   User,
-  Clock,
   AlertCircle,
   CheckCircle,
+  Car,
+  MapPin,
+  Phone,
 } from "lucide-react";
-import { Alert, AlertDescription } from "../../../../components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface WarrantyDetailsDialogProps {
-  claim: WarrantyClaim | null;
+  claim: WarrantyClaimResponse | null;
   open: boolean;
   onClose: () => void;
 }
@@ -43,12 +44,13 @@ export function WarrantyDetailsDialog({
         variant: "default" | "secondary" | "destructive" | "outline";
       }
     > = {
-      pending: { label: "🟡 Chờ duyệt", variant: "outline" },
-      approved: { label: "🟢 Được chấp nhận", variant: "default" },
-      completed: { label: "🔵 Đã xử lý", variant: "secondary" },
-      rejected: { label: "🔴 Từ chối", variant: "destructive" },
+      PENDING: { label: "🟡 Chờ duyệt", variant: "outline" },
+      APPROVED: { label: "🟢 Được chấp nhận", variant: "default" },
+      IN_PROGRESS: { label: "🔵 Đang xử lý", variant: "secondary" },
+      COMPLETED: { label: "✅ Đã hoàn thành", variant: "default" },
+      REJECTED: { label: "🔴 Từ chối", variant: "destructive" },
     };
-    return configs[status] || configs.pending;
+    return configs[status] || configs.PENDING;
   };
 
   const statusConfig = getStatusConfig(claim.status);
@@ -58,42 +60,118 @@ export function WarrantyDetailsDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>{claim.requestCode}</DialogTitle>
+            <DialogTitle>Claim #{claim.claimID}</DialogTitle>
             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
           </div>
           <DialogDescription>Chi tiết yêu cầu bảo hành</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* --- Thông tin cơ bản --- */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-muted-foreground flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Ngày phát hiện lỗi
-              </p>
-              <p>{new Date(claim.issueDate).toLocaleDateString("vi-VN")}</p>
+          {/* --- Thông tin xe --- */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium flex items-center gap-2">
+              <Car className="h-4 w-4" />
+              Thông tin xe
+            </h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground">VIN</p>
+                <p className="font-mono">{claim.vin}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Biển số</p>
+                <p className="font-medium">{claim.licensePlate}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Model</p>
+                <p>{claim.modelName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Màu sắc</p>
+                <p>{claim.color}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Năm sản xuất</p>
+                <p>{claim.productionYear}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Dung lượng pin</p>
+                <p>{claim.batteryCapacity} kWh</p>
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-1">
-              <p className="text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Người xử lý
-              </p>
-              <p>{claim.handler}</p>
+          {/* --- Thông tin khách hàng --- */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Thông tin khách hàng
+            </h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground">Họ tên</p>
+                <p className="font-medium">{claim.customerName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  Điện thoại
+                </p>
+                <p>{claim.customerPhone}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Email</p>
+                <p>{claim.customerEmail}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">CMND/CCCD</p>
+                <p>{claim.customerCmnd}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Địa chỉ
+                </p>
+                <p>{claim.customerAddress}</p>
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-1">
-              <p className="text-muted-foreground">VIN</p>
-              <p>{claim.vin}</p>
+          {/* --- Thông tin Service Center --- */}
+          <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium">Service Center</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-muted-foreground">Tên</p>
+                <p className="font-medium">{claim.serviceCenterName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  Điện thoại
+                </p>
+                <p>{claim.serviceCenterPhone}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  Địa chỉ
+                </p>
+                <p>{claim.serviceCenterAddress}</p>
+              </div>
             </div>
+          </div>
 
-            <div className="space-y-1">
-              <p className="text-muted-foreground flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Ngày tạo
-              </p>
-              <p>{new Date(claim.createdDate).toLocaleDateString("vi-VN")}</p>
+          <Separator />
+
+          {/* --- Thông tin yêu cầu bảo hành --- */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>Ngày tạo:</span>
+              <span className="font-medium text-foreground">
+                {new Date(claim.creationDate).toLocaleDateString("vi-VN")}
+              </span>
             </div>
           </div>
 
@@ -102,156 +180,115 @@ export function WarrantyDetailsDialog({
           {/* --- Mô tả sự cố --- */}
           <div className="space-y-2">
             <h4 className="font-medium">Mô tả sự cố</h4>
-            <p className="text-muted-foreground">{claim.description}</p>
+            <p className="text-muted-foreground whitespace-pre-wrap">
+              {claim.description}
+            </p>
           </div>
 
           {/* --- Phụ tùng cần bảo hành --- */}
-          <div className="space-y-2">
-            <h4 className="font-medium">Phụ tùng cần bảo hành</h4>
-            <div className="flex flex-wrap gap-2">
-              {claim.parts.map((part, index) => (
-                <Badge key={index} variant="secondary">
-                  {part}
-                </Badge>
+          <div className="space-y-3">
+            <h4 className="font-medium">
+              Phụ tùng cần bảo hành ({claim.affectedParts.length})
+            </h4>
+            <div className="space-y-2">
+              {claim.affectedParts.map((part, index) => (
+                <div key={index} className="bg-muted/50 rounded-lg p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium">{part.partTypeName}</p>
+                      <p className="text-sm text-muted-foreground font-mono">
+                        SN: {part.partSerialNumber}
+                      </p>
+                      <p className="text-sm">{part.partTypeDescription}</p>
+                      {part.description && (
+                        <p className="text-sm text-muted-foreground italic">
+                          "{part.description}"
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(part.createdDate).toLocaleDateString("vi-VN")}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* --- Thông tin chẩn đoán (nếu có) --- */}
-          {claim.diagnosticInfo && (
-            <div className="space-y-2">
-              <h4 className="font-medium">Thông tin chẩn đoán</h4>
-              <p className="text-muted-foreground">{claim.diagnosticInfo}</p>
+          {/* --- Tài liệu đính kèm --- */}
+          {claim.attachments && claim.attachments.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Tài liệu đính kèm ({claim.attachments.length})
+              </h4>
+              <div className="space-y-2">
+                {claim.attachments.map((attachment) => (
+                  <div
+                    key={attachment.attachmentID}
+                    className="flex items-center gap-3 p-3 bg-muted rounded-md hover:bg-muted/80 transition-colors"
+                  >
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">
+                        {attachment.fileName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {attachment.fileType} •{" "}
+                        {new Date(attachment.uploadDate).toLocaleDateString(
+                          "vi-VN"
+                        )}
+                      </p>
+                    </div>
+                    <a
+                      href={attachment.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline text-sm"
+                    >
+                      Xem
+                    </a>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          <Separator />
-
-          {/* --- Tệp đính kèm --- */}
-          <div className="space-y-3">
-            <h4 className="font-medium">Tệp đính kèm</h4>
-
-            {claim.technicalReport && (
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <FileText className="h-5 w-5 text-muted-foreground" />
-                <span>
-                  {claim.technicalReport instanceof File
-                    ? claim.technicalReport.name
-                    : claim.technicalReport}
-                </span>
-              </div>
-            )}
-
-            {claim.images && claim.images.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Hình ảnh ({claim.images.length})
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {claim.images.map((img, index) => (
-                    <div
-                      key={index}
-                      className="p-2 bg-muted rounded-md text-sm truncate"
-                    >
-                      {img instanceof File ? img.name : img}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* --- Phản hồi từ hãng (nếu có) --- */}
-          {claim.manufacturerResponse && (
+          {/* --- Kết quả xử lý --- */}
+          {claim.result && (
             <>
               <Separator />
               <div className="space-y-3">
-                <h4 className="font-medium">Phản hồi từ hãng</h4>
-
-                {claim.manufacturerResponse.result === "approved" ? (
+                <h4 className="font-medium">Kết quả xử lý</h4>
+                {claim.status === "APPROVED" ? (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
                       <div className="space-y-2">
                         <p>
-                          <strong>Kết quả:</strong> Đã phê duyệt
+                          <strong>Trạng thái:</strong> Đã được chấp nhận
                         </p>
-                        <p>
-                          <strong>Ghi chú:</strong>{" "}
-                          {claim.manufacturerResponse.notes}
-                        </p>
-                        {claim.manufacturerResponse.replacementParts && (
-                          <p>
-                            <strong>Phụ tùng thay thế:</strong>{" "}
-                            {claim.manufacturerResponse.replacementParts.join(
-                              ", "
-                            )}
-                          </p>
-                        )}
-                        <p className="text-muted-foreground text-sm">
-                          Cập nhật:{" "}
-                          {new Date(
-                            claim.manufacturerResponse.updateDate
-                          ).toLocaleDateString("vi-VN")}
-                        </p>
+                        <p className="whitespace-pre-wrap">{claim.result}</p>
                       </div>
                     </AlertDescription>
                   </Alert>
-                ) : (
+                ) : claim.status === "REJECTED" ? (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
                       <div className="space-y-2">
                         <p>
-                          <strong>Kết quả:</strong> Từ chối
+                          <strong>Trạng thái:</strong> Đã bị từ chối
                         </p>
-                        <p>
-                          <strong>Lý do:</strong>{" "}
-                          {claim.manufacturerResponse.notes}
-                        </p>
-                        <p className="text-sm">
-                          Cập nhật:{" "}
-                          {new Date(
-                            claim.manufacturerResponse.updateDate
-                          ).toLocaleDateString("vi-VN")}
-                        </p>
+                        <p className="whitespace-pre-wrap">{claim.result}</p>
                       </div>
                     </AlertDescription>
                   </Alert>
+                ) : (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="whitespace-pre-wrap">{claim.result}</p>
+                  </div>
                 )}
-              </div>
-            </>
-          )}
-
-          {/* --- Lịch sử thay đổi --- */}
-          {claim.logs && claim.logs.length > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-3">
-                <h4 className="font-medium">Lịch sử thay đổi</h4>
-                <div className="space-y-2">
-                  {claim.logs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex items-start gap-3 text-sm p-2 rounded-md hover:bg-muted transition-colors"
-                    >
-                      <div className="flex-1">
-                        <p>
-                          <strong>{log.user}</strong> - {log.action}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {new Date(log.timestamp).toLocaleString("vi-VN")}
-                        </p>
-                        {log.changes && (
-                          <p className="text-muted-foreground text-xs mt-1">
-                            {log.changes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </>
           )}

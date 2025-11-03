@@ -60,12 +60,12 @@ function Routers() {
     },
 
     // ============================================
-    // 🔧 TECHNICIAN ROUTES (chỉ SC_TECHNICIAN)
+    // 🔧 TECHNICIAN ROUTES (SC_TECHNICIAN + SC_STAFF)
     // ============================================
     {
       path: "/technician",
       element: (
-        <ProtectedRoute allowedRoles={[ROLES.SC_TECHNICIAN]}>
+        <ProtectedRoute allowedRoles={[ROLES.SC_TECHNICIAN, ROLES.SC_STAFF]}>
           <MainLayout />
         </ProtectedRoute>
       ),
@@ -112,6 +112,7 @@ function Routers() {
       children: [
         { index: true, element: <Navigate to="/evm/dashboard" replace /> },
         { path: "dashboard", element: <EVMDashboard /> },
+        { path: "products", element: <ProductManagement /> },
         { path: "campaigns", element: <CampaignManagement /> },
         { path: "warranty-claims", element: <WarrantyClaims /> },
         { path: "*", element: <NotFound /> },

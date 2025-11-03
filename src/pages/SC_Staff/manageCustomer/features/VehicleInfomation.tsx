@@ -4,18 +4,18 @@ import { useState } from "react";
 import type { Customer } from "../types/index";
 import { Car, User, Info } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
-import { Label } from "../../../../components/ui/label";
-import { Input } from "../../../../components/ui/input";
-import { Badge } from "../../../../components/ui/badge";
-import { Button } from "../../../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "../../../../components/ui/dialog";
+} from "@/components/ui/dialog";
 
 interface Screen2Props {
   customer: Customer;

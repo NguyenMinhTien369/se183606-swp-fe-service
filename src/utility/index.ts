@@ -5,7 +5,6 @@
 
 // ==================== TYPE DEFINITIONS ====================
 // Tất cả interfaces dưới đây đồng bộ với backend DTOs tại:
-// FA25_SWP391_SE1818_G6/EVWarrantyHub/src/main/java/swp391/evwarrantyhub/dto/request/
 
 // Auth & User (LoginRequest.java)
 interface LoginCredentials {
@@ -58,15 +57,8 @@ interface AssignTechnicianRequest {
   internalNotes?: string; // Backend dùng 'internalNotes'
 }
 
-// UpdateAssignmentRequest.java - Backend có nhiều fields hơn
-interface UpdateAssignmentRequest {
-  status?: string;
-  completionPercentage?: number;
-  totalHours?: number;
-  actualCompletionDate?: string; // LocalDate trong backend
-  internalNotes?: string;
-  manufacturerRejected?: boolean;
-}
+// UpdateAssignmentRequest.java - Backend yêu cầu multipart/form-data
+// Không cần interface, sử dụng FormData trực tiếp khi gọi updateAssignmentProgress()
 
 // CreateServiceCenterRequest.java - Backend dùng 'phone' không phải 'phoneNumber'
 interface ServiceCenterRequest {
@@ -112,6 +104,21 @@ interface VehicleSearchRequest {
   // Backend KHÔNG có phoneNumber
 }
 
+// CustomerRequest.java - Tạo/cập nhật customer
+interface CustomerRequest {
+  fullName: string;
+  phone: string;
+  email?: string;
+  address?: string;
+}
+
+// Search params cho customers
+interface CustomerSearchParams {
+  name?: string;
+  phone?: string;
+  vin?: string;
+}
+
 // Search params cho claim assignments
 interface SearchAssignmentsParams {
   serviceCenterID: number;
@@ -119,7 +126,38 @@ interface SearchAssignmentsParams {
   status?: string;
 }
 
+// ServiceHistoryRequest.java - Tạo service history
+interface ServiceHistoryRequest {
+  vin: string;
+  serviceCenterID: number;
+  serviceDate: string; // LocalDate
+  serviceType: string;
+  description?: string;
+  cost?: number;
+}
+
+// VehicleRequest.java - Đăng ký xe mới
+interface VehicleRequest {
+  vin: string;
+  serialNumber: string;
+  productionDate: string; // LocalDate
+  productModelID: number;
+  customerID: number;
+  notes?: string;
+}
+
+// ProductModelRequest.java - Tạo product model
+interface ProductModelRequest {
+  modelName: string;
+  productionYear: number;
+  warrantyPeriod: number; // months
+  description?: string;
+  color?: string; // Optional field for compatibility
+}
+
 // ==================== AUTH API ====================
+// Backend: AuthenticationController.java
+// Path: /api/auth/*
 export const authAPI = {
   login: (credentials: LoginCredentials) =>
     axiosInstance.post("/auth/login", credentials),
@@ -136,16 +174,19 @@ export const authAPI = {
 };
 
 // ==================== USER API ====================
+// Backend: UserController.java
+// Path: /api/users/*
 export const userAPI = {
-  getUsers: (params?: any) => axiosInstance.get("/users", { params }),
-  getUserById: (id: number) => axiosInstance.get(`/users/${id}`),
+  // User management (ADMIN only for register/getAll/delete)
   createUser: (userData: UserRegisterRequest) =>
     axiosInstance.post("/users/register", userData),
+  getAllUsers: () => axiosInstance.get("/users"),
+  getUsers: () => axiosInstance.get("/users"), // Alias for compatibility
   updateUser: (id: number, userData: UserUpdateRequest) =>
     axiosInstance.put(`/users/${id}`, userData),
   deleteUser: (id: number) => axiosInstance.delete(`/users/${id}`),
 
-  // Backend hiện tại đặt các endpoint sau dưới /users
+  // Authentication & Password recovery
   logout: () => axiosInstance.post("/users/logout"),
   forgotPassword: (email: string) =>
     axiosInstance.post("/users/forgot-password", { email }),
@@ -156,6 +197,8 @@ export const userAPI = {
 };
 
 // ==================== WARRANTY CLAIM API ====================
+// Backend: WarrantyClaimController.java
+// Path: /api/warranty-claims/*
 export const warrantyClaimAPI = {
   // Lấy thông tin xe theo VIN (được backend cung cấp dưới warranty-claims)
   getVehicleInfoByVin: (vin: string) =>
@@ -187,6 +230,8 @@ export const warrantyClaimAPI = {
 };
 
 // ==================== CLAIM ASSIGNMENT API ====================
+// Backend: ClaimAssignmentController.java
+// Path: /api/claim-assignments/*
 export const claimAssignmentAPI = {
   assignTechnician: (data: AssignTechnicianRequest) =>
     axiosInstance.post("/claim-assignments/assign", data),
@@ -196,30 +241,21 @@ export const claimAssignmentAPI = {
     axiosInstance.get(`/claim-assignments/progress/${serviceCenterID}`),
   getAssignmentsByTechnician: (technicianID: number) =>
     axiosInstance.get(`/claim-assignments/technician/${technicianID}`),
-  updateAssignmentProgress: (
-    assignmentID: number,
-    data: UpdateAssignmentRequest
-  ) => axiosInstance.put(`/claim-assignments/${assignmentID}/progress`, data),
+  updateAssignmentProgress: (assignmentID: number, formData: FormData) =>
+    axiosInstance.put(`/claim-assignments/${assignmentID}/progress`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
   deleteAssignment: (assignmentID: number) =>
     axiosInstance.delete(`/claim-assignments/${assignmentID}`),
-  searchAssignments: (params: SearchAssignmentsParams) =>
-    axiosInstance.get("/claim-assignments/search", { params }),
   getTechnicianPerformance: (serviceCenterID: number) =>
     axiosInstance.get(`/claim-assignments/performance/${serviceCenterID}`),
-};
-
-// ==================== VEHICLE API ====================
-export const vehicleAPI = {
-  getAllVehicles: () => axiosInstance.get("/vehicles"),
-  getVehicleByVin: (vin: string) => axiosInstance.get(`/vehicles/${vin}`),
-  getVehiclesByCustomerId: (customerId: number) =>
-    axiosInstance.get(`/vehicles/customer/${customerId}`),
-  registerVehicle: (data: any) => axiosInstance.post("/vehicles", data),
-  updateVehicleNotes: (vin: string, notes: string) =>
-    axiosInstance.put(`/vehicles/${vin}/notes`, { notes }),
+  searchAssignments: (params: SearchAssignmentsParams) =>
+    axiosInstance.get("/claim-assignments/search", { params }),
 };
 
 // ==================== SERVICE CENTER API ====================
+// Backend: ServiceCenterController.java
+// Path: /api/service-centers/*
 export const serviceCenterAPI = {
   getServiceCenters: () => axiosInstance.get("/service-centers"),
   searchServiceCenters: (keyword: string) =>
@@ -235,6 +271,8 @@ export const serviceCenterAPI = {
 };
 
 // ==================== PART API ====================
+// Backend: PartController.java
+// Path: /api/parts/*
 export const partAPI = {
   // Backend dùng serialNumber làm key
   getPartBySerialNumber: (serialNumber: string) =>
@@ -249,6 +287,8 @@ export const partAPI = {
 };
 
 // ==================== PART TYPE API ====================
+// Backend: PartTypeController.java
+// Path: /api/part-types/*
 export const partTypeAPI = {
   getPartTypes: () => axiosInstance.get("/part-types"),
   getPartTypeById: (id: number) => axiosInstance.get(`/part-types/${id}`),
@@ -260,6 +300,8 @@ export const partTypeAPI = {
 };
 
 // ==================== INSTALLED PART API ====================
+// Backend: InstalledPartController.java
+// Path: /api/installed-parts/*
 export const installedPartAPI = {
   installPart: (data: InstalledPartRequest) =>
     axiosInstance.post("/installed-parts", data),
@@ -272,31 +314,60 @@ export const installedPartAPI = {
 };
 
 // ==================== SERVICE HISTORY API ====================
+// Backend: ServiceHistoryController.java
+// Path: /api/service-history/*
 export const serviceHistoryAPI = {
-  getByCustomerId: (customerId: number) =>
-    axiosInstance.get(`/service-history/customer/${customerId}`),
+  // Backend chỉ hỗ trợ lấy theo VIN, không có getByCustomerId
   getByVehicleVin: (vin: string) =>
     axiosInstance.get(`/service-history/vehicle/${vin}`),
+
+  // Tạo service history mới
+  createServiceHistory: (data: ServiceHistoryRequest) =>
+    axiosInstance.post("/service-history", data),
 };
 
 // ==================== CUSTOMER API ====================
+// Backend: CustomerController.java
+// Path: /api/customers/*
 export const customerAPI = {
   getCustomers: () => axiosInstance.get("/customers"),
   getCustomerById: (id: number) => axiosInstance.get(`/customers/${id}`),
-  searchCustomersByName: (name: string) =>
-    axiosInstance.get("/customers/search", { params: { name } }),
+
+  // Backend hỗ trợ search với name, phone, hoặc vin
+  searchCustomers: (params: CustomerSearchParams) =>
+    axiosInstance.get("/customers/search", { params }),
+
   searchVehicle: (payload: VehicleSearchRequest) =>
     axiosInstance.post("/customers/vehicles/search", payload),
+
+  // CRUD operations
+  createCustomer: (data: CustomerRequest) =>
+    axiosInstance.post("/customers", data),
+  updateCustomer: (id: number, data: CustomerRequest) =>
+    axiosInstance.put(`/customers/${id}`, data),
+};
+
+// ==================== VEHICLE API ====================
+// Backend: VehicleController.java
+// Path: /api/vehicles/*
+export const vehicleAPI = {
+  getAllVehicles: () => axiosInstance.get("/vehicles"),
+  getVehicleByVin: (vin: string) => axiosInstance.get(`/vehicles/${vin}`),
+  getVehiclesByCustomerId: (customerId: number) =>
+    axiosInstance.get(`/vehicles/customer/${customerId}`),
+  registerVehicle: (data: VehicleRequest) =>
+    axiosInstance.post("/vehicles", data),
+  updateVehicleNotes: (vin: string, notes: string) =>
+    axiosInstance.put(`/vehicles/${vin}/notes`, { notes }),
 };
 
 // ==================== PRODUCT MODEL API ====================
+// Backend: ProductModelController.java
+// Path: /api/product-models/*
 export const productModelAPI = {
   getAllProductModels: () => axiosInstance.get("/product-models"),
-  getProductModelById: (modelId: number) =>
-    axiosInstance.get(`/product-models/${modelId}`),
-  createProductModel: (data: {
-    modelName: string;
-    color?: string;
-    productionYear?: number;
-  }) => axiosInstance.post("/product-models", data),
+  getProductModelById: (id: number) =>
+    axiosInstance.get(`/product-models/${id}`),
+  createProductModel: (data: ProductModelRequest) =>
+    axiosInstance.post("/product-models", data),
 };

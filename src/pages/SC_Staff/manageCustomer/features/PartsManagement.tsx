@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import type { Customer, Part } from "../types/index";
 import { Settings, CheckCircle2, Loader2 } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,17 +12,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../../components/ui/table";
-import { Badge } from "../../../../components/ui/badge";
-import { Button } from "../../../../components/ui/button";
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "../../../../components/ui/dialog";
-import { installedPartAPI } from "../../../../utility/index";
+} from "@/components/ui/dialog";
+import { installedPartAPI } from "@/utility/index";
 
 interface Screen21Props {
   customer: Customer;

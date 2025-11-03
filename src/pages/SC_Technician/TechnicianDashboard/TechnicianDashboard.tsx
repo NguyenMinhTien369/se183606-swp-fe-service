@@ -1,39 +1,210 @@
-import React from 'react';
-import { Wrench, ClipboardCheck, Clock, AlertCircle } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/pages/Login/feature/AuthContext';
+import {
+    FaUsers, FaFileAlt, FaBoxOpen, FaCar,
+    FaChartLine, FaClipboardList, FaTachometerAlt
+} from 'react-icons/fa';
+import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { warrantyClaimAPI, userAPI, productModelAPI, vehicleAPI } from '@/utility';
 import styles from './TechnicianDashboard.module.css';
 
-const TechnicianDashboard: React.FC = () => {
-    // Mock data for charts
-    const workloadData = [
-        { day: 'Mon', tasks: 8 },
-        { day: 'Tue', tasks: 6 },
-        { day: 'Wed', tasks: 10 },
-        { day: 'Thu', tasks: 7 },
-        { day: 'Fri', tasks: 9 },
-        { day: 'Sat', tasks: 5 },
-    ];
+interface Stats {
+    totalUsers: number;
+    totalClaims: number;
+    totalProducts: number;
+    totalVehicles: number;
+    pendingClaims: number;
+    approvedClaims: number;
+    rejectedClaims: number;
+    activeTechnicians: number;
+}
 
-    const completionData = [
-        { month: 'Jan', completed: 45 },
-        { month: 'Feb', completed: 52 },
-        { month: 'Mar', completed: 48 },
-        { month: 'Apr', completed: 61 },
-        { month: 'May', completed: 55 },
-        { month: 'Jun', completed: 67 },
-    ];
+interface MonthlyData {
+    month: string;
+    claims: number;
+    completed: number;
+}
 
-    const assignedTasks = [
-        { id: 'T-001', vehicle: 'Tesla Model 3', issue: 'Battery Check', priority: 'High', deadline: '2025-10-30' },
-        { id: 'T-002', vehicle: 'VinFast VF8', issue: 'Motor Inspection', priority: 'Medium', deadline: '2025-10-31' },
-        { id: 'T-003', vehicle: 'BYD Atto 3', issue: 'Charging Port Repair', priority: 'Low', deadline: '2025-11-01' },
-    ];
+interface ClaimStatus {
+    name: string;
+    value: number;
+    color: string;
+}
 
-    const stats = [
-        { title: 'Assigned Tasks', value: '24', icon: <ClipboardCheck size={24} />, color: '#3b82f6', change: '+5' },
-        { title: 'In Progress', value: '8', icon: <Wrench size={24} />, color: '#f59e0b', change: '+2' },
-        { title: 'Completed Today', value: '12', icon: <ClipboardCheck size={24} />, color: '#10b981', change: '+4' },
-        { title: 'Pending Review', value: '4', icon: <Clock size={24} />, color: '#8b5cf6', change: '-1' },
+interface StatCard {
+    title: string;
+    value: number;
+    icon: any;
+    color: string;
+    change: string;
+    changeType: string;
+}
+
+export default function TechnicianDashboard() {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<Stats>({
+        totalUsers: 0,
+        totalClaims: 0,
+        totalProducts: 0,
+        totalVehicles: 0,
+        pendingClaims: 0,
+        approvedClaims: 0,
+        rejectedClaims: 0,
+        activeTechnicians: 0
+    });
+    const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [claimsByStatus, setClaimsByStatus] = useState<ClaimStatus[]>([]);
+
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
+
+    const fetchDashboardData = async () => {
+        try {
+            setLoading(true);
+
+            // Fetch all data in parallel
+            const [usersRes, claimsRes, productsRes, vehiclesRes] = await Promise.all([
+                userAPI.getUsers(),
+                warrantyClaimAPI.getClaimsByServiceCenter(1),
+                productModelAPI.getAllProductModels(),
+                vehicleAPI.getAllVehicles()
+            ]);
+
+            const users = usersRes.data.result || [];
+            const claims = claimsRes.data.result || [];
+            const products = productsRes.data.result || [];
+            const vehicles = vehiclesRes.data.result || [];
+
+            // Calculate statistics
+            const statusCounts = claims.reduce((acc: any, claim: any) => {
+                const status = claim.status?.toUpperCase() || 'UNKNOWN';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+
+            const pending = statusCounts['PENDING'] || statusCounts['WAITING_FOR_APPROVAL'] || 0;
+            const approved = statusCounts['APPROVED'] || 0;
+            const rejected = statusCounts['REJECTED'] || 0;
+
+            // Count technicians
+            const technicians = users.filter((u: any) =>
+                u.role?.roleName === 'ROLE_SC_TECHNICIAN'
+            );
+
+            // Calculate monthly data (last 6 months)
+            const monthlyStats = calculateMonthlyData(claims);
+            setMonthlyData(monthlyStats);
+
+            // Set claims by status for pie chart
+            const statusData: ClaimStatus[] = [
+                { name: 'Chờ duyệt', value: pending, color: '#f59e0b' },
+                { name: 'Đã duyệt', value: approved, color: '#10b981' },
+                { name: 'Từ chối', value: rejected, color: '#ef4444' }
+            ].filter(item => item.value > 0);
+
+            setClaimsByStatus(statusData);
+
+            setStats({
+                totalUsers: users.length,
+                totalClaims: claims.length,
+                totalProducts: products.length,
+                totalVehicles: vehicles.length,
+                pendingClaims: pending,
+                approvedClaims: approved,
+                rejectedClaims: rejected,
+                activeTechnicians: technicians.length
+            });
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const calculateMonthlyData = (claims: any[]): MonthlyData[] => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const monthlyMap = new Map<string, { claims: number; completed: number }>();
+
+        // Initialize last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthKey = `${months[date.getMonth()]}`;
+            monthlyMap.set(monthKey, { claims: 0, completed: 0 });
+        }
+
+        // Count claims per month
+        claims.forEach((claim: any) => {
+            if (claim.creationDate) {
+                const claimDate = new Date(claim.creationDate);
+                const monthKey = months[claimDate.getMonth()];
+
+                if (monthlyMap.has(monthKey)) {
+                    const data = monthlyMap.get(monthKey)!;
+                    data.claims++;
+
+                    if (claim.status?.toUpperCase() === 'APPROVED' ||
+                        claim.status?.toUpperCase() === 'COMPLETED' ||
+                        claim.status?.toUpperCase() === 'RESOLVED') {
+                        data.completed++;
+                    }
+                    monthlyMap.set(monthKey, data);
+                }
+            }
+        });
+
+        return Array.from(monthlyMap.entries()).map(([month, data]) => ({
+            month,
+            claims: data.claims,
+            completed: data.completed
+        }));
+    };
+
+    if (loading) {
+        return (
+            <div className={styles.dashboard}>
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+                    Đang tải dữ liệu...
+                </div>
+            </div>
+        );
+    }
+
+    const statCards: StatCard[] = [
+        {
+            title: 'Tổng Khách Hàng',
+            value: stats.totalUsers,
+            icon: FaUsers,
+            color: 'bg-blue-500',
+            change: `${stats.activeTechnicians} KTV`,
+            changeType: 'info'
+        },
+        {
+            title: 'Yêu cầu bảo hành',
+            value: stats.totalClaims,
+            icon: FaFileAlt,
+            color: 'bg-green-500',
+            change: `${stats.pendingClaims} chờ`,
+            changeType: 'warning'
+        },
+        {
+            title: 'Sản phẩm',
+            value: stats.totalProducts,
+            icon: FaBoxOpen,
+            color: 'bg-purple-500',
+            change: 'Đã đăng ký',
+            changeType: 'increase'
+        },
+        {
+            title: 'Xe đăng ký',
+            value: stats.totalVehicles,
+            icon: FaCar,
+            color: 'bg-orange-500',
+            change: 'Tổng xe',
+            changeType: 'increase'
+        }
     ];
 
     return (
@@ -41,110 +212,96 @@ const TechnicianDashboard: React.FC = () => {
             {/* Header */}
             <div className={styles.header}>
                 <div className={styles.headerContent}>
-                    <div>
-                        <h1 className={styles.title}>Technician Dashboard</h1>
-                        <p className={styles.subtitle}>Track your assigned tasks and performance</p>
+                    <div className={styles.headerLeft}>
+                        <h1>
+                            <FaTachometerAlt />
+                            Technician Dashboard
+                        </h1>
+                        <p>Chào mừng trở lại, {user?.fullName || 'Technician'}!</p>
+                    </div>
+                    <div className={styles.headerRight}>
+                        <p>Hôm nay</p>
+                        <p>{new Date().toLocaleDateString('vi-VN')}</p>
                     </div>
                 </div>
             </div>
 
-            {/* Stats Cards */}
+            {/* Statistics Cards */}
             <div className={styles.statsGrid}>
-                {stats.map((stat, index) => (
-                    <div key={index} className={styles.statCard}>
+                {statCards.map((card, index) => (
+                    <div key={index} className={styles.statCard} style={{ color: card.color === 'bg-blue-500' ? '#3b82f6' : card.color === 'bg-green-500' ? '#10b981' : card.color === 'bg-purple-500' ? '#a855f7' : '#f97316' }}>
                         <div className={styles.statCardHeader}>
-                            <div className={styles.statIcon} style={{ backgroundColor: stat.color }}>
-                                {stat.icon}
+                            <div className={styles.statIcon} style={{ background: card.color === 'bg-blue-500' ? '#3b82f6' : card.color === 'bg-green-500' ? '#10b981' : card.color === 'bg-purple-500' ? '#a855f7' : '#f97316' }}>
+                                <card.icon />
                             </div>
-                            <span className={styles.statChange} style={{ color: stat.change.startsWith('+') ? '#10b981' : '#ef4444' }}>
-                                {stat.change}
+                            <span className={styles.statChange}>
+                                {card.change}
                             </span>
                         </div>
-                        <div className={styles.statTitle}>{stat.title}</div>
-                        <div className={styles.statValue}>{stat.value}</div>
+                        <h3 className={styles.statTitle}>{card.title}</h3>
+                        <p className={styles.statValue}>{card.value}</p>
                     </div>
                 ))}
             </div>
 
             {/* Charts Row */}
             <div className={styles.chartsGrid}>
-                {/* Weekly Workload */}
+                {/* Area Chart - Claims Trend */}
                 <div className={styles.chartCard}>
-                    <h3 className={styles.chartTitle}>Weekly Workload</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={workloadData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="day" stroke="#6b7280" />
-                            <YAxis stroke="#6b7280" />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="tasks" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Monthly Completion Trend */}
-                <div className={styles.chartCard}>
-                    <h3 className={styles.chartTitle}>Monthly Completion Trend</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={completionData}>
+                    <h2 className={styles.chartTitle}>
+                        <FaChartLine />
+                        Xu hướng yêu cầu bảo hành
+                    </h2>
+                    <ResponsiveContainer width='100%' height={300}>
+                        <AreaChart data={monthlyData}>
                             <defs>
-                                <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                <linearGradient id='colorClaims' x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor='#14b8a6' stopOpacity={0.8} />
+                                    <stop offset='95%' stopColor='#14b8a6' stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id='colorCompleted' x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor='#10b981' stopOpacity={0.8} />
+                                    <stop offset='95%' stopColor='#10b981' stopOpacity={0} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis dataKey="month" stroke="#6b7280" />
-                            <YAxis stroke="#6b7280" />
+                            <CartesianGrid strokeDasharray='3 3' />
+                            <XAxis dataKey='month' />
+                            <YAxis />
                             <Tooltip />
-                            <Area type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={2} fill="url(#colorCompleted)" />
+                            <Legend />
+                            <Area type='monotone' dataKey='claims' stroke='#14b8a6' fillOpacity={1} fill='url(#colorClaims)' name='Yêu cầu' />
+                            <Area type='monotone' dataKey='completed' stroke='#10b981' fillOpacity={1} fill='url(#colorCompleted)' name='Hoàn thành' />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
-            </div>
 
-            {/* Assigned Tasks Table */}
-            <div className={styles.tableCard}>
-                <h3 className={styles.tableTitle}>
-                    <AlertCircle size={20} style={{ marginRight: '0.5rem', color: '#f59e0b' }} />
-                    Today's Assigned Tasks
-                </h3>
-                <div className={styles.tableWrapper}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Task ID</th>
-                                <th>Vehicle</th>
-                                <th>Issue</th>
-                                <th>Priority</th>
-                                <th>Deadline</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {assignedTasks.map((task) => (
-                                <tr key={task.id}>
-                                    <td className={styles.taskId}>{task.id}</td>
-                                    <td>{task.vehicle}</td>
-                                    <td>{task.issue}</td>
-                                    <td>
-                                        <span className={`${styles.badge} ${styles[`badge${task.priority}`]}`}>
-                                            {task.priority}
-                                        </span>
-                                    </td>
-                                    <td>{task.deadline}</td>
-                                    <td>
-                                        <button className={styles.actionButton}>Start Work</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Pie Chart - Claims by Status */}
+                <div className={styles.chartCard}>
+                    <h2 className={styles.chartTitle}>
+                        <FaClipboardList />
+                        Trạng thái yêu cầu
+                    </h2>
+                    <ResponsiveContainer width='100%' height={300}>
+                        <PieChart>
+                            <Pie
+                                data={claimsByStatus}
+                                cx='50%'
+                                cy='50%'
+                                labelLine={false}
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={100}
+                                fill='#8884d8'
+                                dataKey='value'
+                            >
+                                {claimsByStatus.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
         </div>
     );
-};
-
-export default TechnicianDashboard;
+}

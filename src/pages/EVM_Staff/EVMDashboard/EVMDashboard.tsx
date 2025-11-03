@@ -1,28 +1,60 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/pages/Login/feature/AuthContext';
-import type { Stats, Claim, TrendData, CampaignStat } from './types';
 import {
-    FaTachometerAlt, FaClipboardList, FaBullhorn,
-    FaCheckCircle, FaClock, FaTimes, FaExclamationTriangle,
-    FaChartLine, FaTools
+    FaUsers, FaFileAlt, FaBoxOpen, FaCar,
+    FaChartLine, FaClipboardList, FaTachometerAlt
 } from 'react-icons/fa';
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { warrantyClaimAPI, userAPI, productModelAPI, vehicleAPI } from '@/utility';
 import styles from './EVMDashboard.module.css';
 
-const EVMDashboard: React.FC = () => {
+interface Stats {
+    totalUsers: number;
+    totalClaims: number;
+    totalProducts: number;
+    totalVehicles: number;
+    pendingClaims: number;
+    approvedClaims: number;
+    rejectedClaims: number;
+    activeTechnicians: number;
+}
+
+interface MonthlyData {
+    month: string;
+    claims: number;
+    completed: number;
+}
+
+interface ClaimStatus {
+    name: string;
+    value: number;
+    color: string;
+}
+
+interface StatCard {
+    title: string;
+    value: number;
+    icon: any;
+    color: string;
+    change: string;
+    changeType: string;
+}
+
+export default function EVMDashboard() {
     const { user } = useAuth();
-    const [stats] = useState<Stats>({
-        totalClaims: 156,
-        pendingClaims: 23,
-        approvedClaims: 118,
-        rejectedClaims: 15,
-        activeCampaigns: 8,
-        totalParts: 245,
-        lowStockParts: 12
+    const [loading, setLoading] = useState(true);
+    const [stats, setStats] = useState<Stats>({
+        totalUsers: 0,
+        totalClaims: 0,
+        totalProducts: 0,
+        totalVehicles: 0,
+        pendingClaims: 0,
+        approvedClaims: 0,
+        rejectedClaims: 0,
+        activeTechnicians: 0
     });
-    const [recentClaims, setRecentClaims] = useState<Claim[]>([]);
-    const [claimTrends, setClaimTrends] = useState<TrendData[]>([]);
-    const [campaignStats, setCampaignStats] = useState<CampaignStat[]>([]);
+    const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+    const [claimsByStatus, setClaimsByStatus] = useState<ClaimStatus[]>([]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -30,56 +62,150 @@ const EVMDashboard: React.FC = () => {
 
     const fetchDashboardData = async () => {
         try {
-            setRecentClaims([
-                {
-                    id: 1,
-                    claimNumber: 'CLM-2024-001',
-                    customer: { fullName: 'John Smith' },
-                    vehicle: { model: 'EV Model X', vin: 'VIN123456' },
-                    status: 'PENDING',
-                    createdDate: new Date().toISOString()
-                },
-                {
-                    id: 2,
-                    claimNumber: 'CLM-2024-002',
-                    customer: { fullName: 'Jane Doe' },
-                    vehicle: { model: 'EV Model Y', vin: 'VIN789012' },
-                    status: 'APPROVED',
-                    createdDate: new Date().toISOString()
-                }
+            setLoading(true);
+
+            // Fetch all data in parallel
+            const [usersRes, claimsRes, productsRes, vehiclesRes] = await Promise.all([
+                userAPI.getUsers(),
+                warrantyClaimAPI.getClaimsByServiceCenter(1),
+                productModelAPI.getAllProductModels(),
+                vehicleAPI.getAllVehicles()
             ]);
 
-            setClaimTrends([
-                { month: 'Jan', claims: 45, approved: 40 },
-                { month: 'Feb', claims: 52, approved: 48 },
-                { month: 'Mar', claims: 48, approved: 45 },
-                { month: 'Apr', claims: 61, approved: 56 },
-                { month: 'May', claims: 55, approved: 52 },
-                { month: 'Jun', claims: 67, approved: 63 }
-            ]);
+            const users = usersRes.data.result || [];
+            const claims = claimsRes.data.result || [];
+            const products = productsRes.data.result || [];
+            const vehicles = vehiclesRes.data.result || [];
 
-            setCampaignStats([
-                { name: 'Active', value: 8, color: '#10b981' },
-                { name: 'Completed', value: 15, color: '#3b82f6' },
-                { name: 'Pending', value: 5, color: '#f59e0b' }
-            ]);
+            // Calculate statistics
+            const statusCounts = claims.reduce((acc: any, claim: any) => {
+                const status = claim.status?.toUpperCase() || 'UNKNOWN';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
 
+            const pending = statusCounts['PENDING'] || statusCounts['WAITING_FOR_APPROVAL'] || 0;
+            const approved = statusCounts['APPROVED'] || 0;
+            const rejected = statusCounts['REJECTED'] || 0;
+
+            // Count technicians
+            const technicians = users.filter((u: any) =>
+                u.role?.roleName === 'ROLE_SC_TECHNICIAN'
+            );
+
+            // Calculate monthly data (last 6 months)
+            const monthlyStats = calculateMonthlyData(claims);
+            setMonthlyData(monthlyStats);
+
+            // Set claims by status for pie chart
+            const statusData: ClaimStatus[] = [
+                { name: 'Chờ duyệt', value: pending, color: '#f59e0b' },
+                { name: 'Đã duyệt', value: approved, color: '#10b981' },
+                { name: 'Từ chối', value: rejected, color: '#ef4444' }
+            ].filter(item => item.value > 0);
+
+            setClaimsByStatus(statusData);
+
+            setStats({
+                totalUsers: users.length,
+                totalClaims: claims.length,
+                totalProducts: products.length,
+                totalVehicles: vehicles.length,
+                pendingClaims: pending,
+                approvedClaims: approved,
+                rejectedClaims: rejected,
+                activeTechnicians: technicians.length
+            });
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        const config: Record<string, { label: string; className: string; icon: any }> = {
-            PENDING: { label: 'Pending', className: styles.statusPending, icon: FaClock },
-            APPROVED: { label: 'Approved', className: styles.statusApproved, icon: FaCheckCircle },
-            REJECTED: { label: 'Rejected', className: styles.statusRejected, icon: FaTimes },
-            IN_PROGRESS: { label: 'In Progress', className: styles.statusInProgress, icon: FaExclamationTriangle },
-            COMPLETED: { label: 'Completed', className: styles.statusCompleted, icon: FaCheckCircle }
-        };
-        const { label, className, icon: Icon } = config[status] || config.PENDING;
-        return <span className={`${styles.statusBadge} ${className}`}><Icon /> {label}</span>;
+    const calculateMonthlyData = (claims: any[]): MonthlyData[] => {
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        const monthlyMap = new Map<string, { claims: number; completed: number }>();
+
+        // Initialize last 6 months
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthKey = `${months[date.getMonth()]}`;
+            monthlyMap.set(monthKey, { claims: 0, completed: 0 });
+        }
+
+        // Count claims per month
+        claims.forEach((claim: any) => {
+            if (claim.creationDate) {
+                const claimDate = new Date(claim.creationDate);
+                const monthKey = months[claimDate.getMonth()];
+
+                if (monthlyMap.has(monthKey)) {
+                    const data = monthlyMap.get(monthKey)!;
+                    data.claims++;
+
+                    if (claim.status?.toUpperCase() === 'APPROVED' ||
+                        claim.status?.toUpperCase() === 'COMPLETED' ||
+                        claim.status?.toUpperCase() === 'RESOLVED') {
+                        data.completed++;
+                    }
+                    monthlyMap.set(monthKey, data);
+                }
+            }
+        });
+
+        return Array.from(monthlyMap.entries()).map(([month, data]) => ({
+            month,
+            claims: data.claims,
+            completed: data.completed
+        }));
     };
+
+    if (loading) {
+        return (
+            <div className={styles.dashboard}>
+                <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+                    Đang tải dữ liệu...
+                </div>
+            </div>
+        );
+    }
+
+    const statCards: StatCard[] = [
+        {
+            title: 'Tổng Khách Hàng',
+            value: stats.totalUsers,
+            icon: FaUsers,
+            color: 'bg-blue-500',
+            change: `${stats.activeTechnicians} KTV`,
+            changeType: 'info'
+        },
+        {
+            title: 'Yêu cầu bảo hành',
+            value: stats.totalClaims,
+            icon: FaFileAlt,
+            color: 'bg-green-500',
+            change: `${stats.pendingClaims} chờ`,
+            changeType: 'warning'
+        },
+        {
+            title: 'Sản phẩm',
+            value: stats.totalProducts,
+            icon: FaBoxOpen,
+            color: 'bg-purple-500',
+            change: 'Đã đăng ký',
+            changeType: 'increase'
+        },
+        {
+            title: 'Xe đăng ký',
+            value: stats.totalVehicles,
+            icon: FaCar,
+            color: 'bg-orange-500',
+            change: 'Tổng xe',
+            changeType: 'increase'
+        }
+    ];
 
     return (
         <div className={styles.dashboard}>
@@ -91,108 +217,83 @@ const EVMDashboard: React.FC = () => {
                             <FaTachometerAlt />
                             EVM Staff Dashboard
                         </h1>
-                        <p>Welcome, {user?.fullName || 'EVM Staff'}!</p>
+                        <p>Chào mừng trở lại, {user?.fullName || 'EVM Staff'}!</p>
                     </div>
                     <div className={styles.headerRight}>
-                        <p>Today</p>
-                        <p>{new Date().toLocaleDateString('en-US')}</p>
+                        <p>Hôm nay</p>
+                        <p>{new Date().toLocaleDateString('vi-VN')}</p>
                     </div>
                 </div>
             </div>
 
             {/* Statistics Cards */}
             <div className={styles.statsGrid}>
-                <div className={styles.statCard} style={{ borderLeft: '4px solid #f59e0b' }}>
-                    <div className={styles.statIcon} style={{ background: '#fef3c7' }}>
-                        <FaClock style={{ color: '#f59e0b' }} />
+                {statCards.map((card, index) => (
+                    <div key={index} className={styles.statCard} style={{ color: card.color === 'bg-blue-500' ? '#3b82f6' : card.color === 'bg-green-500' ? '#10b981' : card.color === 'bg-purple-500' ? '#a855f7' : '#f97316' }}>
+                        <div className={styles.statCardHeader}>
+                            <div className={styles.statIcon} style={{ background: card.color === 'bg-blue-500' ? '#3b82f6' : card.color === 'bg-green-500' ? '#10b981' : card.color === 'bg-purple-500' ? '#a855f7' : '#f97316' }}>
+                                <card.icon />
+                            </div>
+                            <span className={styles.statChange}>
+                                {card.change}
+                            </span>
+                        </div>
+                        <h3 className={styles.statTitle}>{card.title}</h3>
+                        <p className={styles.statValue}>{card.value}</p>
                     </div>
-                    <div className={styles.statContent}>
-                        <h3>{stats.pendingClaims}</h3>
-                        <p>Pending Approval</p>
-                    </div>
-                </div>
-
-                <div className={styles.statCard} style={{ borderLeft: '4px solid #10b981' }}>
-                    <div className={styles.statIcon} style={{ background: '#d1fae5' }}>
-                        <FaCheckCircle style={{ color: '#10b981' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{stats.approvedClaims}</h3>
-                        <p>Approved Claims</p>
-                    </div>
-                </div>
-
-                <div className={styles.statCard} style={{ borderLeft: '4px solid #3b82f6' }}>
-                    <div className={styles.statIcon} style={{ background: '#dbeafe' }}>
-                        <FaBullhorn style={{ color: '#3b82f6' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{stats.activeCampaigns}</h3>
-                        <p>Active Campaigns</p>
-                    </div>
-                </div>
-
-                <div className={styles.statCard} style={{ borderLeft: '4px solid #ef4444' }}>
-                    <div className={styles.statIcon} style={{ background: '#fee2e2' }}>
-                        <FaTools style={{ color: '#ef4444' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{stats.lowStockParts}</h3>
-                        <p>Low Stock Parts</p>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Charts Row */}
             <div className={styles.chartsGrid}>
-                {/* Claim Trends Chart */}
+                {/* Area Chart - Claims Trend */}
                 <div className={styles.chartCard}>
                     <h2 className={styles.chartTitle}>
                         <FaChartLine />
-                        Warranty Claims Trends
+                        Xu hướng yêu cầu bảo hành
                     </h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={claimTrends}>
+                    <ResponsiveContainer width='100%' height={300}>
+                        <AreaChart data={monthlyData}>
                             <defs>
-                                <linearGradient id="colorClaims" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+                                <linearGradient id='colorClaims' x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor='#14b8a6' stopOpacity={0.8} />
+                                    <stop offset='95%' stopColor='#14b8a6' stopOpacity={0} />
                                 </linearGradient>
-                                <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                <linearGradient id='colorCompleted' x1='0' y1='0' x2='0' y2='1'>
+                                    <stop offset='5%' stopColor='#10b981' stopOpacity={0.8} />
+                                    <stop offset='95%' stopColor='#10b981' stopOpacity={0} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
+                            <CartesianGrid strokeDasharray='3 3' />
+                            <XAxis dataKey='month' />
                             <YAxis />
                             <Tooltip />
                             <Legend />
-                            <Area type="monotone" dataKey="claims" stroke="#14b8a6" fillOpacity={1} fill="url(#colorClaims)" name="Claims" />
-                            <Area type="monotone" dataKey="approved" stroke="#10b981" fillOpacity={1} fill="url(#colorApproved)" name="Approved" />
+                            <Area type='monotone' dataKey='claims' stroke='#14b8a6' fillOpacity={1} fill='url(#colorClaims)' name='Yêu cầu' />
+                            <Area type='monotone' dataKey='completed' stroke='#10b981' fillOpacity={1} fill='url(#colorCompleted)' name='Hoàn thành' />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
 
-                {/* Campaign Stats Chart */}
+                {/* Pie Chart - Claims by Status */}
                 <div className={styles.chartCard}>
                     <h2 className={styles.chartTitle}>
-                        <FaBullhorn />
-                        Campaign Statistics
+                        <FaClipboardList />
+                        Trạng thái yêu cầu
                     </h2>
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width='100%' height={300}>
                         <PieChart>
                             <Pie
-                                data={campaignStats}
-                                cx="50%"
-                                cy="50%"
+                                data={claimsByStatus}
+                                cx='50%'
+                                cy='50%'
                                 labelLine={false}
-                                label={({ name, value }) => `${name}: ${value}`}
+                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                 outerRadius={100}
-                                fill="#8884d8"
-                                dataKey="value"
+                                fill='#8884d8'
+                                dataKey='value'
                             >
-                                {campaignStats.map((entry, index) => (
+                                {claimsByStatus.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
@@ -201,51 +302,6 @@ const EVMDashboard: React.FC = () => {
                     </ResponsiveContainer>
                 </div>
             </div>
-
-            {/* Recent Claims Table */}
-            <div className={styles.tableCard}>
-                <h2 className={styles.tableTitle}>
-                    <FaClipboardList />
-                    Recent Warranty Claims
-                </h2>
-                <div className={styles.tableContainer}>
-                    <table className={styles.table}>
-                        <thead>
-                            <tr>
-                                <th>Claim Number</th>
-                                <th>Customer</th>
-                                <th>Vehicle</th>
-                                <th>Created Date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {recentClaims.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className={styles.noData}>
-                                        No data available
-                                    </td>
-                                </tr>
-                            ) : (
-                                recentClaims.map((claim) => (
-                                    <tr key={claim.id}>
-                                        <td className={styles.claimNumber}>{claim.claimNumber}</td>
-                                        <td>{claim.customer?.fullName}</td>
-                                        <td>
-                                            <div>{claim.vehicle?.model}</div>
-                                            <small>{claim.vehicle?.vin}</small>
-                                        </td>
-                                        <td>{new Date(claim.createdDate).toLocaleDateString('en-US')}</td>
-                                        <td>{getStatusBadge(claim.status)}</td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     );
-};
-
-export default EVMDashboard;
+}
