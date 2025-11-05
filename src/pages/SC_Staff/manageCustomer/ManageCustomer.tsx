@@ -13,10 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
 import type { Customer } from "./types/index";
-import { Screen1CustomerSearch } from "./features/CustomerSearch";
-import { Screen2VehicleInfo } from "./features/VehicleInfomation";
-import { Screen21PartsManagement } from "./features/PartsManagement";
-import { Screen22ServiceHistory } from "./features/ServiceHistory";
+import { Screen1CustomerSearch } from "@/pages/SC_Staff/manageCustomer/features/CustomerSearch";
+import { Screen2VehicleInfo } from "@/pages/SC_Staff/manageCustomer/features/VehicleInfomation";
+import { Screen21PartsManagement } from "@/pages/SC_Staff/manageCustomer/features/PartsManagement";
+import { Screen22ServiceHistory } from "@/pages/SC_Staff/manageCustomer/features/ServiceHistory";
 
 export default function App() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(

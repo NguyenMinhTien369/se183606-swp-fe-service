@@ -199,10 +199,11 @@ export function Screen22ServiceHistory({ customer }: { customer: Customer }) {
               className="resize-none border-border/60 shadow-sm focus-visible:ring-primary"
             />
             <p
-              className={`text-xs ${notes.length > maxChars
+              className={`text-xs ${
+                notes.length > maxChars
                   ? "text-destructive font-medium"
                   : "text-muted-foreground"
-                }`}
+              }`}
             >
               {notes.length}/{maxChars} ký tự
             </p>

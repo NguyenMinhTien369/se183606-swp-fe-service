@@ -57,7 +57,7 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
         (backendCustomer) => flattenCustomerData(backendCustomer)
       );
 
-      console.log("✅ Flattened Customers:", flattenedCustomers);
+      console.log("Flattened Customers:", flattenedCustomers);
 
       setCustomers(flattenedCustomers);
       setFilteredCustomers(flattenedCustomers);
@@ -65,7 +65,7 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
       setError(
         err.response?.data?.message || "Không thể tải danh sách khách hàng"
       );
-      console.error("❌ Error loading customers:", err);
+      console.error("Error loading customers:", err);
     } finally {
       setLoading(false);
     }
@@ -90,8 +90,8 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
         ? { phone: searchTerm }
         : searchTerm.length >= 10 &&
           /^[A-Z0-9]+$/.test(searchTerm.toUpperCase())
-          ? { vin: searchTerm } // VIN thường là chữ in hoa + số, dài
-          : { name: searchTerm }; // Mặc định search theo tên
+        ? { vin: searchTerm } // VIN thường là chữ in hoa + số, dài
+        : { name: searchTerm }; // Mặc định search theo tên
 
       const response = await customerAPI.searchCustomers(searchParams);
       const backendResults: CustomerResponse[] = response.data.result || [];
@@ -159,7 +159,7 @@ export function Screen1CustomerSearch({ onSelectCustomer }: Screen1Props) {
           {/* 🔍 Thanh tìm kiếm */}
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
             <Input
-              placeholder="Nhập Số VIN / Tên khách hàng / Số điện thoại / Serial Number..."
+              placeholder="Nhập Số VIN / Tên khách hàng / Số điện thoại"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={handleKeyPress}
