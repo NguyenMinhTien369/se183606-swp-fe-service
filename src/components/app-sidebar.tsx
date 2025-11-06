@@ -1,7 +1,7 @@
 import * as React from "react";
 import {
   Users, ClipboardPlus, Building2, Wrench,
-  LayoutDashboard, Shield, Package,
+  LayoutDashboard, Package,
   CheckCircle, Megaphone
 } from "lucide-react";
 import { NavLink } from "react-router";
@@ -46,11 +46,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Quản Lý Người Dùng",
           icon: <Users className="size-4" />,
           to: ROUTERS_PATH.ADMIN_USERS,
-        },
-        {
-          title: "Quản Lý Quyền",
-          icon: <Shield className="size-4" />,
-          to: ROUTERS_PATH.ADMIN_ROLE_PERMISSIONS,
         },
         {
           title: "Quản Lý Sản Phẩm",

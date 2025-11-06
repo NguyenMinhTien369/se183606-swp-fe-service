@@ -67,12 +67,41 @@ const ProductManagement = () => {
     const fetchParts = async () => {
         try {
             setLoading(true);
-            // Note: Backend doesn't have a get all parts endpoint
-            // You may need to implement searchPartsBySerialNumber with empty or wildcard query
-            setParts([]);
-        } catch (error) {
-            console.error('Error fetching parts:', error);
-            setParts([]);
+            console.log('🔍 Fetching parts...');
+
+            // Backend hỗ trợ empty search để lấy tất cả parts
+            const response = await partAPI.searchPartsBySerialNumber('');
+            console.log('✅ Parts response:', response);
+            console.log('📊 Result data:', response.data.result);
+
+            // Map backend response
+            const mappedParts = (response.data.result || []).map((part: any) => {
+                console.log('Mapping part:', part);
+                return {
+                    serialNumber: part.partSerialNumber,
+                    partName: part.partTypeName || 'N/A',
+                    category: part.partTypeName || 'N/A',
+                    manufactureDate: part.productionDate,
+                    warrantyPeriodMonths: part.warrantyPeriod || 0,
+                };
+            });
+
+            console.log('✅ Mapped parts:', mappedParts);
+            console.log('📈 Total parts:', mappedParts.length);
+            setParts(mappedParts);
+        } catch (error: any) {
+            console.error('❌ Error fetching parts:', error);
+            console.error('❌ Error response:', error.response);
+            console.error('❌ Error details:', error.response?.data);
+
+            // Xử lý lỗi PART_LIST_EMPTY (code 1041)
+            if (error.response?.data?.code === 1041) {
+                console.log('ℹ️ Không có parts nào trong database');
+                setParts([]);
+            } else {
+                setParts([]);
+                alert(`❌ Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải dữ liệu linh kiện'}`);
+            }
         } finally {
             setLoading(false);
         }
@@ -191,14 +220,14 @@ const ProductManagement = () => {
             } else {
                 const part = selectedItem as Part;
                 await partAPI.deletePart(part.serialNumber);
-                alert('✅ Xóa linh kiện thành công!');
+                alert('Xóa linh kiện thành công!');
                 fetchParts();
             }
 
             setShowConfirmDelete(false);
         } catch (error: any) {
             console.error('Error deleting item:', error);
-            alert(`❌ Lỗi: ${error.response?.data?.message || 'Không thể xóa!'}`);
+            alert(`Lỗi: ${error.response?.data?.message || 'Không thể xóa!'}`);
         } finally {
             setLoading(false);
         }

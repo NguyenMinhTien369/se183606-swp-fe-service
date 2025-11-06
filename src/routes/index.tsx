@@ -2,8 +2,6 @@ import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
 import MainLayout from "@/layouts/MainLayout";
 import ManageCustomer from "@/pages/SC_Staff/manageCustomer/ManageCustomer";
 import InternalManagement from "@/pages/SC_Staff/InternalManagement/InternalManagement";
-import ConductWarranty from "@/pages/SC_Staff/ConductWarranty/ConductWarranty";
-import CreateWarranty from "@/pages/SC_Staff/CreateWarranty/CreateWarranty";
 import LoginForm from "@/pages/Login/LoginFormt";
 import Unauthorized from "@/pages/Unauthorized";
 import ROUTERS_PATH from "@/constants/routers";
@@ -15,13 +13,12 @@ import { ResetPasswordFlow } from "@/pages/Auth";
 import {
   AdminDashboard,
   UserManagement,
-  RolePermissions,
   ProductManagement,
   WarrantyApproval
 } from "@/pages/Admin";
 import { EVMDashboard, CampaignManagement, WarrantyClaims } from "@/pages/EVM_Staff";
 import { SCStaffDashboard } from "@/pages/SC_Staff";
-import { TechnicianDashboard } from "@/pages/SC_Technician";// Nơi để mình cấu hình các routes cho ứng dụng
+import { TechnicianDashboard, ConductWarranty, CreateWarranty } from "@/pages/SC_Technician";
 function Routers() {
   const routers = createBrowserRouter([
     // ============================================
@@ -92,7 +89,6 @@ function Routers() {
         { index: true, element: <Navigate to={ROUTERS_PATH.ADMIN_DASHBOARD} replace /> },
         { path: "dashboard", element: <AdminDashboard /> },
         { path: "users", element: <UserManagement /> },
-        { path: "role-permissions", element: <RolePermissions /> },
         { path: "products", element: <ProductManagement /> },
         { path: "warranty-approval", element: <WarrantyApproval /> },
         { path: "*", element: <NotFound /> },

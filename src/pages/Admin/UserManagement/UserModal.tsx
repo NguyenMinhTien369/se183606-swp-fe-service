@@ -98,6 +98,10 @@ const UserModal: React.FC<UserModalProps> = ({
         if (formData.roleId === 0) {
             newErrors.roleId = 'Please select a role';
         }
+        // Service Center is required for Technician (3) and SC_Staff (4)
+        if ((formData.roleId === 3 || formData.roleId === 4) && (!formData.serviceCenterId || formData.serviceCenterId === 0)) {
+            newErrors.serviceCenterId = 'Service Center is required for this role';
+        }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -213,23 +217,26 @@ const UserModal: React.FC<UserModalProps> = ({
                         {errors.roleId && <span className={styles.errorText}>{errors.roleId}</span>}
                     </div>
 
-                    {(formData.roleId === 3 || formData.roleId === 4) && (
-                        <div className={styles.formGroup}>
-                            <label>Service Center</label>
-                            <select
-                                name="serviceCenterId"
-                                value={formData.serviceCenterId || 0}
-                                onChange={handleChange}
-                            >
-                                <option value={0}>-- Select Service Center --</option>
-                                {serviceCenters.map(sc => (
-                                    <option key={sc.id} value={sc.id}>
-                                        {sc.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
+                    <div className={styles.formGroup}>
+                        <label>
+                            Service Center
+                            {(formData.roleId === 3 || formData.roleId === 4) && ' *'}
+                        </label>
+                        <select
+                            name="serviceCenterId"
+                            value={formData.serviceCenterId || 0}
+                            onChange={handleChange}
+                            className={errors.serviceCenterId ? styles.inputError : ''}
+                        >
+                            <option value={0}>-- Select Service Center --</option>
+                            {serviceCenters.map(sc => (
+                                <option key={sc.id} value={sc.id}>
+                                    {sc.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.serviceCenterId && <span className={styles.errorText}>{errors.serviceCenterId}</span>}
+                    </div>
 
                     <div className={styles.modalFooter}>
                         <button

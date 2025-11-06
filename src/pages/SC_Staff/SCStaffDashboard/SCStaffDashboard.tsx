@@ -63,13 +63,30 @@ export default function SCStaffDashboard() {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
+            console.log('🔍 [SC_Staff] Fetching dashboard data...');
+
+            // SC_Staff sees data from their service center only
+            // TODO: Get serviceCenterID from authenticated user
+            const serviceCenterID = 1;
 
             // Fetch all data in parallel
             const [usersRes, claimsRes, productsRes, vehiclesRes] = await Promise.all([
-                userAPI.getUsers(),
-                warrantyClaimAPI.getClaimsByServiceCenter(1),
-                productModelAPI.getAllProductModels(),
-                vehicleAPI.getAllVehicles()
+                userAPI.getUsers().catch(err => {
+                    console.error('Error fetching users:', err);
+                    return { data: { result: [] } };
+                }),
+                warrantyClaimAPI.getClaimsByServiceCenter(serviceCenterID).catch(err => {
+                    console.error('Error fetching claims:', err);
+                    return { data: { result: [] } };
+                }),
+                productModelAPI.getAllProductModels().catch(err => {
+                    console.error('Error fetching products:', err);
+                    return { data: { result: [] } };
+                }),
+                vehicleAPI.getAllVehicles().catch(err => {
+                    console.error('Error fetching vehicles:', err);
+                    return { data: { result: [] } };
+                })
             ]);
 
             const users = usersRes.data.result || [];
@@ -77,9 +94,33 @@ export default function SCStaffDashboard() {
             const products = productsRes.data.result || [];
             const vehicles = vehiclesRes.data.result || [];
 
+            console.log('📊 [SC_Staff] Dashboard data loaded:');
+            console.log('  Service Center ID:', serviceCenterID);
+            console.log('  Users:', users.length);
+            console.log('  Claims:', claims.length);
+            console.log('  Products:', products.length);
+            console.log('  Vehicles:', vehicles.length);
+
+            // Map status từ tiếng Việt sang tiếng Anh nếu cần
+            const mapStatus = (status: string): string => {
+                const statusMap: Record<string, string> = {
+                    'Chờ duyệt': 'PENDING',
+                    'Được chấp nhận': 'APPROVED',
+                    'Đã duyệt': 'APPROVED',
+                    'Từ chối': 'REJECTED',
+                    'Đang xử lý': 'IN_PROGRESS',
+                    'Hoàn thành': 'COMPLETED',
+                };
+                const upperStatus = status?.toUpperCase();
+                if (['PENDING', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'COMPLETED'].includes(upperStatus)) {
+                    return upperStatus;
+                }
+                return statusMap[status] || status?.toUpperCase() || 'UNKNOWN';
+            };
+
             // Calculate statistics
             const statusCounts = claims.reduce((acc: any, claim: any) => {
-                const status = claim.status?.toUpperCase() || 'UNKNOWN';
+                const status = mapStatus(claim.status);
                 acc[status] = (acc[status] || 0) + 1;
                 return acc;
             }, {});

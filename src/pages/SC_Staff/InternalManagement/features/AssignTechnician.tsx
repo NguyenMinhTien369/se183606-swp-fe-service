@@ -133,7 +133,7 @@ export function AssignTechnician({
       const assignPromises = selectedRequests.map((claimID) =>
         claimAssignmentAPI.assignTechnician({
           claimID,
-          technicianIDs: [Number(mainTechnician)], // ✅ Backend yêu cầu array of technician IDs
+          primaryTechnicianID: Number(mainTechnician), // Backend yêu cầu số, không phải array
           expectedCompletionDate: expectedCompletionDate || undefined,
           internalNotes: internalNotes || undefined,
         })
@@ -164,7 +164,7 @@ export function AssignTechnician({
       console.error("Error response status:", error.response?.status);
       console.error("Request payload:", {
         claimID: selectedRequests[0],
-        technicianIDs: [Number(mainTechnician)],
+        primaryTechnicianID: Number(mainTechnician),
         expectedCompletionDate: expectedCompletionDate || undefined,
         internalNotes: internalNotes || undefined,
       });
