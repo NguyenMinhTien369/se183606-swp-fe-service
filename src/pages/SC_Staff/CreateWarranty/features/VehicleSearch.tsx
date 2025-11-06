@@ -53,9 +53,7 @@ export function VehicleSearch({ onSearch }: VehicleSearchProps) {
     <Card>
       <CardHeader>
         <CardTitle>Tra cứu hồ sơ xe</CardTitle>
-        <CardDescription>
-          Nhập VIN hoặc quét mã QR để tra cứu thông tin xe
-        </CardDescription>
+        <CardDescription>Nhập VIN</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex gap-2">
@@ -81,11 +79,6 @@ export function VehicleSearch({ onSearch }: VehicleSearchProps) {
             ) : (
               "Tìm kiếm"
             )}
-          </Button>
-
-          {/* Nút quét QR */}
-          <Button variant="outline" size="icon" disabled={loading}>
-            <QrCode className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>

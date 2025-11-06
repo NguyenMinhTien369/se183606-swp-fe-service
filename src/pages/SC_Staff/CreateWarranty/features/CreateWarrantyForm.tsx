@@ -15,7 +15,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, X, Save, Send, Loader2 } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Upload,
+  X,
+  Save,
+  Send,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 interface CreateWarrantyFormProps {
   vin: string;
@@ -39,6 +48,34 @@ export function CreateWarrantyForm({
   >({});
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Alert state management
+  const [alertState, setAlertState] = useState<{
+    show: boolean;
+    type: "error" | "success";
+    title: string;
+    description: string;
+    details?: string[];
+  }>({
+    show: false,
+    type: "error",
+    title: "",
+    description: "",
+    details: [],
+  });
+
+  const showAlert = (
+    type: "error" | "success",
+    title: string,
+    description: string,
+    details?: string[]
+  ) => {
+    setAlertState({ show: true, type, title, description, details });
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+      setAlertState((prev) => ({ ...prev, show: false }));
+    }, 5000);
+  };
 
   const handlePartToggle = (partSerialNumber: string) => {
     setSelectedParts((prev) => {
@@ -83,11 +120,21 @@ export function CreateWarrantyForm({
 
   const validateForm = (): boolean => {
     if (!description.trim()) {
-      alert("Vui lòng nhập mô tả sự cố.");
+      showAlert(
+        "error",
+        "Thiếu thông tin bắt buộc",
+        "Vui lòng nhập mô tả sự cố.",
+        ["Mô tả sự cố là trường bắt buộc", "Vui lòng điền thông tin chi tiết"]
+      );
       return false;
     }
     if (selectedParts.length === 0) {
-      alert("Vui lòng chọn ít nhất một phụ tùng cần bảo hành.");
+      showAlert(
+        "error",
+        "Thiếu thông tin bắt buộc",
+        "Vui lòng chọn ít nhất một phụ tùng cần bảo hành.",
+        ["Chọn phụ tùng cần bảo hành từ danh sách bên phải"]
+      );
       return false;
     }
     return true;
@@ -129,13 +176,25 @@ export function CreateWarrantyForm({
       const response = await warrantyClaimAPI.createClaim(formData);
       const claimID = response.data.result;
 
-      alert(`Đã lưu bản nháp thành công! Claim ID: ${claimID}`);
-      onSuccess(claimID, true);
+      showAlert(
+        "success",
+        "Thành công! Đã lưu bản nháp",
+        `Bản nháp yêu cầu bảo hành đã được lưu với Claim ID: ${claimID}`
+      );
+
+      // Delay navigation to show success message
+      setTimeout(() => {
+        onSuccess(claimID, true);
+      }, 1500);
     } catch (error: any) {
       const errorMsg =
         error.response?.data?.message ||
         "Không thể lưu bản nháp. Vui lòng thử lại.";
-      alert(errorMsg);
+      showAlert("error", "Không thể lưu bản nháp", errorMsg, [
+        "Kiểm tra kết nối mạng",
+        "Đảm bảo thông tin hợp lệ",
+        "Thử lại sau",
+      ]);
       console.error("Error saving draft:", error);
     } finally {
       setLoading(false);
@@ -146,7 +205,12 @@ export function CreateWarrantyForm({
     if (!validateForm()) return;
 
     if (attachmentFiles.length === 0) {
-      alert("Vui lòng đính kèm ít nhất một tài liệu/hình ảnh.");
+      showAlert(
+        "error",
+        "Thiếu tài liệu đính kèm",
+        "Vui lòng đính kèm ít nhất một tài liệu/hình ảnh.",
+        ["Tải lên ảnh hoặc PDF minh chứng", "Tài liệu giúp xử lý nhanh hơn"]
+      );
       return;
     }
 
@@ -156,13 +220,25 @@ export function CreateWarrantyForm({
       const response = await warrantyClaimAPI.createClaim(formData);
       const claimID = response.data.result;
 
-      alert(`Đã gửi yêu cầu bảo hành thành công! Claim ID: ${claimID}`);
-      onSuccess(claimID, false);
+      showAlert(
+        "success",
+        "Thành công! Yêu cầu đã được gửi",
+        `Yêu cầu bảo hành đã được gửi thành công với Claim ID: ${claimID}`
+      );
+
+      // Delay navigation to show success message
+      setTimeout(() => {
+        onSuccess(claimID, false);
+      }, 1500);
     } catch (error: any) {
       const errorMsg =
         error.response?.data?.message ||
         "Không thể gửi yêu cầu. Vui lòng thử lại.";
-      alert(errorMsg);
+      showAlert("error", "Không thể gửi yêu cầu", errorMsg, [
+        "Kiểm tra kết nối mạng",
+        "Đảm bảo thông tin hợp lệ",
+        "Liên hệ hỗ trợ nếu lỗi tiếp diễn",
+      ]);
       console.error("Error submitting claim:", error);
     } finally {
       setLoading(false);
@@ -179,6 +255,32 @@ export function CreateWarrantyForm({
       </CardHeader>
 
       <CardContent>
+        {/* Alert notification */}
+        {alertState.show && (
+          <div className="mb-6">
+            <Alert
+              variant={alertState.type === "error" ? "destructive" : "default"}
+            >
+              {alertState.type === "error" ? (
+                <AlertCircle className="h-4 w-4" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              <AlertTitle>{alertState.title}</AlertTitle>
+              <AlertDescription>
+                <p>{alertState.description}</p>
+                {alertState.details && alertState.details.length > 0 && (
+                  <ul className="list-inside list-disc text-sm mt-2">
+                    {alertState.details.map((detail, index) => (
+                      <li key={index}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Cột trái: Thông tin chung */}
           <div className="space-y-4">
