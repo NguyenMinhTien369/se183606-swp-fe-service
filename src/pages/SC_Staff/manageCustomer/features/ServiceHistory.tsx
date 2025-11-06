@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Customer, ServiceHistory } from "../types/index";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { Save, ClipboardList, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -12,12 +12,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { serviceHistoryAPI } from "@/utility/index";
 
 export function Screen22ServiceHistory({ customer }: { customer: Customer }) {
+  const [notes, setNotes] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [dialogType, setDialogType] = useState<"success" | "error">("success");
   const [serviceHistory, setServiceHistory] = useState<ServiceHistory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
+
+  const maxChars = 500;
 
   // Load service history khi component mount hoặc customer thay đổi
   useEffect(() => {
@@ -51,6 +66,19 @@ export function Screen22ServiceHistory({ customer }: { customer: Customer }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveNotes = () => {
+    if (notes.length > maxChars) {
+      setDialogMessage("❌ Ghi chú vượt quá 500 ký tự!");
+      setDialogType("error");
+      setDialogOpen(true);
+      return;
+    }
+    // TODO: Implement API call to save notes
+    setDialogMessage("✅ Đã lưu ghi chú thành công!");
+    setDialogType("success");
+    setDialogOpen(true);
   };
 
   return (
@@ -147,8 +175,58 @@ export function Screen22ServiceHistory({ customer }: { customer: Customer }) {
               </Table>
             </div>
           </div>
+
+          {/* 📝 Ghi chú nội bộ */}
+          <div className="space-y-3 pt-6 border-t">
+            <div className="flex items-center justify-between">
+              <h4 className="text-base font-medium">Ghi chú nội bộ</h4>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSaveNotes}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Lưu ghi chú
+              </Button>
+            </div>
+
+            <Textarea
+              placeholder="Nhập ghi chú nội bộ cho hồ sơ xe..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={5}
+              className="resize-none border-border/60 shadow-sm focus-visible:ring-primary"
+            />
+            <p
+              className={`text-xs ${
+                notes.length > maxChars
+                  ? "text-destructive font-medium"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {notes.length}/{maxChars} ký tự
+            </p>
+          </div>
         </CardContent>
       </Card>
+
+      {/* 🪟 Dialog thay thế toaster */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogType === "success" ? "✅ Thành công" : "⚠️ Lỗi ghi chú"}
+            </DialogTitle>
+            <DialogDescription>{dialogMessage}</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end mt-5">
+            <Button variant="default" onClick={() => setDialogOpen(false)}>
+              Đóng
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

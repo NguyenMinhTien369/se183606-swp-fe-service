@@ -25,8 +25,7 @@ const UserManagement: React.FC = () => {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const params = roleFilter !== 'ALL' ? { role: roleFilter } : {};
-            const response = await userAPI.getUsers(params);
+            const response = await userAPI.getUsers();
 
             let userData: any[] = [];
             if (response.data.result) {
@@ -115,7 +114,7 @@ const UserManagement: React.FC = () => {
                 email: formData.email.trim(),
                 phone: formData.phone?.trim() || null,
                 roleId: formData.roleId,
-                serviceCenterId: [3, 4].includes(formData.roleId) && formData.serviceCenterId
+                serviceCenterId: formData.serviceCenterId && formData.serviceCenterId !== 0
                     ? parseInt(String(formData.serviceCenterId))
                     : null
             };
@@ -161,7 +160,10 @@ const UserManagement: React.FC = () => {
             user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+
+        const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+
+        return matchesSearch && matchesRole;
     });
 
     const roleFilters: RoleFilter[] = [

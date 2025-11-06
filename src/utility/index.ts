@@ -49,10 +49,10 @@ interface ResetPasswordRequest {
   confirmPassword: string; // Required trong backend
 }
 
-// AssignTechnicianRequest.java - Backend yêu cầu technicianIDs là array
+// AssignTechnicianRequest.java - Backend dùng tên khác
 interface AssignTechnicianRequest {
   claimID: number;
-  technicianIDs: number[]; // Backend dùng 'technicianIDs' (array, min=1, max=4)
+  primaryTechnicianID: number; // Backend dùng 'primaryTechnicianID'
   expectedCompletionDate?: string; // LocalDate trong backend
   internalNotes?: string; // Backend dùng 'internalNotes'
 }
@@ -200,22 +200,18 @@ export const userAPI = {
 // Backend: WarrantyClaimController.java
 // Path: /api/warranty-claims/*
 export const warrantyClaimAPI = {
-  // Lấy tất cả claims (chỉ cho EVM_STAFF và ADMIN)
-  getAllClaims: () => axiosInstance.get("/warranty-claims"),
-
-  // Lấy claims theo status (chỉ cho EVM_STAFF và ADMIN)
-  getClaimsByStatus: (status: string) =>
-    axiosInstance.get(`/warranty-claims/status/${status}`),
-
-  // Lấy claims chưa được assign (cho SC_STAFF)
-  getClaimsForAssignment: () =>
-    axiosInstance.get("/warranty-claims/unassigned"),
-
   // Lấy thông tin xe theo VIN (được backend cung cấp dưới warranty-claims)
   getVehicleInfoByVin: (vin: string) =>
     axiosInstance.get("/warranty-claims/vehicle-info", { params: { vin } }),
 
-  // Lấy danh sách claim theo Service Center
+  // Lấy TẤT CẢ claims (ADMIN only)
+  getAllClaims: () => axiosInstance.get("/warranty-claims"),
+
+  // Lấy claims theo trạng thái (ADMIN, EVM_STAFF)
+  getClaimsByStatus: (status: string) =>
+    axiosInstance.get(`/warranty-claims/status/${status}`),
+
+  // Lấy danh sách claim theo Service Center (SC_STAFF)
   getClaimsByServiceCenter: (serviceCenterID: number) =>
     axiosInstance.get(`/warranty-claims/service-center/${serviceCenterID}`),
 

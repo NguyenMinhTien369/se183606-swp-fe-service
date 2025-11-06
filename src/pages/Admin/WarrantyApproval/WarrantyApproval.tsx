@@ -19,51 +19,89 @@ const WarrantyApproval = () => {
     const [claims, setClaims] = useState<WarrantyClaim[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'ALL'>('PENDING');
+    const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'ALL'>('ALL');
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [selectedClaim, setSelectedClaim] = useState<WarrantyClaim | null>(null);
     const [rejectReason, setRejectReason] = useState('');
-    // TODO: Get serviceCenterID from auth context instead of hardcoding
-    const serviceCenterID = 1;
 
     useEffect(() => {
         fetchClaims();
-    }, [statusFilter, serviceCenterID]);
+    }, [statusFilter]);
 
     const fetchClaims = async () => {
         try {
             setLoading(true);
-            const response = await warrantyClaimAPI.getClaimsByServiceCenter(serviceCenterID);
+            console.log('Fetching claims with status filter:', statusFilter);
 
-            // Map backend response to frontend interface
-            const mappedClaims = (response.data.result || []).map((claim: any) => ({
-                id: claim.claimID,
-                claimNumber: `CLM-${claim.claimID}`,
-                customer: {
-                    fullName: claim.customerName,
-                    email: claim.customerEmail,
-                    phone: claim.customerPhone,
-                },
-                vehicle: {
-                    vin: claim.vin,
-                    model: claim.modelName,
-                    licensePlate: claim.licensePlate,
-                },
-                issueDescription: claim.description,
-                status: claim.status?.toUpperCase() || 'PENDING',
-                createdDate: claim.creationDate,
-                estimatedCost: 0, // Not provided by backend
-                result: claim.result,
-                affectedParts: claim.affectedParts || [],
-                attachments: claim.attachments || [],
-            }));
+            const response = statusFilter === 'ALL'
+                ? await warrantyClaimAPI.getAllClaims()
+                : await warrantyClaimAPI.getClaimsByStatus(statusFilter);
 
+            console.log('API Response:', response);
+            console.log('Result data:', response.data.result);
+
+            // Map Vietnamese status to English
+            const mapStatus = (status: string): ClaimStatus => {
+                const statusMap: Record<string, ClaimStatus> = {
+                    'Chờ duyệt': 'PENDING',
+                    'Được chấp nhận': 'APPROVED',
+                    'Đã duyệt': 'APPROVED',
+                    'Từ chối': 'REJECTED',
+                    'Đang xử lý': 'IN_PROGRESS',
+                    'Hoàn thành': 'COMPLETED',
+                };
+
+                const upperStatus = status?.toUpperCase();
+                if (['PENDING', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'COMPLETED'].includes(upperStatus)) {
+                    return upperStatus as ClaimStatus;
+                }
+                return statusMap[status] || 'PENDING';
+            };
+
+            const mappedClaims = (response.data.result || []).map((claim: any) => {
+                console.log('Mapping claim:', claim.claimID, 'Status:', claim.status);
+                return {
+                    id: claim.claimID,
+                    claimNumber: `CLM-${claim.claimID}`,
+                    customer: {
+                        fullName: claim.customerName,
+                        email: claim.customerEmail,
+                        phone: claim.customerPhone,
+                    },
+                    vehicle: {
+                        vin: claim.vin,
+                        model: claim.modelName,
+                        licensePlate: claim.licensePlate,
+                    },
+                    issueDescription: claim.description,
+                    status: mapStatus(claim.status),
+                    createdDate: claim.creationDate,
+                    estimatedCost: 0, // Not provided by backend
+                    result: claim.result,
+                    affectedParts: claim.affectedParts || [],
+                    attachments: claim.attachments || [],
+                };
+            });
+
+            console.log('Mapped claims:', mappedClaims);
+            console.log('Total claims:', mappedClaims.length);
             setClaims(mappedClaims);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching claims:', error);
+            console.error('Error response:', error.response);
+            console.error('Error details:', error.response?.data);
             setClaims([]);
+
+            // Hiển thị lỗi chi tiết
+            if (error.response?.status === 403) {
+                alert('Lỗi: Bạn không có quyền truy cập! Vui lòng đăng nhập với tài khoản Admin hoặc EVM_Staff.');
+            } else if (error.response?.status === 401) {
+                alert('Lỗi: Phiên đăng nhập đã hết hạn! Vui lòng đăng nhập lại.');
+            } else {
+                alert(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải dữ liệu'}`);
+            }
         } finally {
             setLoading(false);
         }
@@ -74,15 +112,14 @@ const WarrantyApproval = () => {
 
         try {
             setLoading(true);
-            // Sync status to APPROVED using backend API
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'APPROVED');
+            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'Được chấp nhận');
 
-            alert('✅ Phê duyệt yêu cầu thành công!');
+            alert('Phê duyệt yêu cầu thành công!');
             setShowApproveModal(false);
             fetchClaims();
         } catch (error: any) {
             console.error('Error approving claim:', error);
-            alert(`❌ Lỗi: ${error.response?.data?.message || 'Không thể phê duyệt!'}`);
+            alert(`Lỗi: ${error.response?.data?.message || 'Không thể phê duyệt!'}`);
         } finally {
             setLoading(false);
         }
@@ -90,36 +127,39 @@ const WarrantyApproval = () => {
 
     const handleRejectClaim = async () => {
         if (!selectedClaim || !rejectReason.trim()) {
-            alert('❌ Vui lòng nhập lý do từ chối!');
+            alert('Vui lòng nhập lý do từ chối!');
             return;
         }
 
         try {
             setLoading(true);
-            // Sync status to REJECTED using backend API
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'REJECTED');
+            // SỬA: Gửi status bằng tiếng Việt thay vì tiếng Anh
+            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'Từ chối');
 
-            alert('✅ Từ chối yêu cầu thành công!');
+            alert('Từ chối yêu cầu thành công!');
             setShowRejectModal(false);
             setRejectReason('');
             fetchClaims();
         } catch (error: any) {
             console.error('Error rejecting claim:', error);
-            alert(`❌ Lỗi: ${error.response?.data?.message || 'Không thể từ chối!'}`);
+            alert(`Lỗi: ${error.response?.data?.message || 'Không thể từ chối!'}`);
         } finally {
             setLoading(false);
         }
     };
 
     const getStatusBadge = (status: ClaimStatus) => {
-        const config = {
+        const config: Record<ClaimStatus, { label: string; className: string; icon: any }> = {
             PENDING: { label: 'Chờ duyệt', className: styles.statusPending, icon: FaClock },
             APPROVED: { label: 'Đã duyệt', className: styles.statusApproved, icon: FaCheckCircle },
             REJECTED: { label: 'Từ chối', className: styles.statusRejected, icon: FaTimes },
             IN_PROGRESS: { label: 'Đang xử lý', className: styles.statusInProgress, icon: FaExclamationCircle },
             COMPLETED: { label: 'Hoàn thành', className: styles.statusCompleted, icon: FaCheck },
         };
-        const { label, className, icon: Icon } = config[status];
+
+        const statusConfig = config[status] || config.PENDING; // Fallback to PENDING if status not found
+        const { label, className, icon: Icon } = statusConfig;
+
         return (
             <span className={`${styles.statusBadge} ${className}`}>
                 <Icon /> {label}
@@ -128,13 +168,14 @@ const WarrantyApproval = () => {
     };
 
     const filteredClaims = claims.filter((claim) => {
-        const matchesStatus = statusFilter === 'ALL' || claim.status === statusFilter;
+        // Không cần filter theo status nữa vì đã filter từ API
         const search = searchTerm.toLowerCase();
         const matchesSearch =
             claim.claimNumber?.toLowerCase().includes(search) ||
             claim.customer?.fullName?.toLowerCase().includes(search) ||
-            claim.vehicle?.vin?.toLowerCase().includes(search);
-        return matchesStatus && matchesSearch;
+            claim.vehicle?.vin?.toLowerCase().includes(search) ||
+            claim.vehicle?.model?.toLowerCase().includes(search);
+        return matchesSearch;
     });
 
     const getStatCount = (status: ClaimStatus) => {
@@ -232,7 +273,6 @@ const WarrantyApproval = () => {
                                 <th>Khách hàng</th>
                                 <th>Xe</th>
                                 <th>Vấn đề</th>
-                                <th>Chi phí dự kiến</th>
                                 <th>Ngày tạo</th>
                                 <th>Trạng thái</th>
                                 <th>Thao tác</th>
@@ -241,7 +281,7 @@ const WarrantyApproval = () => {
                         <tbody>
                             {filteredClaims.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className={styles.noData}>
+                                    <td colSpan={7} className={styles.noData}>
                                         Không có dữ liệu
                                     </td>
                                 </tr>
@@ -270,9 +310,6 @@ const WarrantyApproval = () => {
                                         <td className={styles.issueDesc}>
                                             {claim.issueDescription?.substring(0, 50)}
                                             {claim.issueDescription?.length > 50 && '...'}
-                                        </td>
-                                        <td className={styles.cost}>
-                                            {claim.estimatedCost?.toLocaleString('vi-VN')} VNĐ
                                         </td>
                                         <td>{new Date(claim.createdDate).toLocaleDateString('vi-VN')}</td>
                                         <td>{getStatusBadge(claim.status)}</td>
@@ -361,12 +398,6 @@ const WarrantyApproval = () => {
                                 <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
                                     <label>Mô tả vấn đề:</label>
                                     <p>{selectedClaim.issueDescription}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>Chi phí dự kiến:</label>
-                                    <p className={styles.cost}>
-                                        {selectedClaim.estimatedCost?.toLocaleString('vi-VN')} VNĐ
-                                    </p>
                                 </div>
                                 <div className={styles.detailItem}>
                                     <label>Ngày tạo:</label>
