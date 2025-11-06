@@ -118,11 +118,14 @@ export function WarrantyRequestsList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Đã duyệt</SelectItem>
-              <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
-              <SelectItem value="COMPLETED">Hoàn tất</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
+              <SelectItem value="Nháp">📝 Nháp</SelectItem>
+              <SelectItem value="Chờ duyệt">🟡 Chờ duyệt</SelectItem>
+              <SelectItem value="Được chấp thuận">
+                🟢 Được chấp thuận
+              </SelectItem>
+              <SelectItem value="Đang xử lý">🔵 Đang xử lý</SelectItem>
+              <SelectItem value="Hoàn thành">✅ Hoàn thành</SelectItem>
+              <SelectItem value="Bị từ chối">🔴 Bị từ chối</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -266,7 +269,7 @@ export function WarrantyRequestsList({
                 <section>
                   <h4 className="font-medium mb-3">Phụ tùng bị ảnh hưởng</h4>
                   {selectedRequest.affectedParts &&
-                    selectedRequest.affectedParts.length > 0 ? (
+                  selectedRequest.affectedParts.length > 0 ? (
                     <ul className="space-y-2 text-sm">
                       {selectedRequest.affectedParts.map((part, i) => (
                         <li
@@ -303,7 +306,7 @@ export function WarrantyRequestsList({
                 <section>
                   <h4 className="font-medium mb-3">File đính kèm</h4>
                   {selectedRequest.attachments &&
-                    selectedRequest.attachments.length > 0 ? (
+                  selectedRequest.attachments.length > 0 ? (
                     <div className="space-y-2">
                       {selectedRequest.attachments.map((file, i) => (
                         <div

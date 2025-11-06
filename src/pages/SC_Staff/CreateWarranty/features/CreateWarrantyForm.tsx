@@ -32,6 +32,11 @@ interface CreateWarrantyFormProps {
   serviceCenterID: number;
   onSuccess: (claimID: number, isDraft: boolean) => void;
   onCancel: () => void;
+  // ✅ Props cho Edit Mode
+  editMode?: boolean;
+  claimID?: number;
+  initialDescription?: string;
+  initialSelectedParts?: ClaimPartRequest[];
 }
 
 export function CreateWarrantyForm({
@@ -40,12 +45,24 @@ export function CreateWarrantyForm({
   serviceCenterID,
   onSuccess,
   onCancel,
+  editMode = false,
+  claimID,
+  initialDescription = "",
+  initialSelectedParts = [],
 }: CreateWarrantyFormProps) {
-  const [description, setDescription] = useState("");
-  const [selectedParts, setSelectedParts] = useState<ClaimPartRequest[]>([]);
+  const [description, setDescription] = useState(initialDescription);
+  const [selectedParts, setSelectedParts] =
+    useState<ClaimPartRequest[]>(initialSelectedParts);
   const [partDescriptions, setPartDescriptions] = useState<
     Record<string, string>
-  >({});
+  >(() => {
+    // Pre-fill part descriptions for edit mode
+    const descriptions: Record<string, string> = {};
+    initialSelectedParts.forEach((part) => {
+      descriptions[part.partSerialNumber] = part.description || "";
+    });
+    return descriptions;
+  });
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -173,28 +190,48 @@ export function CreateWarrantyForm({
     try {
       setLoading(true);
       const formData = buildFormData(true);
-      const response = await warrantyClaimAPI.createClaim(formData);
-      const claimID = response.data.result;
 
-      showAlert(
-        "success",
-        "Thành công! Đã lưu bản nháp",
-        `Bản nháp yêu cầu bảo hành đã được lưu với Claim ID: ${claimID}`
-      );
+      // ✅ Edit Mode: Update existing claim
+      if (editMode && claimID) {
+        const response = await warrantyClaimAPI.updateClaim(claimID, formData);
+        const updatedClaimID = response.data.result;
 
-      // Delay navigation to show success message
-      setTimeout(() => {
-        onSuccess(claimID, true);
-      }, 1500);
+        showAlert(
+          "success",
+          "Thành công! Đã cập nhật bản nháp",
+          `Bản nháp yêu cầu bảo hành đã được cập nhật với Claim ID: ${updatedClaimID}`
+        );
+
+        setTimeout(() => {
+          onSuccess(updatedClaimID, true);
+        }, 1500);
+      } else {
+        // Create Mode: Create new claim
+        const response = await warrantyClaimAPI.createClaim(formData);
+        const newClaimID = response.data.result;
+
+        showAlert(
+          "success",
+          "Thành công! Đã lưu bản nháp",
+          `Bản nháp yêu cầu bảo hành đã được lưu với Claim ID: ${newClaimID}`
+        );
+
+        setTimeout(() => {
+          onSuccess(newClaimID, true);
+        }, 1500);
+      }
     } catch (error: any) {
       const errorMsg =
         error.response?.data?.message ||
-        "Không thể lưu bản nháp. Vui lòng thử lại.";
-      showAlert("error", "Không thể lưu bản nháp", errorMsg, [
-        "Kiểm tra kết nối mạng",
-        "Đảm bảo thông tin hợp lệ",
-        "Thử lại sau",
-      ]);
+        `Không thể ${
+          editMode ? "cập nhật" : "lưu"
+        } bản nháp. Vui lòng thử lại.`;
+      showAlert(
+        "error",
+        `Không thể ${editMode ? "cập nhật" : "lưu"} bản nháp`,
+        errorMsg,
+        ["Kiểm tra kết nối mạng", "Đảm bảo thông tin hợp lệ", "Thử lại sau"]
+      );
       console.error("Error saving draft:", error);
     } finally {
       setLoading(false);
@@ -204,7 +241,8 @@ export function CreateWarrantyForm({
   const handleSubmitToClaim = async () => {
     if (!validateForm()) return;
 
-    if (attachmentFiles.length === 0) {
+    // Only require attachments for new claims, not for edits
+    if (!editMode && attachmentFiles.length === 0) {
       showAlert(
         "error",
         "Thiếu tài liệu đính kèm",
@@ -217,28 +255,50 @@ export function CreateWarrantyForm({
     try {
       setLoading(true);
       const formData = buildFormData(false);
-      const response = await warrantyClaimAPI.createClaim(formData);
-      const claimID = response.data.result;
 
-      showAlert(
-        "success",
-        "Thành công! Yêu cầu đã được gửi",
-        `Yêu cầu bảo hành đã được gửi thành công với Claim ID: ${claimID}`
-      );
+      // ✅ Edit Mode: Update existing claim
+      if (editMode && claimID) {
+        const response = await warrantyClaimAPI.updateClaim(claimID, formData);
+        const updatedClaimID = response.data.result;
 
-      // Delay navigation to show success message
-      setTimeout(() => {
-        onSuccess(claimID, false);
-      }, 1500);
+        showAlert(
+          "success",
+          "Thành công! Yêu cầu đã được cập nhật",
+          `Yêu cầu bảo hành đã được cập nhật thành công với Claim ID: ${updatedClaimID}`
+        );
+
+        setTimeout(() => {
+          onSuccess(updatedClaimID, false);
+        }, 1500);
+      } else {
+        // Create Mode: Create new claim
+        const response = await warrantyClaimAPI.createClaim(formData);
+        const newClaimID = response.data.result;
+
+        showAlert(
+          "success",
+          "Thành công! Yêu cầu đã được gửi",
+          `Yêu cầu bảo hành đã được gửi thành công với Claim ID: ${newClaimID}`
+        );
+
+        setTimeout(() => {
+          onSuccess(newClaimID, false);
+        }, 1500);
+      }
     } catch (error: any) {
       const errorMsg =
         error.response?.data?.message ||
-        "Không thể gửi yêu cầu. Vui lòng thử lại.";
-      showAlert("error", "Không thể gửi yêu cầu", errorMsg, [
-        "Kiểm tra kết nối mạng",
-        "Đảm bảo thông tin hợp lệ",
-        "Liên hệ hỗ trợ nếu lỗi tiếp diễn",
-      ]);
+        `Không thể ${editMode ? "cập nhật" : "gửi"} yêu cầu. Vui lòng thử lại.`;
+      showAlert(
+        "error",
+        `Không thể ${editMode ? "cập nhật" : "gửi"} yêu cầu`,
+        errorMsg,
+        [
+          "Kiểm tra kết nối mạng",
+          "Đảm bảo thông tin hợp lệ",
+          "Liên hệ hỗ trợ nếu lỗi tiếp diễn",
+        ]
+      );
       console.error("Error submitting claim:", error);
     } finally {
       setLoading(false);
@@ -248,9 +308,15 @@ export function CreateWarrantyForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tạo yêu cầu bảo hành mới</CardTitle>
+        <CardTitle>
+          {editMode
+            ? `Chỉnh sửa yêu cầu bảo hành #${claimID}`
+            : "Tạo yêu cầu bảo hành mới"}
+        </CardTitle>
         <CardDescription>
-          Điền thông tin chi tiết về sự cố cần bảo hành
+          {editMode
+            ? "Cập nhật thông tin chi tiết về sự cố cần bảo hành"
+            : "Điền thông tin chi tiết về sự cố cần bảo hành"}
         </CardDescription>
       </CardHeader>
 
@@ -453,12 +519,12 @@ export function CreateWarrantyForm({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang lưu...
+                  {editMode ? "Đang cập nhật..." : "Đang lưu..."}
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Lưu bản nháp
+                  {editMode ? "Cập nhật bản nháp" : "Lưu bản nháp"}
                 </>
               )}
             </Button>
@@ -466,12 +532,12 @@ export function CreateWarrantyForm({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Đang gửi...
+                  {editMode ? "Đang cập nhật..." : "Đang gửi..."}
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Gửi yêu cầu
+                  {editMode ? "Cập nhật yêu cầu" : "Gửi yêu cầu"}
                 </>
               )}
             </Button>

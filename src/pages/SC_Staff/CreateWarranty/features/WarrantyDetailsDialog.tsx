@@ -44,13 +44,14 @@ export function WarrantyDetailsDialog({
         variant: "default" | "secondary" | "destructive" | "outline";
       }
     > = {
-      PENDING: { label: "🟡 Chờ duyệt", variant: "outline" },
-      APPROVED: { label: "🟢 Được chấp nhận", variant: "default" },
-      IN_PROGRESS: { label: "🔵 Đang xử lý", variant: "secondary" },
-      COMPLETED: { label: "✅ Đã hoàn thành", variant: "default" },
-      REJECTED: { label: "🔴 Từ chối", variant: "destructive" },
+      Nháp: { label: "📝 Nháp", variant: "outline" },
+      "Chờ duyệt": { label: "🟡 Chờ duyệt", variant: "outline" },
+      "Được chấp thuận": { label: "🟢 Được chấp thuận", variant: "default" },
+      "Đang xử lý": { label: "🔵 Đang xử lý", variant: "secondary" },
+      "Hoàn thành": { label: "✅ Hoàn thành", variant: "default" },
+      "Bị từ chối": { label: "🔴 Bị từ chối", variant: "destructive" },
     };
-    return configs[status] || configs.PENDING;
+    return configs[status] || configs["Chờ duyệt"];
   };
 
   const statusConfig = getStatusConfig(claim.status);
@@ -260,7 +261,7 @@ export function WarrantyDetailsDialog({
               <Separator />
               <div className="space-y-3">
                 <h4 className="font-medium">Kết quả xử lý</h4>
-                {claim.status === "APPROVED" ? (
+                {claim.status === "Được chấp thuận" ? (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
@@ -272,7 +273,7 @@ export function WarrantyDetailsDialog({
                       </div>
                     </AlertDescription>
                   </Alert>
-                ) : claim.status === "REJECTED" ? (
+                ) : claim.status === "Bị từ chối" ? (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>

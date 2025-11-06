@@ -1,23 +1,25 @@
 // ==================== Warranty Claim Status ====================
-// Backend uses UPPERCASE status values
+// ✅ Backend sử dụng tiếng Việt cho status
 export const getClaimStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
-    PENDING: "Chờ duyệt",
-    APPROVED: "Đã duyệt",
-    IN_PROGRESS: "Đang xử lý",
-    COMPLETED: "Hoàn tất",
-    REJECTED: "Từ chối",
+    Nháp: "📝 Nháp",
+    "Chờ duyệt": "🟡 Chờ duyệt",
+    "Được chấp thuận": "🟢 Được chấp thuận",
+    "Đang xử lý": "🔵 Đang xử lý",
+    "Hoàn thành": "✅ Hoàn thành",
+    "Bị từ chối": "🔴 Bị từ chối",
   };
   return labels[status] || status;
 };
 
 export const getClaimStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    APPROVED: "bg-blue-100 text-blue-800",
-    IN_PROGRESS: "bg-purple-100 text-purple-800",
-    COMPLETED: "bg-green-100 text-green-800",
-    REJECTED: "bg-red-100 text-red-800",
+    Nháp: "bg-gray-100 text-gray-800",
+    "Chờ duyệt": "bg-yellow-100 text-yellow-800",
+    "Được chấp thuận": "bg-blue-100 text-blue-800",
+    "Đang xử lý": "bg-purple-100 text-purple-800",
+    "Hoàn thành": "bg-green-100 text-green-800",
+    "Bị từ chối": "bg-red-100 text-red-800",
   };
   return colors[status] || "bg-gray-100 text-gray-800";
 };

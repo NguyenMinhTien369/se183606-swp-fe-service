@@ -45,8 +45,8 @@ interface ArchiveReportsProps {
 }
 
 export function ArchiveReports({ claims }: ArchiveReportsProps) {
-  // Filter completed requests only
-  const completedRequests = claims.filter((r) => r.status === "COMPLETED");
+  // ✅ Filter claims với status "Hoàn thành"
+  const completedRequests = claims.filter((r) => r.status === "Hoàn thành");
 
   const [searchVin, setSearchVin] = useState("");
   const [searchCode, setSearchCode] = useState("");
@@ -309,7 +309,7 @@ export function ArchiveReports({ claims }: ArchiveReportsProps) {
                         Phụ tùng bị ảnh hưởng
                       </label>
                       {selectedRequest.affectedParts &&
-                        selectedRequest.affectedParts.length > 0 ? (
+                      selectedRequest.affectedParts.length > 0 ? (
                         <ul className="mt-1 space-y-2">
                           {selectedRequest.affectedParts.map((part, index) => (
                             <li
@@ -414,7 +414,7 @@ export function ArchiveReports({ claims }: ArchiveReportsProps) {
                 <div>
                   <h4 className="mb-3 font-semibold">📎 File đính kèm</h4>
                   {selectedRequest.attachments &&
-                    selectedRequest.attachments.length > 0 ? (
+                  selectedRequest.attachments.length > 0 ? (
                     <div className="space-y-2">
                       {selectedRequest.attachments.map((file, index) => (
                         <div

@@ -47,8 +47,8 @@ export function AssignTechnician({
   claims,
   onAssignSuccess,
 }: AssignTechnicianProps) {
-  // Filter APPROVED claims (ready to assign)
-  const pendingRequests = claims.filter((r) => r.status === "APPROVED");
+  // ✅ Filter claims với status "Được chấp thuận" (ready to assign)
+  const pendingRequests = claims.filter((r) => r.status === "Được chấp thuận");
 
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianUser[]>([]);

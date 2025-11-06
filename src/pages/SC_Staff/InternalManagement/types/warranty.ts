@@ -1,13 +1,14 @@
 // ==================== BACKEND DTO TYPES ====================
 // Synchronized with backend response structures
 
-// Warranty Claim Status (backend enum)
+// ✅ Warranty Claim Status đồng bộ với backend (tiếng Việt)
 export type WarrantyStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "REJECTED";
+  | "Nháp" // Draft
+  | "Chờ duyệt" // Pending
+  | "Được chấp thuận" // Approved
+  | "Đang xử lý" // In Progress
+  | "Hoàn thành" // Completed
+  | "Bị từ chối"; // Rejected
 
 // Assignment Status (backend enum)
 export type AssignmentStatus =

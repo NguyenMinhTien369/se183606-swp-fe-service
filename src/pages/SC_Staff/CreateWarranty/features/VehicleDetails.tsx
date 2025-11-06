@@ -51,14 +51,18 @@ export function VehicleDetails({
   // --- Hiển thị trạng thái claim bảo hành ---
   const getClaimStatusBadge = (status: string) => {
     const config: Record<string, { label: string; color: string }> = {
-      PENDING: { label: "🟡 Chờ duyệt", color: "text-yellow-600" },
-      APPROVED: { label: "🟢 Được chấp nhận", color: "text-green-600" },
-      IN_PROGRESS: { label: "🔵 Đang xử lý", color: "text-blue-600" },
-      COMPLETED: { label: "✅ Đã hoàn thành", color: "text-green-600" },
-      REJECTED: { label: "🔴 Từ chối", color: "text-red-600" },
+      Nháp: { label: "📝 Nháp", color: "text-gray-600" },
+      "Chờ duyệt": { label: "🟡 Chờ duyệt", color: "text-yellow-600" },
+      "Được chấp thuận": {
+        label: "🟢 Được chấp thuận",
+        color: "text-green-600",
+      },
+      "Đang xử lý": { label: "🔵 Đang xử lý", color: "text-blue-600" },
+      "Hoàn thành": { label: "✅ Hoàn thành", color: "text-green-600" },
+      "Bị từ chối": { label: "🔴 Bị từ chối", color: "text-red-600" },
     };
 
-    const { label, color } = config[status] || config.PENDING;
+    const { label, color } = config[status] || config["Chờ duyệt"];
     return <span className={color}>{label}</span>;
   };
 

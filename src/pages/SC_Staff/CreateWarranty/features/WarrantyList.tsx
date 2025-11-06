@@ -61,33 +61,38 @@ export function WarrantyList({
         variant: "default" | "secondary" | "destructive" | "outline";
       }
     > = {
-      PENDING: {
+      Nháp: {
+        label: "📝 Nháp",
+        color: "bg-gray-100 text-gray-800",
+        variant: "outline",
+      },
+      "Chờ duyệt": {
         label: "🟡 Chờ duyệt",
         color: "bg-yellow-100 text-yellow-800",
         variant: "outline",
       },
-      APPROVED: {
-        label: "🟢 Được chấp nhận",
+      "Được chấp thuận": {
+        label: "🟢 Được chấp thuận",
         color: "bg-green-100 text-green-800",
         variant: "default",
       },
-      IN_PROGRESS: {
+      "Đang xử lý": {
         label: "🔵 Đang xử lý",
         color: "bg-blue-100 text-blue-800",
         variant: "secondary",
       },
-      COMPLETED: {
-        label: "✅ Đã hoàn thành",
+      "Hoàn thành": {
+        label: "✅ Hoàn thành",
         color: "bg-green-100 text-green-800",
         variant: "default",
       },
-      REJECTED: {
-        label: "🔴 Từ chối",
+      "Bị từ chối": {
+        label: "🔴 Bị từ chối",
         color: "bg-red-100 text-red-800",
         variant: "destructive",
       },
     };
-    return configs[status] || configs.PENDING;
+    return configs[status] || configs["Chờ duyệt"];
   };
 
   const filteredClaims = claims.filter((claim) => {
@@ -99,7 +104,9 @@ export function WarrantyList({
     return matchesVin && matchesStatus;
   });
 
-  const canEdit = (status: string) => status === "PENDING";
+  // ✅ Đồng bộ với backend: chỉ cho phép edit "Chờ duyệt" hoặc "Nháp"
+  const canEdit = (status: string) =>
+    status === "Chờ duyệt" || status === "Nháp";
 
   return (
     <Card className="border shadow-sm">
@@ -129,11 +136,14 @@ export function WarrantyList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả trạng thái</SelectItem>
-              <SelectItem value="PENDING">Chờ duyệt</SelectItem>
-              <SelectItem value="APPROVED">Được chấp nhận</SelectItem>
-              <SelectItem value="IN_PROGRESS">Đang xử lý</SelectItem>
-              <SelectItem value="COMPLETED">Đã hoàn thành</SelectItem>
-              <SelectItem value="REJECTED">Từ chối</SelectItem>
+              <SelectItem value="Nháp">📝 Nháp</SelectItem>
+              <SelectItem value="Chờ duyệt">🟡 Chờ duyệt</SelectItem>
+              <SelectItem value="Được chấp thuận">
+                🟢 Được chấp thuận
+              </SelectItem>
+              <SelectItem value="Đang xử lý">🔵 Đang xử lý</SelectItem>
+              <SelectItem value="Hoàn thành">✅ Hoàn thành</SelectItem>
+              <SelectItem value="Bị từ chối">🔴 Bị từ chối</SelectItem>
             </SelectContent>
           </Select>
         </div>

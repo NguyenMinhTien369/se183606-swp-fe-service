@@ -29,6 +29,8 @@ export default function App() {
   const [selectedClaim, setSelectedClaim] =
     useState<WarrantyClaimResponse | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [editingClaim, setEditingClaim] =
+    useState<WarrantyClaimResponse | null>(null);
 
   // Hardcoded serviceCenterID - in production, get from auth context
   const SERVICE_CENTER_ID = 1;
@@ -84,17 +86,27 @@ export default function App() {
     }
   };
 
-  const handleCreateWarranty = () => setShowCreateForm(true);
-  const handleCancelCreate = () => setShowCreateForm(false);
+  const handleCreateWarranty = () => {
+    setEditingClaim(null); // Reset edit mode
+    setShowCreateForm(true);
+  };
+
+  const handleCancelCreate = () => {
+    setShowCreateForm(false);
+    setEditingClaim(null); // Reset edit mode
+  };
 
   const handleCreateSuccess = async (claimID: number, isDraft: boolean) => {
     setShowCreateForm(false);
+    setEditingClaim(null); // Reset edit mode
     setActiveTab("tracking");
 
     // Reload warranty claims list
     await loadWarrantyClaims();
 
-    const message = isDraft
+    const message = editingClaim
+      ? `Đã cập nhật yêu cầu bảo hành thành công! Claim ID: ${claimID}`
+      : isDraft
       ? `Đã lưu bản nháp thành công! Claim ID: ${claimID}`
       : `Yêu cầu bảo hành đã được gửi thành công! Claim ID: ${claimID}`;
 
@@ -102,17 +114,37 @@ export default function App() {
     console.log(message);
   };
 
-  const handleEdit = (claim: WarrantyClaimResponse) => {
-    if (claim.status !== "PENDING") {
+  const handleEdit = async (claim: WarrantyClaimResponse) => {
+    // ✅ Đồng bộ với backend: status = "Chờ duyệt" hoặc "Nháp"
+    if (claim.status !== "Chờ duyệt" && claim.status !== "Nháp") {
       alert("Không thể chỉnh sửa. Yêu cầu đã được xử lý.");
       return;
     }
-    alert("Chức năng chỉnh sửa đang được phát triển.");
+
+    try {
+      // Load vehicle info for the claim's VIN
+      const vehicleResponse = await warrantyClaimAPI.getVehicleInfoByVin(
+        claim.vin
+      );
+      const vehicleInfo = vehicleResponse.data.result;
+
+      // Set current vehicle info và hiện form edit
+      setCurrentVehicleInfo(vehicleInfo);
+      setEditingClaim(claim);
+      setShowCreateForm(true);
+
+      // Switch to search tab to show the form
+      setActiveTab("search");
+    } catch (error) {
+      console.error("Error loading claim for edit:", error);
+      alert("Không thể tải thông tin yêu cầu để chỉnh sửa.");
+    }
   };
 
   const handleDelete = async (claimId: number) => {
     const claim = warrantyClaims.find((c) => c.claimID === claimId);
-    if (claim && claim.status !== "PENDING") {
+    // ✅ Đồng bộ với backend: chỉ cho phép xóa "Chờ duyệt" hoặc "Nháp"
+    if (claim && claim.status !== "Chờ duyệt" && claim.status !== "Nháp") {
       alert("Không thể xóa. Yêu cầu đã được xử lý.");
       return;
     }
@@ -138,7 +170,9 @@ export default function App() {
     setShowDetailsDialog(true);
   };
 
-  const rejectedClaims = warrantyClaims.filter((c) => c.status === "REJECTED");
+  const rejectedClaims = warrantyClaims.filter(
+    (c) => c.status === "Bị từ chối"
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -194,6 +228,16 @@ export default function App() {
                 serviceCenterID={SERVICE_CENTER_ID}
                 onSuccess={handleCreateSuccess}
                 onCancel={handleCancelCreate}
+                // ✅ Edit Mode Props
+                editMode={!!editingClaim}
+                claimID={editingClaim?.claimID}
+                initialDescription={editingClaim?.description}
+                initialSelectedParts={editingClaim?.affectedParts?.map(
+                  (part) => ({
+                    partSerialNumber: part.partSerialNumber,
+                    description: part.description || "",
+                  })
+                )}
               />
             )}
 

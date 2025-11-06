@@ -1,12 +1,14 @@
 // Types for warranty management system
 // Đồng bộ với backend DTOs: VehicleInfoResponse, WarrantyClaimResponse, CreateWarrantyClaimRequest
 
+// ✅ Status đồng bộ với backend (tiếng Việt)
 export type WarrantyStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "REJECTED";
+  | "Nháp" // Draft
+  | "Chờ duyệt" // Pending
+  | "Được chấp thuận" // Approved
+  | "Đang xử lý" // In Progress
+  | "Hoàn thành" // Completed
+  | "Bị từ chối"; // Rejected
 
 // ==================== VehicleInfoResponse.java ====================
 // Backend: WarrantyClaimController.getVehicleInfoByVin()
