@@ -116,14 +116,15 @@ export interface ClaimAttachmentResponse {
 
 // ==================== Assignment Status Enums ====================
 export type AssignmentStatus =
-  | "ASSIGNED" // Đã phân công
-  | "IN_PROGRESS" // Đang sửa chữa
-  | "AWAITING_PARTS" // Chờ phụ tùng
-  | "COMPLETED"; // Hoàn tất
+  | "Đã phân công"
+  // Đã phân công
+  | "Đang thay thế" // Đang sửa chữa
+  | "Nhận phụ tùng"
+  | "Hoàn thành"; // Hoàn tất
 
 export type WarrantyClaimStatus =
-  | "PENDING" // Chờ duyệt
-  | "APPROVED" // Đã duyệt
-  | "IN_PROGRESS" // Đang xử lý
-  | "COMPLETED" // Hoàn tất
-  | "REJECTED"; // Từ chối
+  | "Chờ duyệt"
+  | "Được chấp nhận"
+  | "Đang xử lý"
+  | "Đã xử lý"
+  | "Từ chối";

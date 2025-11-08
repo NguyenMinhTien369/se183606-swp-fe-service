@@ -46,7 +46,7 @@ export function WarrantyDetailsDialog({
     > = {
       Nháp: { label: "📝 Nháp", variant: "outline" },
       "Chờ duyệt": { label: "🟡 Chờ duyệt", variant: "outline" },
-      "Được chấp thuận": { label: "🟢 Được chấp thuận", variant: "default" },
+      "Được chấp nhận": { label: "🟢 Được chấp nhận", variant: "default" },
       "Đang xử lý": { label: "🔵 Đang xử lý", variant: "secondary" },
       "Hoàn thành": { label: "✅ Hoàn thành", variant: "default" },
       "Bị từ chối": { label: "🔴 Bị từ chối", variant: "destructive" },
@@ -261,7 +261,7 @@ export function WarrantyDetailsDialog({
               <Separator />
               <div className="space-y-3">
                 <h4 className="font-medium">Kết quả xử lý</h4>
-                {claim.status === "Được chấp thuận" ? (
+                {claim.status === "Được chấp nhận" ? (
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>

@@ -5,7 +5,7 @@
 export type WarrantyStatus =
   | "Nháp" // Draft
   | "Chờ duyệt" // Pending
-  | "Được chấp thuận" // Approved
+  | "Được chấp nhận" // Approved
   | "Đang xử lý" // In Progress
   | "Hoàn thành" // Completed
   | "Bị từ chối"; // Rejected
@@ -125,7 +125,7 @@ export interface ServiceCenterResponse {
 // Endpoint: POST /api/claim-assignments/assign
 export interface AssignTechnicianRequest {
   claimID: number;
-  primaryTechnicianID: number;
+  technicianIDs: number[]; // Backend expects List<Integer> - min 1, max 4 technicians
   expectedCompletionDate?: string; // LocalDate format: YYYY-MM-DD
   internalNotes?: string;
 }

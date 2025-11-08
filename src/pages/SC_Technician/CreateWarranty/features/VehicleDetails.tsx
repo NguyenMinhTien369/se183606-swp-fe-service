@@ -53,8 +53,8 @@ export function VehicleDetails({
     const config: Record<string, { label: string; color: string }> = {
       Nháp: { label: "📝 Nháp", color: "text-gray-600" },
       "Chờ duyệt": { label: "🟡 Chờ duyệt", color: "text-yellow-600" },
-      "Được chấp thuận": {
-        label: "🟢 Được chấp thuận",
+      "Được chấp nhận": {
+        label: "🟢 Được chấp nhận",
         color: "text-green-600",
       },
       "Đang xử lý": { label: "🔵 Đang xử lý", color: "text-blue-600" },

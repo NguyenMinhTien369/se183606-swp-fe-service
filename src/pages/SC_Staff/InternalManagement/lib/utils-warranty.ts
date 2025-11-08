@@ -4,7 +4,7 @@ export const getClaimStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     Nháp: "📝 Nháp",
     "Chờ duyệt": "🟡 Chờ duyệt",
-    "Được chấp thuận": "🟢 Được chấp thuận",
+    "Được chấp nhận": "🟢 Được chấp nhận",
     "Đang xử lý": "🔵 Đang xử lý",
     "Hoàn thành": "✅ Hoàn thành",
     "Bị từ chối": "🔴 Bị từ chối",
@@ -16,7 +16,7 @@ export const getClaimStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
     Nháp: "bg-gray-100 text-gray-800",
     "Chờ duyệt": "bg-yellow-100 text-yellow-800",
-    "Được chấp thuận": "bg-blue-100 text-blue-800",
+    "Được chấp nhận": "bg-blue-100 text-blue-800",
     "Đang xử lý": "bg-purple-100 text-purple-800",
     "Hoàn thành": "bg-green-100 text-green-800",
     "Bị từ chối": "bg-red-100 text-red-800",

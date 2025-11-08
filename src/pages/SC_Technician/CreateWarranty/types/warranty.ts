@@ -5,7 +5,7 @@
 export type WarrantyStatus =
   | "Nháp" // Draft
   | "Chờ duyệt" // Pending
-  | "Được chấp thuận" // Approved
+  | "Được chấp nhận" // Approved
   | "Đang xử lý" // In Progress
   | "Hoàn thành" // Completed
   | "Bị từ chối"; // Rejected
@@ -158,7 +158,7 @@ export interface WarrantyClaim {
   handler: string;
   createdDate: string;
   manufacturerResponse?: {
-    result: "Được chấp thuận" | "Bị từ chối";
+    result: "Được chấp nhận" | "Bị từ chối";
     notes: string;
     replacementParts?: string[];
     updateDate: string;
