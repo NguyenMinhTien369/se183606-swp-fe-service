@@ -20,7 +20,7 @@ import { TrackProgress } from "../InternalManagement/features/TrackProgress";
 import { PerformanceDashboard } from "../InternalManagement/features/PerformanceDashboard";
 import { ArchiveReports } from "../InternalManagement/features/ArchiveReports";
 import { warrantyClaimAPI } from "@/utility/index";
-import type { WarrantyClaimResponse } from "../CreateWarranty/types/warranty";
+import type { WarrantyClaimResponse } from "./types";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("requests");

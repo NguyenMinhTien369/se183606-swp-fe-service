@@ -49,10 +49,10 @@ interface ResetPasswordRequest {
   confirmPassword: string; // Required trong backend
 }
 
-// AssignTechnicianRequest.java - Backend dùng tên khác
+// AssignTechnicianRequest.java - Backend expects array of technician IDs
 interface AssignTechnicianRequest {
   claimID: number;
-  primaryTechnicianID: number; // Backend dùng 'primaryTechnicianID'
+  technicianIDs: number[]; // Backend expects List<Integer> - min 1, max 4 technicians
   expectedCompletionDate?: string; // LocalDate trong backend
   internalNotes?: string; // Backend dùng 'internalNotes'
 }
@@ -230,6 +230,9 @@ export const warrantyClaimAPI = {
 
   submitClaim: (id: number) =>
     axiosInstance.post(`/warranty-claims/${id}/submit`),
+  //API  của table  phân công kỹ thuật viên
+  getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
+
   syncStatusFromManufacturer: (id: number, status: string) =>
     axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
       params: { status },
@@ -240,14 +243,21 @@ export const warrantyClaimAPI = {
 // Backend: ClaimAssignmentController.java
 // Path: /api/claim-assignments/*
 export const claimAssignmentAPI = {
+  // Lấy danh sách kỹ thuật viên theo Service Center (SC_STAFF only)
+  getTechnicians: () => axiosInstance.get("/claim-assignments/technicians"),
+
   assignTechnician: (data: AssignTechnicianRequest) =>
     axiosInstance.post("/claim-assignments/assign", data),
+
   getAssignmentByClaimId: (claimID: number) =>
     axiosInstance.get(`/claim-assignments/claim/${claimID}`),
+
   getAssignmentsProgress: (serviceCenterID: number) =>
     axiosInstance.get(`/claim-assignments/progress/${serviceCenterID}`),
+
   getAssignmentsByTechnician: (technicianID: number) =>
     axiosInstance.get(`/claim-assignments/technician/${technicianID}`),
+
   updateAssignmentProgress: (assignmentID: number, formData: FormData) =>
     axiosInstance.put(`/claim-assignments/${assignmentID}/progress`, formData, {
       headers: { "Content-Type": "multipart/form-data" },

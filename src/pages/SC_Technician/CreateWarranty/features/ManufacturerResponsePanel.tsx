@@ -26,18 +26,18 @@ export function ManufacturerResponsePanel({
   claims,
   onViewDetails,
 }: ManufacturerResponsePanelProps) {
-  // Filter claims that have been processed (APPROVED, REJECTED, or COMPLETED)
+  // Filter claims that have been processed (Được chấp nhận, Bị từ chối, or Hoàn thành)
   const claimsWithResponse = claims.filter((c) =>
-    ["APPROVED", "REJECTED", "COMPLETED"].includes(c.status)
+    ["Được chấp nhận", "Bị từ chối", "Hoàn thành"].includes(c.status)
   );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "APPROVED":
+      case "Được chấp nhận":
         return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case "REJECTED":
+      case "Bị từ chối":
         return <XCircle className="h-5 w-5 text-red-600" />;
-      case "COMPLETED":
+      case "Hoàn thành":
         return <FileCheck className="h-5 w-5 text-blue-600" />;
       default:
         return <Clock className="h-5 w-5 text-yellow-600" />;

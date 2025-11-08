@@ -36,7 +36,7 @@ import {
   getClaimStatusLabel,
   getClaimStatusColor,
 } from "../lib/utils-warranty";
-import { claimAssignmentAPI, userAPI } from "@/utility/index";
+import { claimAssignmentAPI } from "@/utility/index";
 
 interface AssignTechnicianProps {
   claims: WarrantyClaimResponse[];
@@ -47,8 +47,8 @@ export function AssignTechnician({
   claims,
   onAssignSuccess,
 }: AssignTechnicianProps) {
-  // ✅ Filter claims với status "Được chấp thuận" (ready to assign)
-  const pendingRequests = claims.filter((r) => r.status === "Được chấp thuận");
+  // ✅ Filter claims với status "Được chấp nhận" (ready to assign)
+  const pendingRequests = claims.filter((r) => r.status === "Được chấp nhận");
 
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianUser[]>([]);
@@ -71,14 +71,17 @@ export function AssignTechnician({
 
   const loadTechnicians = async () => {
     try {
-      const response = await userAPI.getAllUsers();
-      // Filter users with role TECHNICIAN (roleID = 3)
-      const techUsers = response.data.result.filter(
-        (user: TechnicianUser) => user.role.roleID === 3
+      // ✅ Sử dụng API mới: getTechnicians() - Chỉ lấy kỹ thuật viên của Service Center hiện tại
+      const response = await claimAssignmentAPI.getTechnicians();
+      console.log("🔍 API Response:", response.data);
+      console.log("📋 Technicians loaded:", response.data.result);
+      console.log(
+        "📊 Number of technicians:",
+        response.data.result?.length || 0
       );
-      setTechnicians(techUsers);
+      setTechnicians(response.data.result);
     } catch (error) {
-      console.error("Error loading technicians:", error);
+      console.error("❌ Error loading technicians:", error);
     }
   };
 
@@ -116,6 +119,12 @@ export function AssignTechnician({
   };
 
   const handleConfirmAssign = async () => {
+    console.log("🔍 Validation check:");
+    console.log("  mainTechnician:", mainTechnician);
+    console.log("  Type:", typeof mainTechnician);
+    console.log("  Is empty?", !mainTechnician || mainTechnician === "");
+    console.log("  Selected requests:", selectedRequests);
+
     if (!mainTechnician || mainTechnician === "") {
       setAlertDialog({
         open: true,
@@ -133,7 +142,7 @@ export function AssignTechnician({
       const assignPromises = selectedRequests.map((claimID) =>
         claimAssignmentAPI.assignTechnician({
           claimID,
-          primaryTechnicianID: Number(mainTechnician), // Backend yêu cầu số, không phải array
+          technicianIDs: [Number(mainTechnician)], // Backend expects array of technician IDs
           expectedCompletionDate: expectedCompletionDate || undefined,
           internalNotes: internalNotes || undefined,
         })
@@ -304,7 +313,11 @@ export function AssignTechnician({
               </label>
               <Select
                 value={mainTechnician}
-                onValueChange={(value) => setMainTechnician(value)}
+                onValueChange={(value) => {
+                  console.log("👤 Selected technician ID:", value);
+                  console.log("📝 Type of value:", typeof value);
+                  setMainTechnician(value);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn kỹ thuật viên..." />
@@ -320,6 +333,10 @@ export function AssignTechnician({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Current value: "{mainTechnician}" (Type: {typeof mainTechnician}
+                )
+              </p>
             </div>
 
             {/* Expected Completion Date */}
