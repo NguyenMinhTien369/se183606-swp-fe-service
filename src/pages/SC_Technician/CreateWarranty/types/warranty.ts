@@ -158,7 +158,7 @@ export interface WarrantyClaim {
   handler: string;
   createdDate: string;
   manufacturerResponse?: {
-    result: "approved" | "rejected";
+    result: "Được chấp thuận" | "Bị từ chối";
     notes: string;
     replacementParts?: string[];
     updateDate: string;
