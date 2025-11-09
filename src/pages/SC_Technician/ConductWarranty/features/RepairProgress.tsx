@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Textarea } from "../../../../components/ui/textarea";
@@ -22,120 +27,82 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../../../components/ui/dialog";
-import { Settings, Clock } from "lucide-react";
-
-interface RequestData {
-  id: string;
-  vin: string;
-  model: string;
-  parts: string;
-  partCode: string;
-  status: string;
-  receivedDate: string;
-}
+import { Settings } from "lucide-react";
+import { claimAssignmentAPI } from "@/utility/index";
+import type { AssignmentProgressResponse } from "../types";
 
 interface RepairProgressProps {
-  selectedRequest?: RequestData;
-  onSelectRequest?: (request: RequestData) => void;
+  selectedRequest?: any;
+  onSelectRequest?: (request: any) => void;
   onNextStep?: () => void;
 }
-
-// Mock data
-const availableRequests = [
-  {
-    id: "CLM-2025-031",
-    vin: "XCF12345",
-    model: "Ranger XLS",
-    parts: "Turbo Kit",
-    partCode: "8G1A-6K682",
-    status: "received",
-    receivedDate: "05/10/2025",
-  },
-  {
-    id: "CLM-2025-032",
-    vin: "XCF12346",
-    model: "Everest Titanium",
-    parts: "Brake Pad Set",
-    partCode: "7D0-698-151",
-    status: "received",
-    receivedDate: "06/10/2025",
-  },
-  {
-    id: "CLM-2025-033",
-    vin: "XCF12347",
-    model: "Territory Trend",
-    parts: "Air Filter",
-    partCode: "9C1A-9601-AA",
-    status: "received",
-    receivedDate: "07/10/2025",
-  },
-  {
-    id: "CLM-2025-034",
-    vin: "XCF12348",
-    model: "Focus ST",
-    parts: "Engine Mount",
-    partCode: "CM5Z-6038-A",
-    status: "in-progress",
-    receivedDate: "04/10/2025",
-  },
-];
 
 export function RepairProgress({
   selectedRequest,
   onSelectRequest,
   onNextStep,
 }: RepairProgressProps) {
+  // Get technician ID from localStorage or auth context
+  const TECHNICIAN_ID = 1; // TODO: Get from AuthContext
+
+  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(false);
   const [currentWorkingRequest, setCurrentWorkingRequest] =
-    useState<RequestData | undefined>(selectedRequest);
+    useState<AssignmentProgressResponse | null>(null);
   const [dialog, setDialog] = useState({ open: false, title: "", message: "" });
 
   const [workStatus, setWorkStatus] = useState({
     startTime: "",
     expectedCompletion: "",
-    status: currentWorkingRequest?.status || "received",
+    status: "Đang thay thế",
+    completionPercentage: 10,
   });
 
   const [partInfo, setPartInfo] = useState({
-    oldPartCode: currentWorkingRequest?.partCode + "-OLD" || "",
     newPartSerial: "",
     notes: "Phụ tùng mới đã được kiểm tra và lắp đặt đúng quy trình",
   });
+
+  // Load assignments on mount
+  useEffect(() => {
+    loadAssignments();
+  }, []);
+
+  const loadAssignments = async () => {
+    setIsLoading(true);
+    try {
+      const response = await claimAssignmentAPI.getAssignmentsByTechnician(
+        TECHNICIAN_ID
+      );
+      // Filter only IN_PROGRESS status (currently being repaired)
+      const inProgressClaims = response.data.result.filter(
+        (assignment: AssignmentProgressResponse) =>
+          assignment.status === "Đang thay thế"
+      );
+      setAssignments(inProgressClaims);
+
+      // Auto-select first assignment if exists
+      if (inProgressClaims.length > 0 && !currentWorkingRequest) {
+        setCurrentWorkingRequest(inProgressClaims[0]);
+        onSelectRequest?.(inProgressClaims[0]);
+      }
+    } catch (error) {
+      console.error("Error loading assignments:", error);
+      showDialog("Lỗi", "Không thể tải danh sách yêu cầu đang sửa chữa.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const showDialog = (title: string, message: string) => {
     setDialog({ open: true, title, message });
   };
 
-  const handleSelectRequest = (requestId: string) => {
-    const request = availableRequests.find((req) => req.id === requestId);
-    if (request) {
-      setCurrentWorkingRequest(request);
-      onSelectRequest?.(request);
-      setPartInfo((prev) => ({
-        ...prev,
-        oldPartCode: request.partCode + "-OLD",
-      }));
-      setWorkStatus((prev) => ({
-        ...prev,
-        status: request.status,
-      }));
-    }
-  };
-
-  const handleStartWork = () => {
-    if (!currentWorkingRequest) {
-      showDialog("Lỗi", "Vui lòng chọn yêu cầu bảo hành để bắt đầu.");
-      return;
-    }
-
-    setWorkStatus((prev) => ({
-      ...prev,
-      status: "in-progress",
-      startTime: new Date().toISOString(),
-    }));
-
-    setCurrentWorkingRequest((prev) => (prev ? { ...prev, status: "in-progress" } : prev));
-
-    showDialog("Thành công", "Đã bắt đầu thực hiện sửa chữa.");
+  const handleSelectRequest = (assignment: AssignmentProgressResponse) => {
+    setCurrentWorkingRequest(assignment);
+    onSelectRequest?.(assignment);
   };
 
   const handleUpdatePartInfo = () => {
@@ -147,7 +114,7 @@ export function RepairProgress({
     showDialog("Cập nhật thành công", "Đã cập nhật thông tin phụ tùng.");
   };
 
-  const handleCompleteWork = () => {
+  const handleCompleteWork = async () => {
     if (!partInfo.newPartSerial.trim()) {
       showDialog(
         "Lỗi",
@@ -156,14 +123,37 @@ export function RepairProgress({
       return;
     }
 
-    setWorkStatus((prev) => ({ ...prev, status: "completed" }));
-    setCurrentWorkingRequest((prev) => (prev ? { ...prev, status: "completed" } : prev));
+    if (!currentWorkingRequest) return;
 
-    showDialog("Hoàn tất", "Đã hoàn thành sửa chữa.");
+    try {
+      const formData = new FormData();
+      formData.append("status", "Hoàn thành");
+      formData.append("completionPercentage", "100");
+      formData.append(
+        "internalNotes",
+        `Hoàn thành sửa chữa. Serial phụ tùng mới: ${partInfo.newPartSerial}. ${partInfo.notes}`
+      );
 
-    setTimeout(() => {
-      onNextStep?.();
-    }, 1200);
+      await claimAssignmentAPI.updateAssignmentProgress(
+        currentWorkingRequest.assignmentID,
+        formData
+      );
+
+      setWorkStatus((prev) => ({
+        ...prev,
+        status: "Hoàn thành",
+        completionPercentage: 100,
+      }));
+
+      showDialog("Hoàn tất", "Đã hoàn thành sửa chữa.");
+
+      setTimeout(() => {
+        onNextStep?.();
+      }, 1200);
+    } catch (error) {
+      console.error("Error completing work:", error);
+      showDialog("Lỗi", "Không thể hoàn thành sửa chữa. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -182,64 +172,96 @@ export function RepairProgress({
               <TableRow>
                 <TableHead>Mã yêu cầu</TableHead>
                 <TableHead>VIN</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Phụ tùng</TableHead>
+                <TableHead>Kỹ thuật viên</TableHead>
+                <TableHead>Tiến độ</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead>Ngày nhận</TableHead>
+                <TableHead>Ngày phân công</TableHead>
                 <TableHead>Thao tác</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {availableRequests.map((request) => (
-                <TableRow
-                  key={request.id}
-                  className={`cursor-pointer transition-all hover:bg-muted/50 ${currentWorkingRequest?.id === request.id
-                    ? "bg-blue-50 border-blue-200"
-                    : ""
-                    }`}
-                  onClick={() => handleSelectRequest(request.id)}
-                >
-                  <TableCell className="font-medium">{request.id}</TableCell>
-                  <TableCell>{request.vin}</TableCell>
-                  <TableCell>{request.model}</TableCell>
-                  <TableCell>{request.parts}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        request.status === "received"
-                          ? "bg-green-100 text-green-800 border-green-300"
-                          : request.status === "in-progress"
-                            ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-                            : "bg-blue-100 text-blue-800 border-blue-300"
-                      }
-                    >
-                      {request.status === "received" && "📦 Đã nhận"}
-                      {request.status === "in-progress" && "🔧 Đang sửa"}
-                      {request.status === "completed" && "✅ Hoàn tất"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{request.receivedDate}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant={
-                        currentWorkingRequest?.id === request.id
-                          ? "default"
-                          : "outline"
-                      }
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectRequest(request.id);
-                      }}
-                    >
-                      {currentWorkingRequest?.id === request.id
-                        ? "Đã chọn"
-                        : "Chọn"}
-                    </Button>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                      <span className="text-muted-foreground">Đang tải...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : assignments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Không có yêu cầu nào đang sửa chữa
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                assignments.map((assignment) => (
+                  <TableRow
+                    key={assignment.assignmentID}
+                    className={`cursor-pointer transition-all hover:bg-muted/50 ${
+                      currentWorkingRequest?.assignmentID ===
+                      assignment.assignmentID
+                        ? "bg-blue-50 border-blue-200"
+                        : ""
+                    }`}
+                    onClick={() => handleSelectRequest(assignment)}
+                  >
+                    <TableCell className="font-medium">
+                      #{assignment.claimCode}
+                    </TableCell>
+                    <TableCell>{assignment.vin}</TableCell>
+                    <TableCell>{assignment.technicianName}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{
+                              width: `${assignment.completionPercentage}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-sm">
+                          {assignment.completionPercentage}%
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                        🔧 Đang sửa
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(assignment.assignedDate).toLocaleDateString(
+                        "vi-VN"
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant={
+                          currentWorkingRequest?.assignmentID ===
+                          assignment.assignmentID
+                            ? "default"
+                            : "outline"
+                        }
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectRequest(assignment);
+                        }}
+                      >
+                        {currentWorkingRequest?.assignmentID ===
+                        assignment.assignmentID
+                          ? "Đã chọn"
+                          : "Chọn"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -256,7 +278,9 @@ export function RepairProgress({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>Mã yêu cầu</Label>
-                  <p className="font-medium">{currentWorkingRequest.id}</p>
+                  <p className="font-medium">
+                    #{currentWorkingRequest.claimCode}
+                  </p>
                 </div>
                 <div>
                   <Label>VIN</Label>
@@ -266,21 +290,21 @@ export function RepairProgress({
                   <Label>Trạng thái</Label>
                   <Badge
                     className={
-                      workStatus.status === "received"
-                        ? "bg-green-100 text-green-800"
-                        : workStatus.status === "in-progress"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-blue-100 text-blue-800"
+                      workStatus.status === "Đang thay thế"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-blue-100 text-blue-800"
                     }
                   >
-                    {workStatus.status === "received" && "📦 Sẵn sàng"}
-                    {workStatus.status === "in-progress" && "🔧 Đang sửa"}
-                    {workStatus.status === "completed" && "✅ Hoàn tất"}
+                    {workStatus.status === "Đang thay thế" &&
+                      "🔧 Đang thay thế"}
+                    {workStatus.status === "Hoàn thành" && "✅ Hoàn thành"}
                   </Badge>
                 </div>
                 <div>
-                  <Label>Phụ tùng</Label>
-                  <p className="font-medium">{currentWorkingRequest.parts}</p>
+                  <Label>Kỹ thuật viên</Label>
+                  <p className="font-medium">
+                    {currentWorkingRequest.technicianName}
+                  </p>
                 </div>
                 <div>
                   <Label>Thời gian bắt đầu</Label>
@@ -312,13 +336,7 @@ export function RepairProgress({
               </div>
 
               <div className="mt-4 flex gap-3">
-                {workStatus.status === "received" && (
-                  <Button onClick={handleStartWork}>
-                    <Clock className="w-4 h-4 mr-2" />
-                    Bắt đầu thực hiện
-                  </Button>
-                )}
-                {workStatus.status === "in-progress" && (
+                {workStatus.status === "Đang thay thế" && (
                   <Button
                     onClick={handleCompleteWork}
                     className="bg-green-600 hover:bg-green-700"
@@ -341,14 +359,6 @@ export function RepairProgress({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Mã phụ tùng cũ</Label>
-                  <Input
-                    value={partInfo.oldPartCode}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
                 <div>
                   <Label>Số seri phụ tùng mới *</Label>
                   <Input
@@ -394,7 +404,7 @@ export function RepairProgress({
       )}
 
       {/* Nút hành động */}
-      {currentWorkingRequest && workStatus.status === "completed" && (
+      {currentWorkingRequest && workStatus.status === "Hoàn thành" && (
         <div className="flex justify-end">
           <Button onClick={onNextStep} size="lg">
             Tiến tới bước tiếp theo

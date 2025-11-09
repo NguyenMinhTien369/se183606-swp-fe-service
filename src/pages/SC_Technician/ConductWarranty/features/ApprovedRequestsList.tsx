@@ -82,7 +82,7 @@ export function ApprovedRequestsList({
       // Filter only ASSIGNED status (ready to start repair)
       const assignedClaims = response.data.result.filter(
         (assignment: AssignmentProgressResponse) =>
-          assignment.status === "ASSIGNED"
+          assignment.status === "Đã phân công"
       );
       setAssignments(assignedClaims);
     } catch (error) {
@@ -118,7 +118,7 @@ export function ApprovedRequestsList({
     try {
       // Update assignment to IN_PROGRESS status
       const formData = new FormData();
-      formData.append("status", "IN_PROGRESS");
+      formData.append("status", "Đang thay thế");
       formData.append("completionPercentage", "10");
       formData.append(
         "internalNotes",
