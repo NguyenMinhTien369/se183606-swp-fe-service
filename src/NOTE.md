@@ -53,3 +53,12 @@ Mình đang nghi ngờ:
 - claimid 14 và 18 đều gán cho userid là 3, thằng này có service_centerid là 1
 
 - tôi đang gặp vấn đề sau, trong database có 1 bảng là user đó là nơi chứa thông tin user bao gồm tài khoản và mật khẩu, nhưng hiện tại, tại sao tôi không thể đăng nhập bằng tài khoản có trong database mà chỉ có thể đăng nhập được bằng những tài khoản mà được tạo sẵn ở trong be.hãy giải thích nguyên nhân và đề xuất phương án khắc phục cho tôi
+
+- Lỗi là do tạo dữ liệu trong database thủ công
+
+1. Tạo mới 1 thằng sửa chữa, phải đăng nhập được account của nó
+2. Tạo mới đơn bảo hành, rồi duyệt
+3. Gán đơn bảo hành đó cho no để test code
+
+4. giải thích cho tôi tại sao khi tôi nhấn hoàn thành sửa chửa không chuyển sang tab hoàn tất & bàn giao
+5. Tại sao tôi đã nhập số seri phụ tùng ở bước xác nhận mà ở bước thực hiện sửa chữa không hiển thị lại và hiển thị lại ở cả bước Hoàn tất & bàn giao

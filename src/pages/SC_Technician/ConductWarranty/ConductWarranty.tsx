@@ -6,7 +6,12 @@ import { ApprovedRequestsList } from "./features/ApprovedRequestsList";
 import { RepairProgress } from "./features/RepairProgress";
 import { CompletionHandover } from "./features/CompletionHandover";
 
-import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "../../../components/ui/card";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import {
@@ -58,6 +63,11 @@ export default function WarrantyWorkflow() {
     setDialogOpen(false);
   };
 
+  const handleResetToStep1 = () => {
+    setCurrentStep(1);
+    setSelectedRequest(null);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Header */}
@@ -92,12 +102,13 @@ export default function WarrantyWorkflow() {
               <Button
                 key={step.id}
                 variant={isActive ? "default" : "outline"}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${isActive
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : isCompleted
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                    : isCompleted
                     ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                     : "text-gray-700 hover:bg-gray-100"
-                  }`}
+                }`}
                 onClick={() => setCurrentStep(step.id)}
               >
                 <Icon className="w-4 h-4" />
@@ -126,6 +137,7 @@ export default function WarrantyWorkflow() {
                 selectedRequest={selectedRequest}
                 onSelectRequest={setSelectedRequest}
                 onNextStep={handleNextStep}
+                onComplete={handleResetToStep1}
               />
             )}
           </CardContent>

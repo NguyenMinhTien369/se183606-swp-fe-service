@@ -29,6 +29,7 @@ import {
 } from "../../../../components/ui/dialog";
 import { Settings } from "lucide-react";
 import { claimAssignmentAPI } from "@/utility/index";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 import type { AssignmentProgressResponse } from "../types";
 
 interface RepairProgressProps {
@@ -42,8 +43,9 @@ export function RepairProgress({
   onSelectRequest,
   onNextStep,
 }: RepairProgressProps) {
-  // Get technician ID from localStorage or auth context
-  const TECHNICIAN_ID = 1; // TODO: Get from AuthContext
+  // Get technician ID from auth context
+  const { user } = useAuth();
+  const TECHNICIAN_ID = user?.userId;
 
   const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
     []
@@ -71,22 +73,32 @@ export function RepairProgress({
   }, []);
 
   const loadAssignments = async () => {
+    if (!TECHNICIAN_ID) {
+      console.error("Technician ID not found");
+      showDialog(
+        "Lỗi",
+        "Không tìm thấy thông tin kỹ thuật viên. Vui lòng đăng nhập lại."
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await claimAssignmentAPI.getAssignmentsByTechnician(
         TECHNICIAN_ID
       );
-      // Filter only IN_PROGRESS status (currently being repaired)
-      const inProgressClaims = response.data.result.filter(
+      // Filter assignments ready for repair: "Nhận phụ tùng" (just confirmed) OR "Đang thay thế" (in progress)
+      const repairReadyClaims = response.data.result.filter(
         (assignment: AssignmentProgressResponse) =>
+          assignment.status === "Nhận phụ tùng" ||
           assignment.status === "Đang thay thế"
       );
-      setAssignments(inProgressClaims);
+      setAssignments(repairReadyClaims);
 
       // Auto-select first assignment if exists
-      if (inProgressClaims.length > 0 && !currentWorkingRequest) {
-        setCurrentWorkingRequest(inProgressClaims[0]);
-        onSelectRequest?.(inProgressClaims[0]);
+      if (repairReadyClaims.length > 0 && !currentWorkingRequest) {
+        setCurrentWorkingRequest(repairReadyClaims[0]);
+        onSelectRequest?.(repairReadyClaims[0]);
       }
     } catch (error) {
       console.error("Error loading assignments:", error);
@@ -114,24 +126,16 @@ export function RepairProgress({
     showDialog("Cập nhật thành công", "Đã cập nhật thông tin phụ tùng.");
   };
 
-  const handleCompleteWork = async () => {
-    if (!partInfo.newPartSerial.trim()) {
-      showDialog(
-        "Lỗi",
-        "Vui lòng nhập số seri phụ tùng mới trước khi hoàn thành."
-      );
-      return;
-    }
-
+  const handleStartRepair = async () => {
     if (!currentWorkingRequest) return;
 
     try {
       const formData = new FormData();
-      formData.append("status", "Hoàn thành");
-      formData.append("completionPercentage", "100");
+      formData.append("status", "Đang thay thế");
+      formData.append("completionPercentage", "30");
       formData.append(
         "internalNotes",
-        `Hoàn thành sửa chữa. Serial phụ tùng mới: ${partInfo.newPartSerial}. ${partInfo.notes}`
+        `Bắt đầu thay thế phụ tùng. ${partInfo.notes || "Đang tiến hành"}`
       );
 
       await claimAssignmentAPI.updateAssignmentProgress(
@@ -141,18 +145,62 @@ export function RepairProgress({
 
       setWorkStatus((prev) => ({
         ...prev,
-        status: "Hoàn thành",
-        completionPercentage: 100,
+        status: "Đang thay thế",
+        completionPercentage: 30,
       }));
 
-      showDialog("Hoàn tất", "Đã hoàn thành sửa chữa.");
+      showDialog("Bắt đầu", "Đã bắt đầu quá trình sửa chữa.");
+      loadAssignments(); // Reload to update status
+    } catch (error) {
+      console.error("Error starting repair:", error);
+      showDialog("Lỗi", "Không thể bắt đầu sửa chữa. Vui lòng thử lại.");
+    }
+  };
 
+  const handleCompleteWork = async () => {
+    if (!partInfo.newPartSerial.trim()) {
+      showDialog(
+        "Lỗi",
+        "Vui lòng nhập số seri phụ tùng mới trước khi tiếp tục."
+      );
+      return;
+    }
+
+    if (!currentWorkingRequest) return;
+
+    try {
+      // Update progress to 80% and save part info, DO NOT mark as "Hoàn thành" yet
+      // "Hoàn thành" will be done in step 3 (CompletionHandover) with files
+      const formData = new FormData();
+      formData.append("status", "Đang thay thế");
+      formData.append("completionPercentage", "80");
+      formData.append(
+        "internalNotes",
+        `Đã thay thế phụ tùng. Serial phụ tùng mới: ${partInfo.newPartSerial}. ${partInfo.notes}`
+      );
+
+      await claimAssignmentAPI.updateAssignmentProgress(
+        currentWorkingRequest.assignmentID,
+        formData
+      );
+
+      setWorkStatus((prev) => ({
+        ...prev,
+        completionPercentage: 80,
+      }));
+
+      showDialog(
+        "Thành công",
+        "Đã cập nhật tiến độ sửa chữa. Vui lòng chuyển sang bước tiếp theo để hoàn tất & bàn giao."
+      );
+
+      // Auto navigate to step 3 after 2 seconds
       setTimeout(() => {
         onNextStep?.();
-      }, 1200);
+      }, 2000);
     } catch (error) {
-      console.error("Error completing work:", error);
-      showDialog("Lỗi", "Không thể hoàn thành sửa chữa. Vui lòng thử lại.");
+      console.error("Error updating progress:", error);
+      showDialog("Lỗi", "Không thể cập nhật tiến độ. Vui lòng thử lại.");
     }
   };
 
@@ -336,13 +384,22 @@ export function RepairProgress({
               </div>
 
               <div className="mt-4 flex gap-3">
-                {workStatus.status === "Đang thay thế" && (
+                {currentWorkingRequest?.status === "Nhận phụ tùng" && (
                   <Button
-                    onClick={handleCompleteWork}
-                    className="bg-green-600 hover:bg-green-700"
+                    onClick={handleStartRepair}
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
                     <Settings className="w-4 h-4 mr-2" />
-                    Hoàn thành sửa chữa
+                    Bắt đầu sửa chữa
+                  </Button>
+                )}
+                {currentWorkingRequest?.status === "Đang thay thế" && (
+                  <Button
+                    onClick={handleCompleteWork}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Lưu & Chuyển bước tiếp theo
                   </Button>
                 )}
               </div>
