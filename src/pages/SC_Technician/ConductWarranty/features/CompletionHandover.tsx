@@ -1,7 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import { Textarea } from "../../../../components/ui/textarea";
@@ -24,13 +29,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../../../../components/ui/dialog";
+import { claimAssignmentAPI } from "@/utility/index";
+import type { AssignmentProgressResponse } from "../types";
 
 interface CompletionHandoverProps {
-  selectedRequest?: {
-    id: string;
-    vin: string;
-    parts: string;
-  };
+  selectedRequest?: any;
   onNextStep?: () => void;
 }
 
@@ -38,6 +41,15 @@ export function CompletionHandover({
   selectedRequest,
   onNextStep,
 }: CompletionHandoverProps) {
+  // Get technician ID from localStorage or auth context
+  const TECHNICIAN_ID = 1; // TODO: Get from AuthContext
+
+  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentAssignment, setCurrentAssignment] =
+    useState<AssignmentProgressResponse | null>(null);
   const [completionData, setCompletionData] = useState({
     workDescription: "",
     completionTime: "",
@@ -63,13 +75,47 @@ export function CompletionHandover({
     type: "info", // "success" | "error" | "info"
   });
 
-  const mockRequest = selectedRequest || {
-    id: "CLM-2025-031",
-    vin: "XCF12345",
-    parts: "Turbo Kit",
+  // Load completed assignments on mount
+  useEffect(() => {
+    loadCompletedAssignments();
+  }, []);
+
+  const loadCompletedAssignments = async () => {
+    setIsLoading(true);
+    try {
+      const response = await claimAssignmentAPI.getAssignmentsByTechnician(
+        TECHNICIAN_ID
+      );
+      // Filter only COMPLETED status (ready for handover)
+      const completedClaims = response.data.result.filter(
+        (assignment: AssignmentProgressResponse) =>
+          assignment.status === "Hoàn thành" &&
+          assignment.completionPercentage === 100
+      );
+      setAssignments(completedClaims);
+
+      // Auto-select first completed assignment if exists
+      if (completedClaims.length > 0 && !currentAssignment) {
+        setCurrentAssignment(completedClaims[0]);
+      }
+    } catch (error) {
+      console.error("Error loading completed assignments:", error);
+      showError("Không thể tải danh sách yêu cầu đã hoàn thành.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleFileUpload = (type: keyof typeof uploadedFiles, files: FileList | null) => {
+  const mockRequest = currentAssignment || {
+    claimCode: "N/A",
+    vin: "N/A",
+    technicianName: "N/A",
+  };
+
+  const handleFileUpload = (
+    type: keyof typeof uploadedFiles,
+    files: FileList | null
+  ) => {
     if (!files) return;
 
     if (type === "handoverDoc") {
@@ -101,7 +147,7 @@ export function CompletionHandover({
     });
   };
 
-  const handleConfirmHandover = () => {
+  const handleConfirmHandover = async () => {
     if (!completionData.workDescription.trim()) {
       return showError("Vui lòng nhập mô tả công việc đã thực hiện");
     }
@@ -118,17 +164,54 @@ export function CompletionHandover({
       return showError("Vui lòng xác nhận đầy đủ chứng từ");
     }
 
-    setDialog({
-      open: true,
-      title: "Xác nhận thành công",
-      message:
-        "Đã xác nhận bàn giao xe thành công! Thông báo đã được gửi cho SC Staff và khách hàng.",
-      type: "success",
-    });
+    if (!currentAssignment) {
+      return showError("Không tìm thấy thông tin assignment");
+    }
 
-    setTimeout(() => {
-      onNextStep?.();
-    }, 1500);
+    try {
+      const formData = new FormData();
+      formData.append("status", "Hoàn thành");
+      formData.append("completionPercentage", "100");
+      formData.append(
+        "internalNotes",
+        `Hoàn thành bàn giao. Mô tả: ${completionData.workDescription}. Serial phụ tùng mới: ${completionData.newPartSerial}.`
+      );
+
+      // Append handover document
+      if (uploadedFiles.handoverDoc) {
+        formData.append("newHandoverFiles", uploadedFiles.handoverDoc);
+      }
+
+      // Append handover images
+      uploadedFiles.handoverImages.forEach((file) => {
+        formData.append("newHandoverFiles", file);
+      });
+
+      // Append completion images
+      uploadedFiles.completionImages.forEach((file) => {
+        formData.append("newHandoverFiles", file);
+      });
+
+      await claimAssignmentAPI.updateAssignmentProgress(
+        currentAssignment.assignmentID,
+        formData
+      );
+
+      setDialog({
+        open: true,
+        title: "Xác nhận thành công",
+        message:
+          "Đã xác nhận bàn giao xe thành công! Thông báo đã được gửi cho SC Staff và khách hàng.",
+        type: "success",
+      });
+
+      setTimeout(() => {
+        onNextStep?.();
+      }, 1500);
+    } catch (error) {
+      console.error("Error confirming handover:", error);
+      showError("Không thể hoàn thành bàn giao. Vui lòng thử lại.");
+    }
   };
 
   const showError = (msg: string) =>
@@ -161,15 +244,15 @@ export function CompletionHandover({
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Mã yêu cầu:</p>
-                    <p className="font-medium">{mockRequest.id}</p>
+                    <p className="font-medium">#{mockRequest.claimCode}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">VIN:</p>
                     <p className="font-medium">{mockRequest.vin}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Phụ tùng:</p>
-                    <p className="font-medium">{mockRequest.parts}</p>
+                    <p className="text-gray-600">Kỹ thuật viên:</p>
+                    <p className="font-medium">{mockRequest.technicianName}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Trạng thái:</p>
@@ -429,12 +512,13 @@ export function CompletionHandover({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle
-              className={`flex items-center space-x-2 ${dialog.type === "error"
-                ? "text-red-600"
-                : dialog.type === "success"
+              className={`flex items-center space-x-2 ${
+                dialog.type === "error"
+                  ? "text-red-600"
+                  : dialog.type === "success"
                   ? "text-green-600"
                   : "text-blue-600"
-                }`}
+              }`}
             >
               {dialog.type === "error" && <AlertCircle className="w-5 h-5" />}
               {dialog.type === "success" && <CheckCircle className="w-5 h-5" />}
