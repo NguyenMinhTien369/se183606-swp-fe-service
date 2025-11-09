@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Eye, Filter, AlertTriangle, CheckCircle } from "lucide-react";
 import { claimAssignmentAPI } from "@/utility/index";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 import type { AssignmentProgressResponse } from "../types";
 
 interface ApprovedRequestsListProps {
@@ -42,8 +43,9 @@ export function ApprovedRequestsList({
   onSelectRequest,
   onNextStep,
 }: ApprovedRequestsListProps) {
-  // Get technician ID from auth context (hardcoded for now)
-  const TECHNICIAN_ID = 1; // TODO: Get from AuthContext
+  // Get technician ID from auth context
+  const { user } = useAuth();
+  const TECHNICIAN_ID = user?.userId;
 
   const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
     []
@@ -74,6 +76,14 @@ export function ApprovedRequestsList({
   }, []);
 
   const loadAssignments = async () => {
+    if (!TECHNICIAN_ID) {
+      console.error("Technician ID not found");
+      setDialogMessage(
+        "❌ Không tìm thấy thông tin kỹ thuật viên. Vui lòng đăng nhập lại."
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await claimAssignmentAPI.getAssignmentsByTechnician(
@@ -116,9 +126,9 @@ export function ApprovedRequestsList({
     if (!selectedRequestData) return;
 
     try {
-      // Update assignment to IN_PROGRESS status
+      // Update assignment to "Nhận phụ tùng" status (intermediate step required by backend)
       const formData = new FormData();
-      formData.append("status", "Đang thay thế");
+      formData.append("status", "Nhận phụ tùng");
       formData.append("completionPercentage", "10");
       formData.append(
         "internalNotes",

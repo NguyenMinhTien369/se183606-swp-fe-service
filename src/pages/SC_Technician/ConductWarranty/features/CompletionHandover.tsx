@@ -30,19 +30,23 @@ import {
   DialogFooter,
 } from "../../../../components/ui/dialog";
 import { claimAssignmentAPI } from "@/utility/index";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 import type { AssignmentProgressResponse } from "../types";
 
 interface CompletionHandoverProps {
   selectedRequest?: any;
   onNextStep?: () => void;
+  onComplete?: () => void;
 }
 
 export function CompletionHandover({
   selectedRequest,
   onNextStep,
+  onComplete,
 }: CompletionHandoverProps) {
-  // Get technician ID from localStorage or auth context
-  const TECHNICIAN_ID = 1; // TODO: Get from AuthContext
+  // Get technician ID from auth context
+  const { user } = useAuth();
+  const TECHNICIAN_ID = user?.userId;
 
   const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
     []
@@ -54,6 +58,7 @@ export function CompletionHandover({
     workDescription: "",
     completionTime: "",
     newPartSerial: "",
+    claimPartID: 0, // Will be set from claim details
     completionImages: [] as File[],
     isDocumentComplete: false,
   });
@@ -81,22 +86,41 @@ export function CompletionHandover({
   }, []);
 
   const loadCompletedAssignments = async () => {
+    if (!TECHNICIAN_ID) {
+      console.error("Technician ID not found");
+      showError(
+        "Không tìm thấy thông tin kỹ thuật viên. Vui lòng đăng nhập lại."
+      );
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await claimAssignmentAPI.getAssignmentsByTechnician(
         TECHNICIAN_ID
       );
-      // Filter only COMPLETED status (ready for handover)
-      const completedClaims = response.data.result.filter(
+      // Filter assignments ready for handover: "Đang thay thế" with high progress OR already "Hoàn thành"
+      const readyForHandover = response.data.result.filter(
         (assignment: AssignmentProgressResponse) =>
-          assignment.status === "Hoàn thành" &&
-          assignment.completionPercentage === 100
+          (assignment.status === "Đang thay thế" &&
+            assignment.completionPercentage >= 80) ||
+          assignment.status === "Hoàn thành"
       );
-      setAssignments(completedClaims);
+      setAssignments(readyForHandover);
 
-      // Auto-select first completed assignment if exists
-      if (completedClaims.length > 0 && !currentAssignment) {
-        setCurrentAssignment(completedClaims[0]);
+      // Auto-select first assignment if exists
+      if (readyForHandover.length > 0 && !currentAssignment) {
+        setCurrentAssignment(readyForHandover[0]);
+
+        // Extract part serial from internalNotes if exists
+        const notes = readyForHandover[0].internalNotes || "";
+        const serialMatch = notes.match(/Serial phụ tùng mới:\s*([^\.\n]+)/i);
+        if (serialMatch) {
+          setCompletionData((prev) => ({
+            ...prev,
+            newPartSerial: serialMatch[1].trim(),
+          }));
+        }
       }
     } catch (error) {
       console.error("Error loading completed assignments:", error);
@@ -177,6 +201,15 @@ export function CompletionHandover({
         `Hoàn thành bàn giao. Mô tả: ${completionData.workDescription}. Serial phụ tùng mới: ${completionData.newPartSerial}.`
       );
 
+      // Format partReplacements for Spring Boot @ModelAttribute (indexed array format)
+      // Backend expects: partReplacements[0].claimPartID, partReplacements[0].newPartSerialNumber
+      const partId = completionData.claimPartID || 1; // TODO: fetch from claim details
+      formData.append("partReplacements[0].claimPartID", partId.toString());
+      formData.append(
+        "partReplacements[0].newPartSerialNumber",
+        completionData.newPartSerial
+      );
+
       // Append handover document
       if (uploadedFiles.handoverDoc) {
         formData.append("newHandoverFiles", uploadedFiles.handoverDoc);
@@ -205,9 +238,14 @@ export function CompletionHandover({
         type: "success",
       });
 
+      // Navigate back to step 1 (Nhận phụ tùng bảo hành) after 2 seconds
       setTimeout(() => {
-        onNextStep?.();
-      }, 1500);
+        if (onComplete) {
+          onComplete(); // Use parent's reset function instead of reload
+        } else {
+          window.location.reload(); // Fallback if onComplete not provided
+        }
+      }, 2000);
     } catch (error) {
       console.error("Error confirming handover:", error);
       showError("Không thể hoàn thành bàn giao. Vui lòng thử lại.");
