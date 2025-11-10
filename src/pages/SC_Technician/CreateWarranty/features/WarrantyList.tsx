@@ -86,8 +86,8 @@ export function WarrantyList({
         color: "bg-green-100 text-green-800",
         variant: "default",
       },
-      "Bị từ chối": {
-        label: "🔴 Bị từ chối",
+      "Từ chối": {
+        label: "🔴 Từ chối",
         color: "bg-red-100 text-red-800",
         variant: "destructive",
       },
@@ -141,7 +141,7 @@ export function WarrantyList({
               <SelectItem value="Được chấp nhận">🟢 Được chấp nhận</SelectItem>
               <SelectItem value="Đang xử lý">🔵 Đang xử lý</SelectItem>
               <SelectItem value="Hoàn thành">✅ Hoàn thành</SelectItem>
-              <SelectItem value="Bị từ chối">🔴 Bị từ chối</SelectItem>
+              <SelectItem value="Từ chối">🔴 Từ chối</SelectItem>
             </SelectContent>
           </Select>
         </div>

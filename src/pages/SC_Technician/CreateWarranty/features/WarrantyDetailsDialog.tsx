@@ -49,7 +49,7 @@ export function WarrantyDetailsDialog({
       "Được chấp nhận": { label: "🟢 Được chấp nhận", variant: "default" },
       "Đang xử lý": { label: "🔵 Đang xử lý", variant: "secondary" },
       "Hoàn thành": { label: "✅ Hoàn thành", variant: "default" },
-      "Bị từ chối": { label: "🔴 Bị từ chối", variant: "destructive" },
+      "Từ chối": { label: "🔴 Từ chối", variant: "destructive" },
     };
     return configs[status] || configs["Chờ duyệt"];
   };
@@ -273,7 +273,7 @@ export function WarrantyDetailsDialog({
                       </div>
                     </AlertDescription>
                   </Alert>
-                ) : claim.status === "Bị từ chối" ? (
+                ) : claim.status === "Từ chối" ? (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>

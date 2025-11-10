@@ -170,9 +170,7 @@ export default function App() {
     setShowDetailsDialog(true);
   };
 
-  const rejectedClaims = warrantyClaims.filter(
-    (c) => c.status === "Bị từ chối"
-  );
+  const rejectedClaims = warrantyClaims.filter((c) => c.status === "Từ chối");
 
   return (
     <div className="min-h-screen bg-background">

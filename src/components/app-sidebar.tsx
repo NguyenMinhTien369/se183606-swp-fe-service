@@ -1,8 +1,13 @@
 import * as React from "react";
 import {
-  Users, ClipboardPlus, Building2, Wrench,
-  LayoutDashboard, Package,
-  CheckCircle, Megaphone
+  Users,
+  ClipboardPlus,
+  Building2,
+  Wrench,
+  LayoutDashboard,
+  Package,
+  CheckCircle,
+  Megaphone,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
@@ -109,11 +114,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: <ClipboardPlus className="size-4" />,
           to: ROUTERS_PATH.CREATE_WARRANTY,
         },
-        {
-          title: "Thực Hiện Bảo Hành",
-          icon: <Wrench className="size-4" />,
-          to: ROUTERS_PATH.CONDUCT_WARRANTY,
-        },
       ];
     }
 
@@ -178,9 +178,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <NavLink
                     to={item.to}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
+                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${
+                        isActive
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted"
                       }`
                     }
                   >
@@ -200,8 +201,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavUser
             user={{
               name: user.fullName || user.username,
-              email: user.email || '',
-              avatar: '/avatars/default.jpg'
+              email: user.email || "",
+              avatar: "/avatars/default.jpg",
             }}
           />
         )}

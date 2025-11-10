@@ -96,7 +96,7 @@ export function PerformanceDashboard({
   // Data for pie chart
   const statusData = [
     { name: "Hoàn thành đúng hạn", value: totalCompleted, color: "#22c55e" },
-    { name: "Bị từ chối", value: totalRejected, color: "#ef4444" },
+    { name: "Từ chối", value: totalRejected, color: "#ef4444" },
     {
       name: "Chưa hoàn thành",
       value: Math.max(0, totalAssigned - totalCompleted - totalRejected),
@@ -109,7 +109,7 @@ export function PerformanceDashboard({
     name: tech.fullName.split(" ").slice(-2).join(" "), // Get last 2 words
     "Tổng số": tech.totalAssignedClaims,
     "Hoàn thành": tech.completedOnTime,
-    "Bị từ chối": tech.manufacturerRejected,
+    "Từ chối": tech.manufacturerRejected,
   }));
 
   return (
