@@ -103,7 +103,7 @@ Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
                   required
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="awesome@user.com"
+                  placeholder="Username"
                   className={styles.input}
                 />
               </div>
