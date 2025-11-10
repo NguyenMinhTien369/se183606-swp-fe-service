@@ -59,7 +59,7 @@ export function VehicleDetails({
       },
       "Đang xử lý": { label: "🔵 Đang xử lý", color: "text-blue-600" },
       "Hoàn thành": { label: "✅ Hoàn thành", color: "text-green-600" },
-      "Bị từ chối": { label: "🔴 Bị từ chối", color: "text-red-600" },
+      "Từ chối": { label: "🔴 Từ chối", color: "text-red-600" },
     };
 
     const { label, color } = config[status] || config["Chờ duyệt"];

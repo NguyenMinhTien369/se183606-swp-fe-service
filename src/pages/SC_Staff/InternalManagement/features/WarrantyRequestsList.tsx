@@ -123,7 +123,7 @@ export function WarrantyRequestsList({
               <SelectItem value="Được chấp nhận">🟢 Được chấp nhận</SelectItem>
               <SelectItem value="Đang xử lý">🔵 Đang xử lý</SelectItem>
               <SelectItem value="Hoàn thành">✅ Hoàn thành</SelectItem>
-              <SelectItem value="Bị từ chối">🔴 Bị từ chối</SelectItem>
+              <SelectItem value="Từ chối">🔴 Từ chối</SelectItem>
             </SelectContent>
           </Select>
           <Button

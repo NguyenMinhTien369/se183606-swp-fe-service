@@ -8,7 +8,7 @@ export type WarrantyStatus =
   | "Được chấp nhận" // Approved
   | "Đang xử lý" // In Progress
   | "Hoàn thành" // Completed
-  | "Bị từ chối"; // Rejected
+  | "Từ chối"; // Rejected
 
 // Assignment Status (backend enum)
 export type AssignmentStatus =

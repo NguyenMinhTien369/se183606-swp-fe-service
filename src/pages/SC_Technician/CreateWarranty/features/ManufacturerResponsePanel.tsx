@@ -28,14 +28,14 @@ export function ManufacturerResponsePanel({
 }: ManufacturerResponsePanelProps) {
   // Filter claims that have been processed (Được chấp nhận, Bị từ chối, or Hoàn thành)
   const claimsWithResponse = claims.filter((c) =>
-    ["Được chấp nhận", "Bị từ chối", "Hoàn thành"].includes(c.status)
+    ["Được chấp nhận", "Từ chối", "Hoàn thành"].includes(c.status)
   );
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "Được chấp nhận":
         return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case "Bị từ chối":
+      case "Từ chối":
         return <XCircle className="h-5 w-5 text-red-600" />;
       case "Hoàn thành":
         return <FileCheck className="h-5 w-5 text-blue-600" />;
