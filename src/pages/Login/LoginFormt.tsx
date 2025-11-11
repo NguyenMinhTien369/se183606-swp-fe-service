@@ -2,7 +2,7 @@
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "./feature/AuthContext";
 import { getHomeRoute } from "@/utils/constants";
-import { FaUser, FaLock } from "react-icons/fa";
+import { FaUser, FaLock, FaArrowLeft, FaEye, FaEyeSlash } from "react-icons/fa";
 import styles from "./LoginForm.module.css";
 
 export default function LoginForm() {
@@ -11,6 +11,7 @@ export default function LoginForm() {
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   /*
 Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
@@ -82,6 +83,16 @@ Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
         {/* Right Side - Login Form */}
         <div className={styles.rightSide}>
           <div className={styles.formContainer}>
+            {/* Back to Home Button */}
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className={styles.backToHomeBtn}
+            >
+              <FaArrowLeft />
+              <span>Quay lại trang chủ</span>
+            </button>
+
             {/* Welcome Text */}
             <div className={styles.welcomeText}>
               <h1 className={styles.welcomeTitle}>Welcome</h1>
@@ -103,7 +114,7 @@ Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
                   required
                   value={formData.username}
                   onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="awesome@user.com"
+                  placeholder="Username"
                   className={styles.input}
                 />
               </div>
@@ -111,13 +122,20 @@ Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
               <div className={styles.inputGroup}>
                 <FaLock className={styles.inputIcon} />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="••••••••••••••"
                   className={styles.input}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={styles.togglePasswordBtn}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
 
               <div className={styles.forgotPassword}>

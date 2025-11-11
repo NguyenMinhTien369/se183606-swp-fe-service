@@ -40,6 +40,10 @@ function Routers() {
     // 🔐 PUBLIC ROUTES (không cần authentication)
     // ============================================
     {
+      path: ROUTERS_PATH.HOME,
+      element: <Home />,
+    },
+    {
       path: LOGIN_ROUTE,
       element: <LoginForm />,
     },
