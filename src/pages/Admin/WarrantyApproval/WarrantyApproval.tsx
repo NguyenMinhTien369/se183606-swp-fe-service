@@ -10,6 +10,8 @@ import {
     FaClock,
     FaExclamationCircle,
     FaCheckCircle,
+    FaFileAlt,
+    FaExternalLinkAlt,
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
 import type { WarrantyClaim, ClaimStatus } from './types';
@@ -35,9 +37,21 @@ const WarrantyApproval = () => {
             setLoading(true);
             console.log('Fetching claims with status filter:', statusFilter);
 
+            // Convert English status to Vietnamese for API
+            const mapStatusForAPI = (status: ClaimStatus | 'ALL'): string => {
+                const statusMap: Record<string, string> = {
+                    'PENDING': 'Chờ duyệt',
+                    'APPROVED': 'Được chấp nhận',
+                    'REJECTED': 'Từ chối',
+                    'IN_PROGRESS': 'Đang xử lý',
+                    'COMPLETED': 'Hoàn thành',
+                };
+                return statusMap[status] || status;
+            };
+
             const response = statusFilter === 'ALL'
                 ? await warrantyClaimAPI.getAllClaims()
-                : await warrantyClaimAPI.getClaimsByStatus(statusFilter);
+                : await warrantyClaimAPI.getClaimsByStatus(mapStatusForAPI(statusFilter));
 
             console.log('API Response:', response);
             console.log('Result data:', response.data.result);
@@ -403,6 +417,95 @@ const WarrantyApproval = () => {
                                     <label>Ngày tạo:</label>
                                     <p>{new Date(selectedClaim.createdDate).toLocaleString('vi-VN')}</p>
                                 </div>
+
+                                {/* Linh kiện bị ảnh hưởng */}
+                                {selectedClaim.affectedParts && selectedClaim.affectedParts.length > 0 && (
+                                    <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                                        <label>Linh kiện bị ảnh hưởng:</label>
+                                        <div className={styles.partsList}>
+                                            {selectedClaim.affectedParts.map((part) => (
+                                                <div key={part.partID} className={styles.partItem}>
+                                                    <div>
+                                                        <strong>{part.partName}</strong>
+                                                        <span className={styles.partSerial}> (SN: {part.partSerialNumber})</span>
+                                                    </div>
+                                                    {part.description && (
+                                                        <p className={styles.partDesc}>{part.description}</p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Hình ảnh và tài liệu đính kèm */}
+                                {selectedClaim.attachments && selectedClaim.attachments.length > 0 && (
+                                    <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                                        <label>
+                                            <FaFileAlt /> Tài liệu & Hình ảnh đính kèm ({selectedClaim.attachments.length})
+                                        </label>
+                                        <div className={styles.attachmentsList}>
+                                            {selectedClaim.attachments.map((attachment) => {
+                                                const isImage = attachment.fileType?.toLowerCase().includes('image') ||
+                                                    /\.(jpg|jpeg|png|gif|webp)$/i.test(attachment.fileName);
+
+                                                return (
+                                                    <div key={attachment.attachmentID} className={styles.attachmentItem}>
+                                                        {isImage ? (
+                                                            <div className={styles.imagePreview}>
+                                                                <img
+                                                                    src={attachment.fileUrl}
+                                                                    alt={attachment.fileName}
+                                                                    className={styles.thumbnailImage}
+                                                                />
+                                                                <div className={styles.imageOverlay}>
+                                                                    <a
+                                                                        href={attachment.fileUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={styles.viewImageButton}
+                                                                    >
+                                                                        <FaExternalLinkAlt /> Xem đầy đủ
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className={styles.filePreview}>
+                                                                <FaFileAlt className={styles.fileIcon} />
+                                                            </div>
+                                                        )}
+                                                        <div className={styles.attachmentInfo}>
+                                                            <p className={styles.fileName}>{attachment.fileName}</p>
+                                                            <p className={styles.fileDate}>
+                                                                {new Date(attachment.uploadDate).toLocaleDateString('vi-VN')}
+                                                            </p>
+                                                            {!isImage && (
+                                                                <a
+                                                                    href={attachment.fileUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className={styles.downloadLink}
+                                                                >
+                                                                    <FaExternalLinkAlt /> Xem tài liệu
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Kết quả xử lý */}
+                                {selectedClaim.result && (
+                                    <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
+                                        <label>Kết quả xử lý:</label>
+                                        <div className={styles.resultBox}>
+                                            <p>{selectedClaim.result}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

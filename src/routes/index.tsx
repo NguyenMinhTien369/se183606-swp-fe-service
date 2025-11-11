@@ -6,6 +6,7 @@ import LoginForm from "@/pages/Login/LoginFormt";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Home from "@/pages/Home/Home";
 import LOGIN_ROUTE from "@/constants/loginrouter";
 import { ROLES } from "@/utils/constants";
 import { ResetPasswordFlow } from "@/pages/Auth";
@@ -29,12 +30,11 @@ import {
 //Thêm constant & cái mới
 import ManageCustomer from "@/pages/SC_Staff/ManageCustomers/ManageCustomer";
 import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
-import Home from "@/pages/Home/Home";
-// import index from "@/pages/NotFound";
-// import MLCustomerManagement from "@/pages/SC_Staff/ManageCustomers/MLCustomerManagement";
-// import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/VehicleInformation";
-// import ServiceHistory from "@/pages/SC_Staff/ManageCustomers/ServiceHistory";
-// import PartsManagement from "@/pages/SC_Staff/ManageCustomers/PartsManagement";
+import MLCustomerManagement from "@/pages/SC_Staff/ManageCustomers/MLCustomerManagement";
+import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/features/VehicleInformation";
+import ServiceHistory from "@/pages/SC_Staff/ManageCustomers/features/ServiceHistory";
+import PartsManagement from "@/pages/SC_Staff/ManageCustomers/features/PartsManagement";
+
 
 function Routers() {
   const routers = createBrowserRouter([

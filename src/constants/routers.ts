@@ -42,7 +42,6 @@ const ROUTERS_PATH = {
   CONDUCT_WARRANTY: "/technician/conduct-warranty",
 } as const;
 
-// Helper để tạo relative paths (không có base path)
 export const RELATIVE_PATHS = {
   // SC Staff
   DASHBOARD: "dashboard",
