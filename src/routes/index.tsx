@@ -33,6 +33,7 @@ import MLCustomerManagement from "@/pages/SC_Staff/ManageCustomers/MLCustomerMan
 import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/features/VehicleInformation";
 import ServiceHistory from "@/pages/SC_Staff/ManageCustomers/features/ServiceHistory";
 import PartsManagement from "@/pages/SC_Staff/ManageCustomers/features/PartsManagement";
+import Home from "@/pages/Home";
 
 function Routers() {
   const routers = createBrowserRouter([
