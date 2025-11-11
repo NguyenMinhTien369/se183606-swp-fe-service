@@ -6,6 +6,7 @@ import LoginForm from "@/pages/Login/LoginFormt";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import Home from "@/pages/Home/Home";
 import LOGIN_ROUTE from "@/constants/loginrouter";
 import { ROLES } from "@/utils/constants";
 import { ResetPasswordFlow } from "@/pages/Auth";
