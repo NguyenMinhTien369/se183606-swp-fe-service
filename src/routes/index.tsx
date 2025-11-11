@@ -82,30 +82,30 @@ function Routers() {
           path: RELATIVE_PATHS.MANAGE_CUSTOMER,
           element: <ManageCustomer />, // Step 1: Customer search table
         },
-        // {
-        //   path: RELATIVE_PATHS.MANAGE_CUSTOMER_PARAM, // Step 2: Customer details with tabs
-        //   element: <MLCustomerManagement />,
-        //   children: [
-        //     {
-        //       index: true,
-        //       element: (
-        //         <Navigate to={RELATIVE_PATHS.VEHICLE_INFORMATION} replace />
-        //       ),
-        //     },
-        //     {
-        //       path: RELATIVE_PATHS.VEHICLE_INFORMATION,
-        //       element: <VehicleInformation />,
-        //     },
-        //     {
-        //       path: RELATIVE_PATHS.SERVICE_HISTORY,
-        //       element: <ServiceHistory />,
-        //     },
-        //     {
-        //       path: RELATIVE_PATHS.PARTS_MANAGEMENT,
-        //       element: <PartsManagement />,
-        //     },
-        //   ],
-        // },
+        {
+          path: RELATIVE_PATHS.MANAGE_CUSTOMER_PARAM, // Step 2: Customer details with tabs
+          element: <MLCustomerManagement />,
+          children: [
+            {
+              index: true,
+              element: (
+                <Navigate to={RELATIVE_PATHS.VEHICLE_INFORMATION} replace />
+              ),
+            },
+            {
+              path: RELATIVE_PATHS.VEHICLE_INFORMATION,
+              element: <VehicleInformation />,
+            },
+            {
+              path: RELATIVE_PATHS.SERVICE_HISTORY,
+              element: <ServiceHistory />,
+            },
+            {
+              path: RELATIVE_PATHS.PARTS_MANAGEMENT,
+              element: <PartsManagement />,
+            },
+          ],
+        },
         {
           path: RELATIVE_PATHS.INTERNAL_MANAGEMENT,
           element: <InternalManagement />,
