@@ -29,11 +29,10 @@ import {
 //Thêm constant & cái mới
 import ManageCustomer from "@/pages/SC_Staff/ManageCustomers/ManageCustomer";
 import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
-import index from "@/pages/NotFound";
 import MLCustomerManagement from "@/pages/SC_Staff/ManageCustomers/MLCustomerManagement";
-import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/VehicleInformation";
-import ServiceHistory from "@/pages/SC_Staff/ManageCustomers/ServiceHistory";
-import PartsManagement from "@/pages/SC_Staff/ManageCustomers/PartsManagement";
+import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/features/VehicleInformation";
+import ServiceHistory from "@/pages/SC_Staff/ManageCustomers/features/ServiceHistory";
+import PartsManagement from "@/pages/SC_Staff/ManageCustomers/features/PartsManagement";
 
 function Routers() {
   const routers = createBrowserRouter([
