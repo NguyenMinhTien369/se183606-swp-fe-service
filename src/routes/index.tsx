@@ -1,7 +1,5 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router";
 import MainLayout from "@/layouts/MainLayout";
-// import ManageCustomer from "@/pages/SC_Staff/manageCustomer/ManageCustomer";
-import InternalManagement from "@/pages/SC_Staff/InternalManagement/InternalManagement";
 import LoginForm from "@/pages/Login/LoginFormt";
 import Unauthorized from "@/pages/Unauthorized";
 import NotFound from "@/pages/NotFound";
@@ -21,20 +19,11 @@ import {
   CampaignManagement,
   WarrantyClaims,
 } from "@/pages/EVM_Staff";
-import { SCStaffDashboard } from "@/pages/SC_Staff";
-import {
-  TechnicianDashboard,
-  ConductWarranty,
-  CreateWarranty,
-} from "@/pages/SC_Technician";
-//Thêm constant & cái mới
-import ManageCustomer from "@/pages/SC_Staff/ManageCustomers/ManageCustomer";
-import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
-import MLCustomerManagement from "@/pages/SC_Staff/ManageCustomers/MLCustomerManagement";
-import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/features/VehicleInformation";
-import ServiceHistory from "@/pages/SC_Staff/ManageCustomers/features/ServiceHistory";
-import PartsManagement from "@/pages/SC_Staff/ManageCustomers/features/PartsManagement";
 
+import Home from "@/pages/Home";
+import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
+import { scStaffRoutes } from "./components/scStaffRoutes";
+import { technicianRoutes } from "./components/technicianRoutes";
 
 function Routers() {
   const routers = createBrowserRouter([
@@ -61,91 +50,12 @@ function Routers() {
     // ============================================
     // 🔒 SC_STAFF ROUTES (chỉ SC_STAFF)
     // ============================================
-    {
-      path: ROUTERS_PATH.SC_STAFF_BASE,
-      element: (
-        <ProtectedRoute allowedRoles={[ROLES.SC_STAFF]}>
-          <MainLayout />
-        </ProtectedRoute>
-      ),
-      children: [
-        {
-          index: true,
-          element: <Navigate to={ROUTERS_PATH.SC_STAFF_DASHBOARD} replace />,
-        },
-        {
-          path: RELATIVE_PATHS.DASHBOARD,
-          element: <SCStaffDashboard />,
-        },
-        // Manage Customer - 2 level routing
-        {
-          path: RELATIVE_PATHS.MANAGE_CUSTOMER,
-          element: <ManageCustomer />, // Step 1: Customer search table
-        },
-        {
-          path: RELATIVE_PATHS.MANAGE_CUSTOMER_PARAM, // Step 2: Customer details with tabs
-          element: <MLCustomerManagement />,
-          children: [
-            {
-              index: true,
-              element: (
-                <Navigate to={RELATIVE_PATHS.VEHICLE_INFORMATION} replace />
-              ),
-            },
-            {
-              path: RELATIVE_PATHS.VEHICLE_INFORMATION,
-              element: <VehicleInformation />,
-            },
-            {
-              path: RELATIVE_PATHS.SERVICE_HISTORY,
-              element: <ServiceHistory />,
-            },
-            {
-              path: RELATIVE_PATHS.PARTS_MANAGEMENT,
-              element: <PartsManagement />,
-            },
-          ],
-        },
-        {
-          path: RELATIVE_PATHS.INTERNAL_MANAGEMENT,
-          element: <InternalManagement />,
-        },
-        { path: "*", element: <NotFound /> },
-      ],
-    },
+    scStaffRoutes,
 
     // ============================================
     // 🔧 TECHNICIAN ROUTES (SC_TECHNICIAN + SC_STAFF)
     // ============================================
-    {
-      path: ROUTERS_PATH.TECHNICIAN_BASE,
-      element: (
-        <ProtectedRoute allowedRoles={[ROLES.SC_TECHNICIAN, ROLES.SC_STAFF]}>
-          <MainLayout />
-        </ProtectedRoute>
-      ),
-      children: [
-        {
-          index: true,
-          element: (
-            <Navigate to={ROUTERS_PATH.SC_TECHNICIAN_DASHBOARD} replace />
-          ),
-        },
-        {
-          path: RELATIVE_PATHS.DASHBOARD,
-          element: <TechnicianDashboard />,
-        },
-        {
-          path: RELATIVE_PATHS.CREATE_WARRANTY,
-          element: <CreateWarranty />,
-        },
-        {
-          path: RELATIVE_PATHS.CONDUCT_WARRANTY,
-          element: <ConductWarranty />,
-        },
-        { path: "*", element: <NotFound /> },
-      ],
-    },
+    technicianRoutes,
 
     // ============================================
     // 👑 ADMIN ROUTES (chỉ ADMIN)

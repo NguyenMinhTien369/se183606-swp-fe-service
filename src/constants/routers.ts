@@ -25,12 +25,14 @@ const ROUTERS_PATH = {
   SC_STAFF_DASHBOARD: "/sc-staff/dashboard",
 
   //F1 - Manage Customer
+  //Kiểm tra lại phần này, xóa đi nếu không dùng
   MANAGE_CUSTOMER: "/sc-staff/manage-customer",
   MANAGE_CUSTOMER_DETAIL: "/sc-staff/manage-customer/:customerId", // Dynamic route
   VEHICLE_INFORMATION: "/sc-staff/manage-customer/vehicle-information",
   SERVICE_HISTORY: "/sc-staff/manage-customer/service-history",
   PARTS_MANAGEMENT: "/sc-staff/manage-customer/parts-management",
   CUSTOMER_SEARCH: "/sc-staff/manage-customer/search",
+  SERVICE_HISTORY_ALL: "/sc-staff/service-history-all",
 
   //F2 - Internal Management
   INTERNAL_MANAGEMENT: "/sc-staff/internal-management",
@@ -47,7 +49,13 @@ export const RELATIVE_PATHS = {
   DASHBOARD: "dashboard",
   MANAGE_CUSTOMER: "manage-customer",
   MANAGE_CUSTOMER_PARAM: "manage-customer/:customerId",
+
+  //F2 - Internal Management
   INTERNAL_MANAGEMENT: "internal-management",
+  SERVICE_HISTORY_ALL: "service-history-all",
+  WARRANTY_REQUEST: "warranty-request",
+  ASSIGN_TECHNICIAN: "assign-technician",
+  PROGRESS: "progress",
 
   // Customer Management Tabs
   VEHICLE_INFORMATION: "vehicle-information",
