@@ -29,6 +29,7 @@ import {
 //Thêm constant & cái mới
 import ManageCustomer from "@/pages/SC_Staff/ManageCustomers/ManageCustomer";
 import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
+import Home from "@/pages/Home/Home";
 // import index from "@/pages/NotFound";
 // import MLCustomerManagement from "@/pages/SC_Staff/ManageCustomers/MLCustomerManagement";
 // import VehicleInformation from "@/pages/SC_Staff/ManageCustomers/VehicleInformation";
@@ -40,6 +41,10 @@ function Routers() {
     // ============================================
     // 🔐 PUBLIC ROUTES (không cần authentication)
     // ============================================
+    {
+      path: ROUTERS_PATH.HOME,
+      element: <Home />,
+    },
     {
       path: LOGIN_ROUTE,
       element: <LoginForm />,

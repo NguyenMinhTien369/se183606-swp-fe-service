@@ -154,9 +154,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <NavLink
                 to={ROUTERS_PATH.HOME}
                 className="flex items-center gap-2"
+                style={{ textDecoration: 'none', color: 'black' }}
               >
                 <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <Wrench className="size-4" />
+                  <Wrench className="size-4" style={{ color: 'black' }} />
                 </div>
                 <div className="flex flex-col leading-none">
                   <span className="font-medium">Trung Tâm Bảo Hành</span>
@@ -176,15 +177,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuButton asChild>
                   <NavLink
                     to={item.to}
+                    style={{ textDecoration: 'none', color: 'black' }}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${
-                        isActive
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted"
+                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${isActive
+                        ? "bg-sidebar-primary"
+                        : "hover:bg-muted"
                       }`
                     }
                   >
-                    {item.icon}
+                    <span style={{ color: 'black' }}>{item.icon}</span>
                     <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
