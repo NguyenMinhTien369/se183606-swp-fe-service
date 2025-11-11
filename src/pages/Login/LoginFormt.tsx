@@ -2,7 +2,7 @@
 import { useNavigate, Link } from "react-router";
 import { useAuth } from "./feature/AuthContext";
 import { getHomeRoute } from "@/utils/constants";
-import { FaUser, FaLock } from "react-icons/fa";
+import { FaUser, FaLock, FaArrowLeft } from "react-icons/fa";
 import styles from "./LoginForm.module.css";
 
 export default function LoginForm() {
@@ -82,6 +82,16 @@ Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
         {/* Right Side - Login Form */}
         <div className={styles.rightSide}>
           <div className={styles.formContainer}>
+            {/* Back to Home Button */}
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className={styles.backToHomeBtn}
+            >
+              <FaArrowLeft />
+              <span>Quay lại trang chủ</span>
+            </button>
+
             {/* Welcome Text */}
             <div className={styles.welcomeText}>
               <h1 className={styles.welcomeTitle}>Welcome</h1>
