@@ -79,7 +79,7 @@ export default function Home() {
       <section className={styles.showcaseSection}>
         <div className={styles.showcaseContainer}>
           <div className={styles.showcaseContent}>
-            <h3 className={styles.showcaseTitle}>Dòng xe điện VinFast</h3>
+            <h3 className={styles.showcaseTitle}>Dòng xe điện</h3>
             <p className={styles.showcaseSubtitle}>
               Trải nghiệm công nghệ xe điện hiện đại với dịch vụ bảo hành toàn diện
             </p>

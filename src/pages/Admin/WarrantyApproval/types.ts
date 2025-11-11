@@ -12,6 +12,24 @@ export interface Vehicle {
     model: string;
     year?: number;
     manufacturerID?: number;
+    licensePlate?: string;
+}
+
+export interface Attachment {
+    attachmentID: number;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    uploadDate: string;
+}
+
+export interface AffectedPart {
+    partID: number;
+    partName: string;
+    partSerialNumber: string;
+    partTypeDescription?: string;
+    description?: string;
+    createdDate: string;
 }
 
 export interface WarrantyClaim {
@@ -26,6 +44,9 @@ export interface WarrantyClaim {
     approvalNotes?: string;
     rejectionReason?: string;
     assignedTechnician?: string;
+    result?: string;
+    attachments?: Attachment[];
+    affectedParts?: AffectedPart[];
 }
 
 export type ClaimStatus =

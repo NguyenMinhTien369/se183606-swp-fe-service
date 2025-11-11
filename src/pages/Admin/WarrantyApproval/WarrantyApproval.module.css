@@ -471,6 +471,165 @@
     cursor: not-allowed;
 }
 
+/* Parts List */
+.partsList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.partItem {
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border-left: 3px solid #14b8a6;
+}
+
+.partSerial {
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: normal;
+}
+
+.partDesc {
+    margin: 6px 0 0 0;
+    color: #6b7280;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* Attachments List */
+.attachmentsList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.attachmentItem {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.attachmentItem:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.imagePreview {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    overflow: hidden;
+    background: #f3f4f6;
+}
+
+.thumbnailImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.imageOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    padding: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.attachmentItem:hover .imageOverlay {
+    opacity: 1;
+}
+
+.viewImageButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: white;
+    color: #1f2937;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.viewImageButton:hover {
+    background: #f3f4f6;
+}
+
+.filePreview {
+    width: 100%;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9fafb;
+}
+
+.fileIcon {
+    font-size: 48px;
+    color: #9ca3af;
+}
+
+.attachmentInfo {
+    padding: 12px;
+    background: white;
+}
+
+.fileName {
+    margin: 0 0 4px 0;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fileDate {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.downloadLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: #14b8a6;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.downloadLink:hover {
+    color: #0d9488;
+}
+
+/* Result Box */
+.resultBox {
+    margin-top: 8px;
+    padding: 16px;
+    background: #f0fdfa;
+    border-left: 4px solid #14b8a6;
+    border-radius: 8px;
+}
+
+.resultBox p {
+    margin: 0;
+    color: #1f2937;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
 @media (max-width: 768px) {
     .filters {
         flex-direction: column;
@@ -486,5 +645,9 @@
 
     .tableContainer {
         overflow-x: auto;
+    }
+
+    .attachmentsList {
+        grid-template-columns: 1fr;
     }
 }
