@@ -6,7 +6,7 @@ export default function MLCustomerManagement() {
     <div className="p-4">
       <div
         className="bg-gray-200 text-black p-4 flex justify-center gap-4 rounded-4xl
-      w-3/6  align-middle mx-auto "
+      w-3/6  align-middle mx-auto  "
       >
         <NavLink
           to={RELATIVE_PATHS.VEHICLE_INFORMATION}
