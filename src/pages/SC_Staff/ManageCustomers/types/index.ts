@@ -101,8 +101,28 @@ export interface ServiceHistory {
   serialNumber: string;
   technician: string;
 }
+export interface ServiceHistoryItem {
+  serviceID: number;
+  vin: string;
+  serviceCenterName: string;
+  claimID: number;
+  serviceDate: string;
+  serviceType: string;
+  workItem: string;
+  replacementPartName: string;
+  replacementPartSerial: string;
+  technicianName: string;
+}
 
 export interface SyncStatus {
   synced: boolean;
   lastSyncTime?: string;
+}
+
+export interface InstalledPart {
+  installedPartID: number;
+  partTypeName: string;
+  partSerialNumber: string;
+  partTypeID: number;
+  installationDate: string;
 }
