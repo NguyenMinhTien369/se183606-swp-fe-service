@@ -63,20 +63,6 @@ export default function App() {
               <h1 className="text-2xl font-semibold tracking-tight">
                 Hệ thống quản lý bảo hành
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Service Center Staff Portal
-              </p>
-            </div>
-
-            {/* User Info */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium">SC Staff</p>
-                <p className="text-sm text-muted-foreground">Nguyễn Văn X</p>
-              </div>
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-sm font-semibold text-primary-foreground shadow-sm">
-                NX
-              </div>
             </div>
           </div>
         </div>
