@@ -20,6 +20,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
+import LOGIN_ROUTE from "@/constants/loginrouter";
+
 export function NavUser({
   user,
 }: {
@@ -76,11 +78,11 @@ export function NavUser({
               onClick={async () => {
                 try {
                   await logout();
-                  navigate("/login", { replace: true });
+                  navigate(LOGIN_ROUTE, { replace: true });
                 } catch (error) {
                   console.error("Logout failed:", error);
                   // Vẫn navigate về login ngay cả khi có lỗi
-                  navigate("/login", { replace: true });
+                  navigate(LOGIN_ROUTE, { replace: true });
                 }
               }}
             >
