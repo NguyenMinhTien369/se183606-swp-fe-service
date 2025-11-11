@@ -62,3 +62,24 @@ Mình đang nghi ngờ:
 
 4. giải thích cho tôi tại sao khi tôi nhấn hoàn thành sửa chửa không chuyển sang tab hoàn tất & bàn giao
 5. Tại sao tôi đã nhập số seri phụ tùng ở bước xác nhận mà ở bước thực hiện sửa chữa không hiển thị lại và hiển thị lại ở cả bước Hoàn tất & bàn giao
+
+# ------------------------------
+
+### Từng bước làm Router:
+
+1. tạo folder cho từng page mà router chuyển tới
+2. tạo folder constant:
+
+- file index.js chứ toàn bộ đường dẫn, file view detail phải là ..../:id
+
+3. tạo folder layouts: MainLayout.jsx
+4. tạo folder routes: file index.js - cấu hình router
+5. Bọc app bằng ROuter là cái mới tạo ở trên
+
+## Bước 01: Tạo constant cho toàn bộ đường dẫn
+
+- SC_STAFF_DASHBOARD: "/sc-staff/dashboard",
+- SC*STAFF*
+- SC_STAFF
+- SC_STAFF
+- SC_STAFF
