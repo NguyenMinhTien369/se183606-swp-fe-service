@@ -6,14 +6,14 @@ export default function MLCustomerManagement() {
     <div className="p-4">
       <div
         className="bg-gray-200 text-black p-4 flex justify-center gap-4 rounded-4xl
-      w-3/6  align-middle mx-auto"
+      w-3/6  align-middle mx-auto "
       >
         <NavLink
           to={RELATIVE_PATHS.VEHICLE_INFORMATION}
           className="px-3 py-2 rounded-lg hover:bg-slate-950 font-bold  hover:text-white transition-colors duration-200 
           "
         >
-          Vehicle Information
+          Thông Tin Chi Tiết
         </NavLink>
 
         <NavLink
@@ -21,7 +21,7 @@ export default function MLCustomerManagement() {
           className="px-3 py-2 rounded-lg hover:bg-slate-950 font-bold hover:text-white transition-colors duration-200 
           "
         >
-          Service History
+          Lịch Sử Dịch Vụ
         </NavLink>
 
         <NavLink
@@ -29,7 +29,7 @@ export default function MLCustomerManagement() {
           className="px-3 py-2 rounded-lg hover:bg-slate-950 font-bold hover:text-white transition-colors duration-200 
           "
         >
-          Parts Management
+          Quản Lý Phụ Tùng
         </NavLink>
       </div>
 
