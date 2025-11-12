@@ -99,6 +99,13 @@ const WarrantyApproval = () => {
                 };
             });
 
+            // Sắp xếp các đơn bảo hành mới nhất lên đầu
+            mappedClaims.sort((a: any, b: any) => {
+                const dateA = new Date(a.createdDate).getTime();
+                const dateB = new Date(b.createdDate).getTime();
+                return dateB - dateA; // Sort giảm dần (mới nhất trước)
+            });
+
             console.log('Mapped claims:', mappedClaims);
             console.log('Total claims:', mappedClaims.length);
             setClaims(mappedClaims);
