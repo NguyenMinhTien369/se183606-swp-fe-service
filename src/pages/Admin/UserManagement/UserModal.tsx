@@ -68,9 +68,6 @@ const UserModal: React.FC<UserModalProps> = ({
         const finalValue = (name === 'roleId' || name === 'serviceCenterId')
             ? Number(value)
             : value;
-
-        console.log('handleChange:', { name, rawValue: value, finalValue, type: typeof finalValue });
-
         setFormData(prev => ({ ...prev, [name]: finalValue }));
 
         // Clear error when user starts typing

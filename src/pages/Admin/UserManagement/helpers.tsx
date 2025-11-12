@@ -47,14 +47,6 @@ export const getRoleId = (roleString: string): number => {
     };
 
     const roleId = roleMap[normalizedRole];
-
-    // Debug log to see what's being converted
-    console.log('getRoleId:', {
-        original: roleString,
-        normalized: normalizedRole,
-        result: roleId
-    });
-
     return roleId || 2;
 };
 
