@@ -237,9 +237,17 @@ export const warrantyClaimAPI = {
     axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
       params: { status },
     }),
-};
 
-// ==================== CLAIM ASSIGNMENT API ====================
+  // Giao phụ tùng cho đơn bảo hành đã được chấp nhận
+  shipParts: (id: number) =>
+    axiosInstance.post(`/warranty-claims/${id}/ship-parts`),
+
+  // Báo thiếu phụ tùng
+  reportMissingParts: (id: number, note: string) =>
+    axiosInstance.post(`/warranty-claims/${id}/report-missing-parts`, null, {
+      params: { note },
+    }),
+};// ==================== CLAIM ASSIGNMENT API ====================
 // Backend: ClaimAssignmentController.java
 // Path: /api/claim-assignments/*
 export const claimAssignmentAPI = {
@@ -387,4 +395,42 @@ export const productModelAPI = {
     axiosInstance.get(`/product-models/${id}`),
   createProductModel: (data: ProductModelRequest) =>
     axiosInstance.post("/product-models", data),
+};
+
+// PartDistributionRequest.java - Yêu cầu phân phối phụ tùng
+interface PartDistributionRequest {
+  partSerialNumber: string;
+  serviceCenterID: number;
+  quantity: number;
+  distributionDate?: string; // LocalDate
+}
+
+// ==================== PART DISTRIBUTION API ====================
+// Backend: PartDistributionController.java
+// Path: /api/distributions/*
+export const partDistributionAPI = {
+  getAllDistributions: () => axiosInstance.get("/distributions"),
+  getDistributionById: (id: number) =>
+    axiosInstance.get(`/distributions/${id}`),
+  createDistribution: (data: PartDistributionRequest) =>
+    axiosInstance.post("/distributions", data),
+  updateDistribution: (id: number, data: PartDistributionRequest) =>
+    axiosInstance.put(`/distributions/${id}`, data),
+  deleteDistribution: (id: number) =>
+    axiosInstance.delete(`/distributions/${id}`),
+  getDistributionsByPart: (serialNumber: string) =>
+    axiosInstance.get(`/distributions/part/${serialNumber}`),
+  getDistributionsByServiceCenter: (serviceCenterId: number) =>
+    axiosInstance.get(`/distributions/service-center/${serviceCenterId}`),
+  getDistributionsByDateRange: (startDate: string, endDate: string) =>
+    axiosInstance.get("/distributions/date-range", {
+      params: { startDate, endDate },
+    }),
+  getDistributionsByPartAndServiceCenter: (
+    serialNumber: string,
+    serviceCenterId: number
+  ) =>
+    axiosInstance.get(
+      `/distributions/part/${serialNumber}/service-center/${serviceCenterId}`
+    ),
 };

@@ -54,6 +54,9 @@ export type ClaimStatus =
     | 'APPROVED'
     | 'REJECTED'
     | 'IN_PROGRESS'
+    | 'SHIPPING'
+    | 'RECEIVED'
+    | 'MISSING_PARTS'
     | 'COMPLETED';
 
 export interface ApprovalRequest {

@@ -10,6 +10,8 @@ import {
     FaClock,
     FaExclamationCircle,
     FaCheckCircle,
+    FaTruck,
+    FaRedo,
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
 import type { WarrantyClaim, ClaimStatus } from './types';
@@ -23,6 +25,7 @@ const WarrantyClaims = () => {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
+    const [showShipPartsModal, setShowShipPartsModal] = useState(false);
     const [selectedClaim, setSelectedClaim] = useState<WarrantyClaim | null>(null);
     const [rejectReason, setRejectReason] = useState('');
 
@@ -50,11 +53,14 @@ const WarrantyClaims = () => {
                     'Đã duyệt': 'APPROVED',
                     'Từ chối': 'REJECTED',
                     'Đang xử lý': 'IN_PROGRESS',
+                    'Đang giao phụ tùng': 'SHIPPING',
+                    'Đã nhận': 'RECEIVED',
+                    'Thiếu hàng': 'MISSING_PARTS',
                     'Hoàn thành': 'COMPLETED',
                 };
 
                 const upperStatus = status?.toUpperCase();
-                if (['PENDING', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'COMPLETED'].includes(upperStatus)) {
+                if (['PENDING', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'SHIPPING', 'RECEIVED', 'MISSING_PARTS', 'COMPLETED'].includes(upperStatus)) {
                     return upperStatus as ClaimStatus;
                 }
                 return statusMap[status] || 'PENDING';
@@ -150,12 +156,33 @@ const WarrantyClaims = () => {
         }
     };
 
+    const handleShipParts = async () => {
+        if (!selectedClaim) return;
+
+        try {
+            setLoading(true);
+            await warrantyClaimAPI.shipParts(selectedClaim.id);
+
+            alert('✅ Đã tạo yêu cầu giao phụ tùng thành công! Trạng thái: Đang giao phụ tùng');
+            setShowShipPartsModal(false);
+            fetchClaims();
+        } catch (error: any) {
+            console.error('❌ [EVM_Staff] Error shipping parts:', error);
+            alert(`Lỗi: ${error.response?.data?.message || 'Không thể giao phụ tùng!'}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const getStatusBadge = (status: ClaimStatus) => {
         const config: Record<ClaimStatus, { label: string; className: string; icon: any }> = {
             PENDING: { label: 'Chờ duyệt', className: styles.statusPending, icon: FaClock },
             APPROVED: { label: 'Đã duyệt', className: styles.statusApproved, icon: FaCheckCircle },
             REJECTED: { label: 'Từ chối', className: styles.statusRejected, icon: FaTimes },
             IN_PROGRESS: { label: 'Đang xử lý', className: styles.statusInProgress, icon: FaExclamationCircle },
+            SHIPPING: { label: 'Đang giao hàng', className: styles.statusShipping, icon: FaTruck },
+            RECEIVED: { label: 'Đã nhận hàng', className: styles.statusReceived, icon: FaCheckCircle },
+            MISSING_PARTS: { label: 'Thiếu hàng', className: styles.statusMissing, icon: FaExclamationCircle },
             COMPLETED: { label: 'Hoàn thành', className: styles.statusCompleted, icon: FaCheck },
         };
 
@@ -217,6 +244,9 @@ const WarrantyClaims = () => {
                     <option value="ALL">Tất cả trạng thái</option>
                     <option value="PENDING">Chờ duyệt</option>
                     <option value="APPROVED">Đã duyệt</option>
+                    <option value="SHIPPING">Đang giao hàng</option>
+                    <option value="RECEIVED">Đã nhận hàng</option>
+                    <option value="MISSING_PARTS">Thiếu hàng</option>
                     <option value="REJECTED">Từ chối</option>
                     <option value="IN_PROGRESS">Đang xử lý</option>
                     <option value="COMPLETED">Hoàn thành</option>
@@ -354,6 +384,22 @@ const WarrantyClaims = () => {
                                                             </button>
                                                         </>
                                                     )}
+                                                {(claim.status === 'APPROVED' || claim.status === 'MISSING_PARTS') && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedClaim(claim);
+                                                            setShowShipPartsModal(true);
+                                                        }}
+                                                        className={styles.shipButton}
+                                                        title={claim.status === 'MISSING_PARTS' ? 'Giao lại phụ tùng' : 'Giao phụ tùng'}
+                                                    >
+                                                        {claim.status === 'MISSING_PARTS' ? (
+                                                            <><FaRedo /> Giao lại</>
+                                                        ) : (
+                                                            <><FaTruck /> Giao hàng</>
+                                                        )}
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -468,6 +514,59 @@ const WarrantyClaims = () => {
                                 disabled={loading}
                             >
                                 {loading ? 'Đang xử lý...' : 'Từ chối'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Ship Parts Modal */}
+            {showShipPartsModal && selectedClaim && (
+                <div className={styles.modalOverlay} onClick={() => setShowShipPartsModal(false)}>
+                    <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+                        <h3>
+                            {selectedClaim.status === 'MISSING_PARTS'
+                                ? 'Xác nhận giao lại phụ tùng'
+                                : 'Xác nhận giao phụ tùng'}
+                        </h3>
+                        <p>
+                            Bạn có chắc chắn muốn tạo yêu cầu giao phụ tùng cho đơn <strong>{selectedClaim.claimNumber}</strong>?
+                        </p>
+                        {selectedClaim.status === 'MISSING_PARTS' && selectedClaim.result && (
+                            <div className={styles.missingNote}>
+                                <strong>⚠️ Lý do thiếu hàng:</strong>
+                                <p>{selectedClaim.result}</p>
+                            </div>
+                        )}
+                        <p className={styles.infoText}>
+                            <FaTruck /> Hệ thống sẽ tự động tạo phiếu xuất kho và phân phối phụ tùng đến trung tâm bảo hành.
+                        </p>
+                        {selectedClaim.affectedParts && selectedClaim.affectedParts.length > 0 && (
+                            <div className={styles.partsListPreview}>
+                                <strong>Phụ tùng cần giao:</strong>
+                                <ul>
+                                    {selectedClaim.affectedParts.map((part: any) => (
+                                        <li key={part.partID}>
+                                            {part.partName} (SN: {part.partSerialNumber})
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        <div className={styles.confirmActions}>
+                            <button onClick={() => setShowShipPartsModal(false)} className={styles.btnCancel}>
+                                Hủy
+                            </button>
+                            <button
+                                onClick={handleShipParts}
+                                className={styles.btnShip}
+                                disabled={loading}
+                            >
+                                {loading ? 'Đang xử lý...' : (
+                                    selectedClaim.status === 'MISSING_PARTS'
+                                        ? '🔄 Xác nhận giao lại'
+                                        : '🚚 Xác nhận giao hàng'
+                                )}
                             </button>
                         </div>
                     </div>

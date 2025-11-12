@@ -9,7 +9,7 @@
 .title {
     font-size: 28px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #0e0d0d;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -209,6 +209,21 @@
     color: #3b82f6;
 }
 
+.statusShipping {
+    background: #ddd6fe;
+    color: #7c3aed;
+}
+
+.statusReceived {
+    background: #bbf7d0;
+    color: #16a34a;
+}
+
+.statusMissing {
+    background: #fed7aa;
+    color: #ea580c;
+}
+
 .statusCompleted {
     background: #e0e7ff;
     color: #6366f1;
@@ -222,7 +237,8 @@
 
 .viewButton,
 .approveButton,
-.rejectButton {
+.rejectButton,
+.shipButton {
     padding: 8px;
     border: none;
     border-radius: 6px;
@@ -255,6 +271,21 @@
 
 .rejectButton:hover {
     background: #fecaca;
+}
+
+.shipButton {
+    background: #dbeafe;
+    color: #3b82f6;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.shipButton:hover {
+    background: #bfdbfe;
 }
 
 .loading {
@@ -439,7 +470,8 @@
 }
 
 .btnCancel,
-.btnApprove {
+.btnApprove,
+.btnShip {
     padding: 10px 20px;
     border: none;
     border-radius: 6px;
@@ -469,6 +501,57 @@
 .btnApprove:disabled {
     background: #9ca3af;
     cursor: not-allowed;
+}
+
+.btnShip {
+    background: #3b82f6;
+    color: white;
+}
+
+.btnShip:hover {
+    background: #2563eb;
+}
+
+.btnShip:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.infoText {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: #eff6ff;
+    border-radius: 8px;
+    color: #1e40af;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.partsListPreview {
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e7eb;
+}
+
+.partsListPreview strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #1f2937;
+}
+
+.partsListPreview ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.partsListPreview li {
+    margin: 4px 0;
+    color: #4b5563;
+    font-size: 14px;
 }
 
 /* Parts List */
