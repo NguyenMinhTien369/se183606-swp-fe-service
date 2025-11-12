@@ -65,7 +65,14 @@ const UserModal: React.FC<UserModalProps> = ({
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        const finalValue = (name === 'roleId' || name === 'serviceCenterId')
+            ? Number(value)
+            : value;
+
+        console.log('handleChange:', { name, rawValue: value, finalValue, type: typeof finalValue });
+
+        setFormData(prev => ({ ...prev, [name]: finalValue }));
+
         // Clear error when user starts typing
         if (errors[name as keyof UserFormData]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
@@ -210,9 +217,9 @@ const UserModal: React.FC<UserModalProps> = ({
                         >
                             <option value={0}>-- Select Role --</option>
                             <option value={1}>Admin</option>
-                            <option value={2}>EVM Staff</option>
-                            <option value={4}>SC Staff</option>
+                            <option value={2}>SC Staff</option>
                             <option value={3}>Technician</option>
+                            <option value={4}>EVM Staff</option>
                         </select>
                         {errors.roleId && <span className={styles.errorText}>{errors.roleId}</span>}
                     </div>
