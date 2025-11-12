@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, QrCode, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +16,7 @@ interface VehicleSearchProps {
   onSearch: (vehicleInfo: VehicleInfo | null, error?: string) => void;
 }
 
-export function VehicleSearch({ onSearch }: VehicleSearchProps) {
+export default function VehicleSearch({ onSearch }: VehicleSearchProps) {
   const [vin, setVin] = useState("");
   const [loading, setLoading] = useState(false);
 

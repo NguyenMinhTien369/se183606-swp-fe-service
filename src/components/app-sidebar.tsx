@@ -128,7 +128,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Tạo Bảo Hành",
           icon: <ClipboardPlus className="size-4" />,
-          to: ROUTERS_PATH.CREATE_WARRANTY,
+          to: ROUTERS_PATH.MANAGE_WARRANTY,
         },
         {
           title: "Thực Hiện Bảo Hành",
