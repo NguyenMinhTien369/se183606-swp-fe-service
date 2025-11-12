@@ -7,7 +7,7 @@ import styles from './ProductManagement.module.css';
 
 const ProductManagement = () => {
     const [activeTab, setActiveTab] = useState<TabType>('models');
-    const [models, setModels] = useState<ProductModel[]>([]);
+    const [productModels, setProductModels] = useState<ProductModel[]>([]);
     const [parts, setParts] = useState<Part[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,44 +20,32 @@ const ProductManagement = () => {
         modelName: '',
         color: '',
         productionYear: new Date().getFullYear(),
-        warrantyPeriod: 12,
     });
 
     const [partForm, setPartForm] = useState<PartFormData>({
         partSerialNumber: '',
         partTypeID: 1,
         productionDate: '',
-        warrantyPeriod: ''
+        warrantyPeriod: '',
     });
 
     useEffect(() => {
         if (activeTab === 'models') {
-            fetchModels();
+            fetchProductModels();
         } else {
             fetchParts();
         }
     }, [activeTab]);
 
-    const fetchModels = async () => {
+    const fetchProductModels = async () => {
         try {
             setLoading(true);
             const response = await productModelAPI.getAllProductModels();
-            console.log('✅ Models response:', response);
-
-            // Map directly from BE response
-            const mappedModels = (response.data.result || []).map((model: any) => ({
-                modelID: model.modelID,
-                modelName: model.modelName,
-                productionYear: model.productionYear,
-                color: model.color || 'N/A',
-                warrantyPeriod: model.warrantyPeriod || 36,
-                manufacturer: model.manufacturer || 'N/A'
-            }));
-
-            setModels(mappedModels);
+            const models = response.data.result || [];
+            setProductModels(models);
         } catch (error) {
             console.error('Error fetching product models:', error);
-            setModels([]);
+            setProductModels([]);
         } finally {
             setLoading(false);
         }
@@ -68,32 +56,38 @@ const ProductManagement = () => {
             setLoading(true);
             console.log('🔍 Fetching parts...');
 
+            // Backend hỗ trợ empty search để lấy tất cả parts
             const response = await partAPI.searchPartsBySerialNumber('');
-            console.log('✅ Parts response:', response.data);
+            console.log('✅ Parts response:', response);
+            console.log('📊 Result data:', response.data.result);
 
-            // Map backend response to frontend Part interface
+            // Map backend response
             const mappedParts = (response.data.result || []).map((part: any) => {
-                console.log('📦 Part from backend:', part);
+                console.log('Mapping part:', part);
                 return {
                     serialNumber: part.partSerialNumber,
                     partName: part.partTypeName || 'N/A',
                     category: part.partTypeName || 'N/A',
                     manufactureDate: part.productionDate,
                     warrantyPeriodMonths: part.warrantyPeriod || 0,
-                    warrantyExpiryDate: part.warrantyPeriod || '', // Backend trả về warrantyPeriod là date string
                 };
             });
 
+            console.log('✅ Mapped parts:', mappedParts);
+            console.log('📈 Total parts:', mappedParts.length);
             setParts(mappedParts);
         } catch (error: any) {
-            console.error('Error fetching parts:', error);
+            console.error('❌ Error fetching parts:', error);
+            console.error('❌ Error response:', error.response);
+            console.error('❌ Error details:', error.response?.data);
 
+            // Xử lý lỗi PART_LIST_EMPTY (code 1041)
             if (error.response?.data?.code === 1041) {
-                console.log('No parts found in database');
+                console.log('ℹ️ Không có parts nào trong database');
                 setParts([]);
             } else {
                 setParts([]);
-                alert(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải dữ liệu linh kiện'}`);
+                alert(`❌ Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải dữ liệu linh kiện'}`);
             }
         } finally {
             setLoading(false);
@@ -106,7 +100,6 @@ const ProductManagement = () => {
             modelName: '',
             color: '',
             productionYear: new Date().getFullYear(),
-            warrantyPeriod: 12,
         });
         setShowModal(true);
     };
@@ -118,7 +111,6 @@ const ProductManagement = () => {
             modelName: model.modelName,
             color: model.color,
             productionYear: model.productionYear,
-            warrantyPeriod: 12, // Default value since ProductModel doesn't include it
         });
         setShowModal(true);
     };
@@ -134,7 +126,7 @@ const ProductManagement = () => {
             partSerialNumber: '',
             partTypeID: 1,
             productionDate: '',
-            warrantyPeriod: ''
+            warrantyPeriod: '',
         });
         setShowModal(true);
     };
@@ -144,9 +136,9 @@ const ProductManagement = () => {
         setSelectedItem(part);
         setPartForm({
             partSerialNumber: part.serialNumber,
-            partTypeID: 1,
+            partTypeID: 1, // Default value, should be set from part data
             productionDate: part.manufactureDate || '',
-            warrantyPeriod: part.warrantyExpiryDate || '',
+            warrantyPeriod: part.manufactureDate || '', // Placeholder
         });
         setShowModal(true);
     };
@@ -160,31 +152,30 @@ const ProductManagement = () => {
         try {
             setLoading(true);
 
-            if (activeTab === 'models') {
+            if (activeTab === 'vehicles') {
                 if (modalMode === 'add') {
-                    await productModelAPI.createProductModel(modelForm);
+                    await productModelAPI.createProductModel({
+                        modelName: vehicleForm.model,
+                        color: 'Default', // You may want to add a color field to the form
+                        productionYear: vehicleForm.year,
+                        warrantyPeriod: 36, // Default 36 months warranty
+                    });
                     alert('✅ Thêm model xe thành công!');
                 } else if (modalMode === 'edit' && selectedItem) {
                     alert('⚠️ Chức năng cập nhật model chưa được hỗ trợ từ backend!');
                 }
-                fetchModels();
+                fetchVehicles();
             } else {
-                // Chuẩn bị dữ liệu part cho BE
-                const partData = {
-                    partSerialNumber: partForm.partSerialNumber,
-                    partTypeID: partForm.partTypeID,
-                    productionDate: partForm.productionDate,
-                    warrantyPeriod: partForm.warrantyPeriod
-                };
-
-                console.log('📤 Sending part data:', partData);
-
                 if (modalMode === 'add') {
-                    await partAPI.createPart(partData);
+                    await partAPI.createPart(partForm);
                     alert('✅ Thêm linh kiện thành công!');
                 } else if (modalMode === 'edit' && selectedItem) {
                     const part = selectedItem as Part;
-                    await partAPI.updatePart(part.serialNumber, partData);
+                    await partAPI.updatePart(part.serialNumber, {
+                        partTypeID: partForm.partTypeID,
+                        productionDate: partForm.productionDate,
+                        warrantyPeriod: partForm.warrantyPeriod,
+                    });
                     alert('✅ Cập nhật linh kiện thành công!');
                 }
                 fetchParts();
@@ -192,54 +183,47 @@ const ProductManagement = () => {
 
             setShowModal(false);
         } catch (error: any) {
-            console.error('❌ Error submitting form:', error);
-            console.error('❌ Error response:', error.response?.data);
-
-            // Hiển thị thông báo lỗi chi tiết hơn
-            const errorMessage = error.response?.data?.message || error.message || 'Không thể thực hiện!';
-            alert(`❌ Lỗi: ${errorMessage}`);
+            console.error('Error submitting form:', error);
+            alert(`❌ Lỗi: ${error.response?.data?.message || 'Không thể thực hiện!'}`);
         } finally {
             setLoading(false);
         }
     };
+
     const handleConfirmDelete = async () => {
         if (!selectedItem) return;
 
         try {
             setLoading(true);
 
-            if (activeTab === 'models') {
+            if (activeTab === 'vehicles') {
                 alert('⚠️ Chức năng xóa model xe chưa được hỗ trợ từ backend!');
             } else {
                 const part = selectedItem as Part;
                 await partAPI.deletePart(part.serialNumber);
-                alert('✅ Xóa linh kiện thành công!');
+                alert('Xóa linh kiện thành công!');
                 fetchParts();
             }
 
             setShowConfirmDelete(false);
         } catch (error: any) {
             console.error('Error deleting item:', error);
-            alert(`❌ Lỗi: ${error.response?.data?.message || 'Không thể xóa!'}`);
+            alert(`Lỗi: ${error.response?.data?.message || 'Không thể xóa!'}`);
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredModels = models.filter((model) => {
+    const filteredVehicles = vehicles.filter((v) => {
         const search = searchTerm.toLowerCase();
-        return (
-            model.modelName.toLowerCase().includes(search) ||
-            model.color.toLowerCase().includes(search) ||
-            model.modelID.toString().includes(search)
-        );
+        return v.vin?.toLowerCase().includes(search) || v.model?.toLowerCase().includes(search);
     });
 
-    const filteredParts = parts.filter(part => {
+    const filteredParts = parts.filter((p) => {
         const search = searchTerm.toLowerCase();
         return (
-            part.serialNumber?.toLowerCase().includes(search) ||
-            part.partName?.toLowerCase().includes(search)
+            p.serialNumber?.toLowerCase().includes(search) ||
+            p.partName?.toLowerCase().includes(search)
         );
     });
 
@@ -250,22 +234,22 @@ const ProductManagement = () => {
                     <h1 className={styles.title}>
                         <FaBoxOpen /> Quản lý Sản phẩm
                     </h1>
-                    <p className={styles.subtitle}>Quản lý model xe và linh kiện trong hệ thống</p>
+                    <p className={styles.subtitle}>Quản lý xe và linh kiện trong hệ thống</p>
                 </div>
                 <button
-                    onClick={activeTab === 'models' ? handleAddModel : handleAddPart}
+                    onClick={activeTab === 'vehicles' ? handleAddVehicle : handleAddPart}
                     className={styles.addButton}
                 >
-                    <FaPlus /> Thêm {activeTab === 'models' ? 'Model Xe' : 'Linh kiện'}
+                    <FaPlus /> Thêm {activeTab === 'vehicles' ? 'Xe' : 'Linh kiện'}
                 </button>
             </div>
 
             <div className={styles.tabs}>
                 <button
-                    onClick={() => setActiveTab('models')}
-                    className={`${styles.tab} ${activeTab === 'models' ? styles.tabActive : ''}`}
+                    onClick={() => setActiveTab('vehicles')}
+                    className={`${styles.tab} ${activeTab === 'vehicles' ? styles.tabActive : ''}`}
                 >
-                    <FaCar /> Model Xe
+                    <FaCar /> Xe
                 </button>
                 <button
                     onClick={() => setActiveTab('parts')}
@@ -279,7 +263,7 @@ const ProductManagement = () => {
                 <FaSearch className={styles.searchIcon} />
                 <input
                     type="text"
-                    placeholder={`Tìm ${activeTab === 'models' ? 'model xe theo tên, màu sắc' : 'linh kiện theo serial, tên'}...`}
+                    placeholder={`Tìm ${activeTab === 'vehicles' ? 'xe theo VIN, model' : 'linh kiện theo serial, tên'}...`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className={styles.searchInput}
@@ -293,12 +277,13 @@ const ProductManagement = () => {
                     <table className={styles.table}>
                         <thead>
                             <tr>
-                                {activeTab === 'models' ? (
+                                {activeTab === 'vehicles' ? (
                                     <>
-                                        <th>ID</th>
-                                        <th>Tên Model</th>
-                                        <th>Năm SX</th>
-                                        <th>Màu sắc</th>
+                                        <th>VIN</th>
+                                        <th>Model</th>
+                                        <th>Năm</th>
+                                        <th>Ngày mua</th>
+                                        <th>Hết bảo hành</th>
                                         <th>Thao tác</th>
                                     </>
                                 ) : (
@@ -314,31 +299,40 @@ const ProductManagement = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {activeTab === 'models' ? (
-                                filteredModels.length === 0 ? (
+                            {activeTab === 'vehicles' ? (
+                                filteredVehicles.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className={styles.noData}>
-                                            Không có dữ liệu model xe
+                                        <td colSpan={6} className={styles.noData}>
+                                            Không có dữ liệu
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredModels.map((model) => (
-                                        <tr key={model.modelID}>
-                                            <td>{model.modelID}</td>
-                                            <td>{model.modelName}</td>
-                                            <td>{model.productionYear}</td>
-                                            <td>{model.color}</td>
+                                    filteredVehicles.map((vehicle) => (
+                                        <tr key={vehicle.vin}>
+                                            <td>{vehicle.vin}</td>
+                                            <td>{vehicle.model}</td>
+                                            <td>{vehicle.year}</td>
+                                            <td>
+                                                {vehicle.purchaseDate
+                                                    ? new Date(vehicle.purchaseDate).toLocaleDateString('vi-VN')
+                                                    : 'N/A'}
+                                            </td>
+                                            <td>
+                                                {vehicle.warrantyEndDate
+                                                    ? new Date(vehicle.warrantyEndDate).toLocaleDateString('vi-VN')
+                                                    : 'N/A'}
+                                            </td>
                                             <td>
                                                 <div className={styles.actions}>
                                                     <button
-                                                        onClick={() => handleEditModel(model)}
+                                                        onClick={() => handleEditVehicle(vehicle)}
                                                         className={styles.editButton}
                                                         title="Sửa"
                                                     >
                                                         <FaEdit />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDeleteModel(model)}
+                                                        onClick={() => handleDeleteVehicle(vehicle)}
                                                         className={styles.deleteButton}
                                                         title="Xóa"
                                                     >
@@ -352,7 +346,7 @@ const ProductManagement = () => {
                             ) : filteredParts.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className={styles.noData}>
-                                        Không có dữ liệu linh kiện
+                                        Không có dữ liệu
                                     </td>
                                 </tr>
                             ) : (
@@ -399,7 +393,7 @@ const ProductManagement = () => {
                         <div className={styles.modalHeader}>
                             <h2>
                                 {modalMode === 'add' ? 'Thêm' : 'Sửa'}{' '}
-                                {activeTab === 'models' ? 'Model Xe' : 'Linh kiện'}
+                                {activeTab === 'vehicles' ? 'Xe' : 'Linh kiện'}
                             </h2>
                             <button onClick={() => setShowModal(false)} className={styles.closeButton}>
                                 ×
@@ -407,42 +401,68 @@ const ProductManagement = () => {
                         </div>
 
                         <div className={styles.form}>
-                            {activeTab === 'models' ? (
+                            {activeTab === 'vehicles' ? (
                                 <div className={styles.formGrid}>
                                     <div className={styles.formGroup}>
-                                        <label>Tên Model *</label>
+                                        <label>VIN *</label>
                                         <input
                                             type="text"
-                                            value={modelForm.modelName}
-                                            onChange={(e) => setModelForm({ ...modelForm, modelName: e.target.value })}
+                                            value={vehicleForm.vin}
+                                            onChange={(e) => setVehicleForm({ ...vehicleForm, vin: e.target.value })}
+                                            disabled={modalMode === 'edit'}
                                             required
                                         />
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label>Năm sản xuất *</label>
-                                        <input
-                                            type="number"
-                                            value={modelForm.productionYear}
-                                            onChange={(e) => setModelForm({ ...modelForm, productionYear: parseInt(e.target.value) })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className={styles.formGroup}>
-                                        <label>Màu sắc *</label>
+                                        <label>Model *</label>
                                         <input
                                             type="text"
-                                            value={modelForm.color}
-                                            onChange={(e) => setModelForm({ ...modelForm, color: e.target.value })}
+                                            value={vehicleForm.model}
+                                            onChange={(e) => setVehicleForm({ ...vehicleForm, model: e.target.value })}
                                             required
                                         />
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label>Thời hạn bảo hành (tháng) *</label>
+                                        <label>Năm</label>
                                         <input
                                             type="number"
-                                            value={modelForm.warrantyPeriod}
-                                            onChange={(e) => setModelForm({ ...modelForm, warrantyPeriod: parseInt(e.target.value) })}
-                                            required
+                                            value={vehicleForm.year}
+                                            onChange={(e) =>
+                                                setVehicleForm({ ...vehicleForm, year: parseInt(e.target.value) })
+                                            }
+                                        />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Manufacturer ID</label>
+                                        <input
+                                            type="number"
+                                            value={vehicleForm.manufacturerID}
+                                            onChange={(e) =>
+                                                setVehicleForm({
+                                                    ...vehicleForm,
+                                                    manufacturerID: parseInt(e.target.value),
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Ngày mua</label>
+                                        <input
+                                            type="date"
+                                            value={vehicleForm.purchaseDate}
+                                            onChange={(e) =>
+                                                setVehicleForm({ ...vehicleForm, purchaseDate: e.target.value })
+                                            }
+                                        />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label>Ngày hết bảo hành</label>
+                                        <input
+                                            type="date"
+                                            value={vehicleForm.warrantyEndDate}
+                                            onChange={(e) =>
+                                                setVehicleForm({ ...vehicleForm, warrantyEndDate: e.target.value })
+                                            }
                                         />
                                     </div>
                                 </div>
@@ -472,7 +492,9 @@ const ProductManagement = () => {
                                         <input
                                             type="date"
                                             value={partForm.productionDate}
-                                            onChange={(e) => setPartForm({ ...partForm, productionDate: e.target.value })}
+                                            onChange={(e) =>
+                                                setPartForm({ ...partForm, productionDate: e.target.value })
+                                            }
                                             required
                                         />
                                     </div>
@@ -481,7 +503,9 @@ const ProductManagement = () => {
                                         <input
                                             type="date"
                                             value={partForm.warrantyPeriod}
-                                            onChange={(e) => setPartForm({ ...partForm, warrantyPeriod: e.target.value })}
+                                            onChange={(e) =>
+                                                setPartForm({ ...partForm, warrantyPeriod: e.target.value })
+                                            }
                                             required
                                         />
                                     </div>
@@ -504,8 +528,8 @@ const ProductManagement = () => {
             <ConfirmModal
                 isOpen={showConfirmDelete}
                 title="Xác nhận xóa"
-                message={`Bạn có chắc chắn muốn xóa ${activeTab === 'models'
-                    ? `model xe ${(selectedItem as ProductModel)?.modelName}`
+                message={`Bạn có chắc chắn muốn xóa ${activeTab === 'vehicles'
+                    ? `xe ${(selectedItem as Vehicle)?.vin}`
                     : `linh kiện ${(selectedItem as Part)?.serialNumber}`
                     }?`}
                 onConfirm={handleConfirmDelete}

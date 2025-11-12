@@ -1,32 +1,30 @@
-// TypeScript types for Product Management
-export interface Vehicle {
-    vin: string;
-    model?: string;
-    year?: number;
-    manufacturerID?: number;
-    purchaseDate?: string;
-    warrantyEndDate?: string;
+// Backend ProductModel response
+export interface ProductModel {
+    modelID: number;
+    modelName: string;
+    color: string;
+    productionYear: number;
 }
 
+// Backend Part response (mapped)
 export interface Part {
-    partID?: number;
-    partName: string;
     serialNumber: string;
-    manufacturerID?: number;
+    partName: string;
+    category: string;
     manufactureDate?: string;
     warrantyPeriodMonths?: number;
-    category?: string;
+    warrantyExpiryDate?: string; // Ngày hết hạn bảo hành (LocalDate)
 }
 
-export interface VehicleFormData {
-    vin: string;
-    model: string;
-    year: number;
-    manufacturerID: number;
-    purchaseDate: string;
-    warrantyEndDate: string;
+// Form data for creating/editing ProductModel
+export interface ProductModelFormData {
+    modelName: string;
+    color: string;
+    productionYear: number;
+    warrantyPeriod: number;
 }
 
+// Form data for creating/editing Part
 export interface PartFormData {
     partSerialNumber: string;
     partTypeID: number;
@@ -34,5 +32,5 @@ export interface PartFormData {
     warrantyPeriod: string;
 }
 
-export type TabType = 'vehicles' | 'parts';
+export type TabType = 'models' | 'parts';
 export type ModalMode = 'add' | 'edit';
