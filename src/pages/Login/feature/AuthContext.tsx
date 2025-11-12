@@ -16,6 +16,7 @@ interface User {
   email?: string;
   fullName?: string;
   role: UserRole;
+  serviceCenterID?: number; // ✅ Added for SC_TECHNICIAN and SC_STAFF
 }
 
 interface LoginCredentials {
@@ -108,6 +109,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: {
               roleName: decodedToken?.role || decodedToken?.scope,
             },
+            serviceCenterID:
+              decodedToken?.serviceCenterID || decodedToken?.serviceCenterId, // ✅ Added
           };
           setUser(userData);
         } else {
@@ -156,6 +159,8 @@ credentials: là 1 tham số kiểu LoginCredentials chứa thông tin đăng nh
         role: {
           roleName: decodedToken?.role || decodedToken?.scope,
         },
+        serviceCenterID:
+          decodedToken?.serviceCenterID || decodedToken?.serviceCenterId, // ✅ Added
       };
 
       console.log("User data:", userData);

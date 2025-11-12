@@ -14,8 +14,10 @@ import { ManufacturerResponsePanel } from "./features/ManufacturerResponsePanel"
 
 import type { VehicleInfo, WarrantyClaimResponse } from "./types/warranty";
 import { warrantyClaimAPI } from "@/utility/index";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 
 export default function App() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("search");
   const [currentVehicleInfo, setCurrentVehicleInfo] =
     useState<VehicleInfo | null>(null);
@@ -32,8 +34,8 @@ export default function App() {
   const [editingClaim, setEditingClaim] =
     useState<WarrantyClaimResponse | null>(null);
 
-  // Hardcoded serviceCenterID - in production, get from auth context
-  const SERVICE_CENTER_ID = 1;
+  // ✅ Get serviceCenterID from authenticated user
+  const SERVICE_CENTER_ID = user?.serviceCenterID || 1;
 
   // Load all warranty claims on mount
   useEffect(() => {

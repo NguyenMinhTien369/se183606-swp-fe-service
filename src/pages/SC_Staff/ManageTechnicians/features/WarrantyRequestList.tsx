@@ -79,7 +79,7 @@ export default function WarrantyRequestList() {
       );
     } catch (error: any) {
       console.error("❌ Error loading warranty claims:", error);
-      alert(
+      console.log(
         error.response?.data?.message ||
           "Không thể tải danh sách yêu cầu bảo hành"
       );
@@ -90,7 +90,7 @@ export default function WarrantyRequestList() {
 
   const handleSearchById = async () => {
     if (!searchClaimId.trim()) {
-      alert("Vui lòng nhập mã yêu cầu bảo hành");
+      console.log("Vui lòng nhập mã yêu cầu bảo hành");
       return;
     }
 
@@ -104,10 +104,9 @@ export default function WarrantyRequestList() {
 
       // Show in list (replace current claims with search result)
       setClaims([claimData]);
-      alert(`Đã tìm thấy yêu cầu #${claimData.claimID}`);
     } catch (error: any) {
       console.error("❌ Error searching claim:", error);
-      alert(
+      console.log(
         error.response?.data?.message ||
           `Không tìm thấy yêu cầu bảo hành với ID: ${searchClaimId}`
       );

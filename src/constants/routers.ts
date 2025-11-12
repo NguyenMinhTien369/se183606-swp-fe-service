@@ -1,3 +1,5 @@
+import { WARRANTY_CLAIM_STATUS } from "@/utils/constants";
+
 const ROUTERS_PATH = {
   HOME: "/",
 
@@ -40,6 +42,7 @@ const ROUTERS_PATH = {
   // SC Technician Routes
   TECHNICIAN_BASE: "/technician",
   SC_TECHNICIAN_DASHBOARD: "/technician/dashboard",
+  MANAGE_WARRANTY: "/technician/manage-warranty",
   CREATE_WARRANTY: "/technician/create-warranty",
   CONDUCT_WARRANTY: "/technician/conduct-warranty",
 } as const;
@@ -52,10 +55,10 @@ export const RELATIVE_PATHS = {
 
   //F2 - Internal Management
   INTERNAL_MANAGEMENT: "internal-management",
-  SERVICE_HISTORY_ALL: "service-history-all",
   WARRANTY_REQUEST: "warranty-request",
   ASSIGN_TECHNICIAN: "assign-technician",
   PROGRESS: "progress",
+  SERVICE_HISTORY_ALL: "service-history-all",
 
   // Customer Management Tabs
   VEHICLE_INFORMATION: "vehicle-information",
@@ -63,7 +66,13 @@ export const RELATIVE_PATHS = {
   PARTS_MANAGEMENT: "parts-management",
 
   // Technician
+  //F3 - Create Warranty
+  MANAGE_WARRANTY: "manage-warranty",
   CREATE_WARRANTY: "create-warranty",
+  WARRANTY_LIST: "warranty-list",
+  MANUFACTURER_RESPONSE_PANEL: "manufacturer-response-panel",
+
+  //F4 - Conduct Warranty
   CONDUCT_WARRANTY: "conduct-warranty",
 
   // Admin
