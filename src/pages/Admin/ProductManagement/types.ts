@@ -1,9 +1,13 @@
-// Backend ProductModel response
-export interface ProductModel {
-    modelID: number;
-    modelName: string;
-    color: string;
-    productionYear: number;
+// Backend Vehicle response
+export interface Vehicle {
+    vin: string;
+    serialNumber: string;
+    productionDate: string;
+    productModelID: number;
+    productModelName?: string;
+    customerID: number;
+    customerName?: string;
+    notes?: string;
 }
 
 // Backend Part response (mapped)
@@ -16,12 +20,15 @@ export interface Part {
     warrantyExpiryDate?: string; // Ngày hết hạn bảo hành (LocalDate)
 }
 
-// Form data for creating/editing ProductModel
-export interface ProductModelFormData {
-    modelName: string;
-    color: string;
-    productionYear: number;
-    warrantyPeriod: number;
+// Form data for creating/editing Vehicle (match backend VehicleRequest)
+export interface VehicleFormData {
+    vin: string;
+    customerID: number;
+    modelID: number; // Changed from productModelID
+    licensePlate: string; // Changed from serialNumber
+    batteryCapacity: number;
+    image?: string;
+    registrationDate: string; // Changed from productionDate
 }
 
 // Form data for creating/editing Part
@@ -32,5 +39,5 @@ export interface PartFormData {
     warrantyPeriod: string;
 }
 
-export type TabType = 'models' | 'parts';
+export type TabType = 'vehicles' | 'parts';
 export type ModalMode = 'add' | 'edit';
