@@ -139,11 +139,12 @@ interface ServiceHistoryRequest {
 // VehicleRequest.java - Đăng ký xe mới
 interface VehicleRequest {
   vin: string;
-  serialNumber: string;
-  productionDate: string; // LocalDate
-  productModelID: number;
   customerID: number;
-  notes?: string;
+  modelID: number;
+  licensePlate: string;
+  batteryCapacity: number;
+  image?: string;
+  registrationDate: string | number[]; // LocalDate - can be string "YYYY-MM-DD" or array [year, month, day]
 }
 
 // ProductModelRequest.java - Tạo product model
@@ -382,8 +383,11 @@ export const vehicleAPI = {
     axiosInstance.get(`/vehicles/customer/${customerId}`),
   registerVehicle: (data: VehicleRequest) =>
     axiosInstance.post("/vehicles", data),
+  updateVehicle: (vin: string, data: VehicleRequest) =>
+    axiosInstance.put(`/vehicles/${vin}`, data),
   updateVehicleNotes: (vin: string, notes: string) =>
     axiosInstance.put(`/vehicles/${vin}/notes`, { notes }),
+  deleteVehicle: (vin: string) => axiosInstance.delete(`/vehicles/${vin}`),
 };
 
 // ==================== PRODUCT MODEL API ====================
