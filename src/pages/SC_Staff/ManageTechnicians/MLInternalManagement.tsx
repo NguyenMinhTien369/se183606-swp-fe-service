@@ -13,7 +13,7 @@ export default function MLCustomerManagement() {
       w-3/6  align-middle mx-auto  "
         >
           <NavLink
-            to={RELATIVE_PATHS.VEHICLE_INFORMATION}
+            to={RELATIVE_PATHS.WARRANTY_REQUEST}
             className="px-3 py-2 rounded-4xl hover:bg-slate-950 font-bold  hover:text-white transition-colors duration-200 
           "
           >
@@ -21,7 +21,7 @@ export default function MLCustomerManagement() {
           </NavLink>
 
           <NavLink
-            to={RELATIVE_PATHS.VEHICLE_INFORMATION}
+            to={RELATIVE_PATHS.ASSIGN_TECHNICIAN}
             className="px-3 py-2 rounded-4xl hover:bg-slate-950 font-bold  hover:text-white transition-colors duration-200 
           "
           >
@@ -29,7 +29,7 @@ export default function MLCustomerManagement() {
           </NavLink>
 
           <NavLink
-            to={RELATIVE_PATHS.VEHICLE_INFORMATION}
+            to={RELATIVE_PATHS.PROGRESS}
             className="px-3 py-2 rounded-4xl hover:bg-slate-950 font-bold  hover:text-white transition-colors duration-200 
           "
           >

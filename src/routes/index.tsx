@@ -20,7 +20,6 @@ import {
   WarrantyClaims,
 } from "@/pages/EVM_Staff";
 
-import Home from "@/pages/Home";
 import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
 import { scStaffRoutes } from "./components/scStaffRoutes";
 import { technicianRoutes } from "./components/technicianRoutes";
