@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
 import { Car } from "lucide-react";
