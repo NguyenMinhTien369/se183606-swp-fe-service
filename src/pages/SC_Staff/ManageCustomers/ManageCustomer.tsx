@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { Customer, CustomerResponse } from "./types/index";
-import { flattenCustomerData } from "./types/index";
+import { useEffect } from "react";
+import type { Customer } from "./types/index";
 import { Search, X, Loader2, Car } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,16 +15,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { customerAPI } from "@/utility/index";
 import { useNavigate } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
+import { useGetCustomers } from "@/hooks/ManageCustomersHooks/useGetCustomers";
+import { useGetCustomers as useSearchCustomers } from "@/hooks/ManageCustomersHooks/useSearCustomers";
 
 export default function ManageCustomer() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>("");
+  const {
+    customers,
+    loading: loadingCustomers,
+    error: loadError,
+    reload: loadAllCustomers,
+  } = useGetCustomers();
+
+  const {
+    searchTerm,
+    filteredCustomers,
+    searchLoading,
+    searchError,
+    handleSearch,
+    setSearchTerm,
+    setInitialCustomers,
+    clearSearchTerm,
+  } = useSearchCustomers();
 
   const navigate = useNavigate();
 
@@ -34,100 +46,20 @@ export default function ManageCustomer() {
     navigate(`${ROUTERS_PATH.MANAGE_CUSTOMER}/${customer.customerID}`);
   };
 
-  const loadAllCustomers = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await customerAPI.getCustomers();
-
-      // Backend trả về CustomerResponse[] với nested vehicles
-      const backendCustomers: CustomerResponse[] = response.data.result || [];
-
-      // Flatten: 1 customer có nhiều vehicle → tạo nhiều rows
-      const flattenedCustomers: Customer[] = backendCustomers.flatMap(
-        (backendCustomer) => flattenCustomerData(backendCustomer)
-      );
-
-      console.log("Flattened Customers:", flattenedCustomers);
-
-      setCustomers(flattenedCustomers);
-      setFilteredCustomers(flattenedCustomers);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Không thể tải danh sách khách hàng"
-      );
-      console.error("Error loading customers:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadAllCustomers();
   }, []);
 
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      setFilteredCustomers(customers);
-      return;
+  useEffect(() => {
+    if (customers.length > 0) {
+      setInitialCustomers(customers);
     }
+  }, [customers]);
 
-    try {
-      setLoading(true);
-      setError("");
-
-      // API mới hỗ trợ search theo name, phone, hoặc vin
-      // Kiểm tra xem searchTerm có phải là số điện thoại không (bắt đầu bằng 0 và có 10 số)
-      const isPhone = /^0\d{9}$/.test(searchTerm);
-
-      // Tạo params dựa trên loại search term
-      const searchParams = isPhone
-        ? { phone: searchTerm }
-        : searchTerm.length >= 10 &&
-          /^[A-Z0-9]+$/.test(searchTerm.toUpperCase())
-        ? { vin: searchTerm } // VIN thường là chữ in hoa + số, dài
-        : { name: searchTerm }; // Mặc định search theo tên
-
-      const response = await customerAPI.searchCustomers(searchParams);
-      const backendResults: CustomerResponse[] = response.data.result || [];
-
-      // Nếu không tìm thấy kết quả, thử search vehicle
-      if (backendResults.length === 0) {
-        try {
-          const vehicleResponse = await customerAPI.searchVehicle({
-            vin: searchTerm,
-            serialNumber: searchTerm,
-          });
-
-          // Backend có thể trả về Vehicle hoặc Customer
-          const vehicleResult = vehicleResponse.data.result;
-          if (vehicleResult) {
-            // TODO: Cần xử lý response từ searchVehicle API
-            console.log("🔍 Vehicle search result:", vehicleResult);
-          }
-          setFilteredCustomers([]);
-        } catch {
-          setFilteredCustomers([]);
-        }
-      } else {
-        // Flatten backend results
-        const flattenedResults = backendResults.flatMap((customer) =>
-          flattenCustomerData(customer)
-        );
-        setFilteredCustomers(flattenedResults);
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Lỗi khi tìm kiếm");
-      console.error("Error searching:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Xóa filter và hiển thị lại tất cả customers
   const handleClearFilter = () => {
-    setSearchTerm("");
-    setFilteredCustomers(customers);
-    setError("");
+    clearSearchTerm(); // Clear search term và error
+    setInitialCustomers(customers); // Reset về tất cả data
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -170,15 +102,15 @@ export default function ManageCustomer() {
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={handleKeyPress}
               className="flex-1"
-              disabled={loading}
+              disabled={searchLoading || loadingCustomers}
             />
             <div className="flex gap-2">
               <Button
                 onClick={handleSearch}
                 className="gap-2"
-                disabled={loading}
+                disabled={searchLoading || loadingCustomers}
               >
-                {loading ? (
+                {searchLoading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Đang tìm...
@@ -194,7 +126,7 @@ export default function ManageCustomer() {
                 variant="outline"
                 onClick={handleClearFilter}
                 className="gap-2"
-                disabled={loading}
+                disabled={searchLoading || loadingCustomers}
               >
                 <X className="h-4 w-4" />
                 Xóa lọc
@@ -203,9 +135,9 @@ export default function ManageCustomer() {
           </div>
 
           {/* Error Message */}
-          {error && (
+          {(loadError || searchError) && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
-              {error}
+              {loadError || searchError}
             </div>
           )}
 
@@ -225,7 +157,7 @@ export default function ManageCustomer() {
               </TableHeader>
 
               <TableBody>
-                {loading ? (
+                {loadingCustomers || searchLoading ? (
                   <TableRow>
                     <TableCell
                       colSpan={7}
