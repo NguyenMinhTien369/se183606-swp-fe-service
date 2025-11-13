@@ -141,8 +141,7 @@ const WarrantyClaims = () => {
 
         try {
             setLoading(true);
-            // Sync status to REJECTED using backend API
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'REJECTED');
+            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'Từ chối', rejectReason.trim());
 
             alert('Từ chối yêu cầu thành công!');
             setShowRejectModal(false);

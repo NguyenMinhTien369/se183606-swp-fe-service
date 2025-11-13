@@ -234,10 +234,12 @@ export const warrantyClaimAPI = {
   //API  của table  phân công kỹ thuật viên
   getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
 
-  syncStatusFromManufacturer: (id: number, status: string) =>
-    axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
-      params: { status },
-    }),
+  syncStatusFromManufacturer: (id: number, status: string, note?: string) => {
+    const params = note !== undefined
+      ? { status, note }
+      : { status };
+    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, { params });
+  },
 
   // Giao phụ tùng cho đơn bảo hành đã được chấp nhận
   shipParts: (id: number) =>
