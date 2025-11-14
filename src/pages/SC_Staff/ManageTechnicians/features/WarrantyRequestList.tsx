@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Filter, RefreshCw, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Filter, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,7 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { warrantyClaimAPI } from "@/utility/index";
+import { useGetClaimsByServiceCenter } from "@/hooks/ManageTechnicians/useGetClaimsByServiceCenter";
+import { useSearchClaims } from "@/hooks/ManageTechnicians/useSearchClaims";
 
 import type { WarrantyClaimResponse } from "../types";
 import {
@@ -36,110 +37,66 @@ import {
 } from "../lib/utils-warranty";
 
 export default function WarrantyRequestList() {
-  const [claims, setClaims] = useState<WarrantyClaimResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Hardcoded serviceCenterID - in production, get from auth context
+  const SERVICE_CENTER_ID = 1;
+
+  const {
+    claims,
+    loading: loadingClaims,
+    error: loadError,
+    reload: loadAllClaims,
+  } = useGetClaimsByServiceCenter(SERVICE_CENTER_ID);
+
+  const {
+    searchTerm,
+    filteredClaims,
+    searchLoading,
+    searchError,
+    handleSearch,
+    setSearchTerm,
+    setInitialClaims,
+    clearSearchTerm,
+  } = useSearchClaims();
+
   const [selectedRequest, setSelectedRequest] =
     useState<WarrantyClaimResponse | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Bộ lọc
-  const [vinFilter, setVinFilter] = useState("");
-  const [searchClaimId, setSearchClaimId] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Hardcoded serviceCenterID - in production, get from auth context
-  const SERVICE_CENTER_ID = 1;
-
-  // Load all warranty claims on mount
   useEffect(() => {
-    loadWarrantyClaims();
+    loadAllClaims();
   }, []);
 
-  const loadWarrantyClaims = async () => {
-    try {
-      setIsLoading(true);
-      const response = await warrantyClaimAPI.getClaimsByServiceCenter(
-        SERVICE_CENTER_ID
-      );
-      const claimsData = response.data.result || [];
-
-      // ✅ Sắp xếp theo ngày tạo mới nhất lên đầu
-      const sortedClaims = claimsData.sort(
-        (a: WarrantyClaimResponse, b: WarrantyClaimResponse) => {
-          const dateA = new Date(a.creationDate).getTime();
-          const dateB = new Date(b.creationDate).getTime();
-          return dateB - dateA; // Mới nhất trước (descending)
-        }
-      );
-
-      setClaims(sortedClaims);
-      console.log(
-        "✅ Loaded warranty claims (sorted by newest):",
-        sortedClaims
-      );
-    } catch (error: any) {
-      console.error("❌ Error loading warranty claims:", error);
-      console.log(
-        error.response?.data?.message ||
-          "Không thể tải danh sách yêu cầu bảo hành"
-      );
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (claims.length > 0) {
+      setInitialClaims(claims);
     }
-  };
-
-  const handleSearchById = async () => {
-    if (!searchClaimId.trim()) {
-      console.log("Vui lòng nhập mã yêu cầu bảo hành");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const response = await warrantyClaimAPI.getClaimById(
-        Number(searchClaimId)
-      );
-      const claimData = response.data.result;
-      console.log("✅ Found claim by ID:", claimData);
-
-      // Show in list (replace current claims with search result)
-      setClaims([claimData]);
-    } catch (error: any) {
-      console.error("❌ Error searching claim:", error);
-      console.log(
-        error.response?.data?.message ||
-          `Không tìm thấy yêu cầu bảo hành với ID: ${searchClaimId}`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [claims]);
 
   const handleViewDetail = (request: WarrantyClaimResponse) => {
     setSelectedRequest(request);
     setIsDetailOpen(true);
   };
 
-  const handleRefresh = () => {
-    setSearchClaimId("");
-    setVinFilter("");
+  // a filter và hiển thị lại tất cả claims
+  const handleClearFilter = () => {
+    clearSearchTerm(); // Clear search term và error
+    setInitialClaims(claims); // Reset về tất cả data
+
     setStatusFilter("all");
-    loadWarrantyClaims();
   };
 
-  const filteredRequests = claims
-    .filter((req) => {
-      if (vinFilter && !req.vin.toLowerCase().includes(vinFilter.toLowerCase()))
-        return false;
-      if (statusFilter !== "all" && req.status !== statusFilter) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      // ✅ Sắp xếp theo ngày tạo mới nhất lên đầu
-      const dateA = new Date(a.creationDate).getTime();
-      const dateB = new Date(b.creationDate).getTime();
-      return dateB - dateA; // Mới nhất trước
-    });
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSearch();
+  };
+
+  const filteredRequests = filteredClaims.sort((a, b) => {
+    const dateA = new Date(a.creationDate).getTime();
+    const dateB = new Date(b.creationDate).getTime();
+    return dateB - dateA; // Mới nhất trước
+  });
 
   return (
     <div className="p-6 space-y-6">
@@ -153,17 +110,6 @@ export default function WarrantyRequestList() {
             Xem toàn bộ yêu cầu bảo hành từ trung tâm dịch vụ
           </p>
         </div>
-        <Button
-          onClick={handleRefresh}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-          />
-          Làm mới
-        </Button>
       </div>
 
       {/* Search by ID Section */}
@@ -178,16 +124,19 @@ export default function WarrantyRequestList() {
               <Input
                 type="number"
                 placeholder="Nhập mã yêu cầu bảo hành (Claim ID)..."
-                value={searchClaimId}
-                onChange={(e) => setSearchClaimId(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearchById();
-                  }
-                }}
-                disabled={isLoading}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={searchLoading || loadingClaims}
               />
             </div>
+            <Button
+              onClick={handleSearch}
+              disabled={loadingClaims || searchLoading}
+            >
+              <Search className="w-4 h-4 mr-2" />
+              Tìm kiếm
+            </Button>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Trạng thái" />
@@ -204,24 +153,20 @@ export default function WarrantyRequestList() {
                 <SelectItem value="Từ chối">🔴 Từ chối</SelectItem>
               </SelectContent>
             </Select>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setVinFilter("");
-                setStatusFilter("all");
-              }}
-            >
+            <Button variant="outline" onClick={handleClearFilter}>
               Xóa bộ lọc
-            </Button>
-            <Button onClick={handleSearchById} disabled={isLoading}>
-              <Search className="w-4 h-4 mr-2" />
-              Tìm kiếm
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Table Section */}
+      {/* Error Message */}
+      {(loadError || searchError) && (
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+          {loadError || searchError}
+        </div>
+      )}
+
       <Card className="shadow-sm border border-border">
         <ScrollArea className="h-[500px]">
           <Table>
@@ -236,7 +181,7 @@ export default function WarrantyRequestList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {loadingClaims || searchLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
                     <p className="text-muted-foreground">Đang tải dữ liệu...</p>
@@ -268,21 +213,24 @@ export default function WarrantyRequestList() {
                   </TableRow>
                 ))
               )}
-              {!isLoading && filteredRequests.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Không tìm thấy yêu cầu nào phù hợp.
-                    </p>
-                  </TableCell>
-                </TableRow>
-              )}
+              {!loadingClaims &&
+                !searchLoading &&
+                filteredRequests.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        {searchTerm
+                          ? "Không tìm thấy yêu cầu nào"
+                          : "Nhập từ khóa để tìm kiếm"}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
         </ScrollArea>
       </Card>
 
-      {/* Detail Sheet */}
       <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <SheetContent className="w-[95vw] sm:w-[600px] p-6">
           {selectedRequest && (

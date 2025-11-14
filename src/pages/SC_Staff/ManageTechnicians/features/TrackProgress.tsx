@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Edit,
-  Bell,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  RefreshCw,
-} from "lucide-react";
+import { Edit, Bell, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -163,17 +156,6 @@ export default function TrackProgress() {
             Giúp SC Staff theo dõi tình trạng bảo hành và tiến độ thực hiện.
           </p>
         </div>
-        <Button
-          onClick={loadAssignments}
-          variant="outline"
-          size="sm"
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-          />
-          Làm mới
-        </Button>
       </div>
 
       {/* Bảng theo dõi tiến độ */}

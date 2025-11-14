@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { UserPlus, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { UserPlus, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -220,17 +220,6 @@ export default function AssignTechnician() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={loadData}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-            />
-            Làm mới
-          </Button>
           <Button
             onClick={handleOpenAssignModal}
             disabled={selectedRequests.length === 0}
