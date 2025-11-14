@@ -45,7 +45,7 @@ export const scStaffRoutes = {
     // Manage Customer - 2 level routing
     {
       path: RELATIVE_PATHS.MANAGE_CUSTOMER,
-      element: <ManageCustomer />, // Step 1: Customer search table
+      element: <ManageCustomer />,
     },
     {
       path: RELATIVE_PATHS.MANAGE_CUSTOMER_PARAM, // Step 2: Customer details with tabs
