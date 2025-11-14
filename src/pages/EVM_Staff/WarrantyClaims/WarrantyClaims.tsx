@@ -250,6 +250,16 @@ const WarrantyClaims = () => {
                     <option value="IN_PROGRESS">Đang xử lý</option>
                     <option value="COMPLETED">Hoàn thành</option>
                 </select>
+
+                <button
+                    onClick={fetchClaims}
+                    className={styles.refreshButton}
+                    disabled={loading}
+                    title="Làm mới dữ liệu"
+                >
+                    <FaRedo className={loading ? styles.spinning : ''} />
+                    {loading ? 'Đang tải...' : 'Làm mới'}
+                </button>
             </div>
 
             {/* Statistics */}

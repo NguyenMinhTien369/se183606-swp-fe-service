@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
-import { Input } from "../../../../components/ui/input";
 import { Textarea } from "../../../../components/ui/textarea";
 import { Badge } from "../../../../components/ui/badge";
 import {
@@ -55,17 +54,11 @@ export function RepairProgress({
     useState<AssignmentProgressResponse | null>(null);
   const [dialog, setDialog] = useState({ open: false, title: "", message: "" });
 
-  const [workStatus, setWorkStatus] = useState({
-    startTime: "",
-    expectedCompletion: "",
-    status: "Đang thay thế",
-    completionPercentage: 10,
+  const [partInfo, setPartInfo] = useState({
+    internalNotes: "Phụ tùng mới đã được kiểm tra và lắp đặt đúng quy trình",
   });
 
-  const [partInfo, setPartInfo] = useState({
-    newPartSerial: "",
-    notes: "Phụ tùng mới đã được kiểm tra và lắp đặt đúng quy trình",
-  });
+  const [progressPhotos, setProgressPhotos] = useState<File[]>([]);
 
   // Load assignments on mount
   useEffect(() => {
@@ -95,8 +88,18 @@ export function RepairProgress({
       );
       setAssignments(repairReadyClaims);
 
-      // Auto-select first assignment if exists
-      if (repairReadyClaims.length > 0 && !currentWorkingRequest) {
+      // Update current working request if it exists in the new list
+      if (currentWorkingRequest) {
+        const updatedCurrent = repairReadyClaims.find(
+          (a: AssignmentProgressResponse) => a.assignmentID === currentWorkingRequest.assignmentID
+        );
+        if (updatedCurrent) {
+          console.log("Updating current request with new data:", updatedCurrent);
+          setCurrentWorkingRequest(updatedCurrent);
+          onSelectRequest?.(updatedCurrent);
+        }
+      } else if (repairReadyClaims.length > 0) {
+        // Auto-select first assignment if no current selection
         setCurrentWorkingRequest(repairReadyClaims[0]);
         onSelectRequest?.(repairReadyClaims[0]);
       }
@@ -117,40 +120,52 @@ export function RepairProgress({
     onSelectRequest?.(assignment);
   };
 
-  const handleUpdatePartInfo = () => {
-    if (!partInfo.newPartSerial.trim()) {
-      showDialog("Lỗi", "Vui lòng nhập số seri phụ tùng mới.");
-      return;
-    }
-
-    showDialog("Cập nhật thành công", "Đã cập nhật thông tin phụ tùng.");
+  const handleProgressPhotosUpload = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files);
+    setProgressPhotos((prev) => [...prev, ...newFiles]);
+    showDialog("Thành công", `Đã tải lên ${newFiles.length} ảnh hiện trường.`);
   };
 
   const handleStartRepair = async () => {
     if (!currentWorkingRequest) return;
 
+    // Validate progress photos (newProgressFiles - field photos before starting work)
+    if (progressPhotos.length === 0) {
+      showDialog("Lỗi", "Vui lòng chụp ảnh hiện trường trước khi bắt đầu sửa chữa.");
+      return;
+    }
+
     try {
+      // Step 8: Start repair → Update status to "Đang thay thế" (20%)
       const formData = new FormData();
       formData.append("status", "Đang thay thế");
-      formData.append("completionPercentage", "30");
       formData.append(
         "internalNotes",
-        `Bắt đầu thay thế phụ tùng. ${partInfo.notes || "Đang tiến hành"}`
+        `🔧 Bắt đầu thay thế phụ tùng. ${partInfo.internalNotes || "Đang tiến hành thay thế."}`
       );
 
-      await claimAssignmentAPI.updateAssignmentProgress(
+      // Upload progress photos (newProgressFiles - field photos)
+      progressPhotos.forEach((file) => {
+        formData.append("newProgressFiles", file);
+      });
+
+      const response = await claimAssignmentAPI.updateAssignmentProgress(
         currentWorkingRequest.assignmentID,
         formData
       );
 
-      setWorkStatus((prev) => ({
-        ...prev,
-        status: "Đang thay thế",
-        completionPercentage: 30,
-      }));
+      console.log("Start repair response:", response);
 
-      showDialog("Bắt đầu", "Đã bắt đầu quá trình sửa chữa.");
-      loadAssignments(); // Reload to update status
+      showDialog("Bắt đầu", "✅ Đã bắt đầu quá trình thay thế phụ tùng. Tiến độ 20%.\n\nBây giờ bạn có thể nhập ghi chú nội bộ về quá trình thay thế.");
+
+      // Reload assignments and update current working request
+      await loadAssignments();
+
+      // Update current request status locally to immediately show Card 2
+      if (response.data?.result) {
+        setCurrentWorkingRequest(response.data.result);
+      }
     } catch (error) {
       console.error("Error starting repair:", error);
       showDialog("Lỗi", "Không thể bắt đầu sửa chữa. Vui lòng thử lại.");
@@ -158,49 +173,81 @@ export function RepairProgress({
   };
 
   const handleCompleteWork = async () => {
-    if (!partInfo.newPartSerial.trim()) {
+    if (!partInfo.internalNotes.trim()) {
       showDialog(
         "Lỗi",
-        "Vui lòng nhập số seri phụ tùng mới trước khi tiếp tục."
+        "Vui lòng nhập ghi chú nội bộ về quá trình thay thế."
       );
       return;
     }
 
-    if (!currentWorkingRequest) return;
+    if (!currentWorkingRequest) {
+      showDialog("Lỗi", "Không tìm thấy thông tin yêu cầu đang xử lý.");
+      return;
+    }
 
     try {
-      // Update progress to 80% and save part info, DO NOT mark as "Hoàn thành" yet
-      // "Hoàn thành" will be done in step 3 (CompletionHandover) with files
+      // Step 8.5: Update to "Đang kiểm tra" status (80%)
       const formData = new FormData();
-      formData.append("status", "Đang thay thế");
-      formData.append("completionPercentage", "80");
-      formData.append(
-        "internalNotes",
-        `Đã thay thế phụ tùng. Serial phụ tùng mới: ${partInfo.newPartSerial}. ${partInfo.notes}`
-      );
 
-      await claimAssignmentAPI.updateAssignmentProgress(
+      // Backend requires Vietnamese status: "Đang kiểm tra" = 80%
+      formData.append("status", "Đang kiểm tra");
+
+      // Add internal notes
+      const notes = `✅ Đã thay thế phụ tùng thành công.\n\nGhi chú nội bộ:\n${partInfo.internalNotes}`;
+      formData.append("internalNotes", notes);
+
+      // Note: Backend does not use progressPercentage anymore (commented out in DTO)
+      // Progress is auto-calculated based on status
+
+      console.log("Updating assignment progress:", {
+        assignmentID: currentWorkingRequest.assignmentID,
+        status: "Đang kiểm tra",
+        hasNotes: !!partInfo.internalNotes,
+        notesLength: notes.length
+      });
+
+      // Log FormData contents
+      console.log("FormData contents:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + (typeof pair[1] === 'string' ? pair[1].substring(0, 100) : pair[1]));
+      }
+
+      const response = await claimAssignmentAPI.updateAssignmentProgress(
         currentWorkingRequest.assignmentID,
         formData
       );
 
-      setWorkStatus((prev) => ({
-        ...prev,
-        completionPercentage: 80,
-      }));
+      console.log("Update successful:", response);
 
       showDialog(
         "Thành công",
-        "Đã cập nhật tiến độ sửa chữa. Vui lòng chuyển sang bước tiếp theo để hoàn tất & bàn giao."
+        "Đã lưu thông tin thay thế phụ tùng. Tiến độ 80%. Vui lòng chuyển sang bước tiếp theo để hoàn tất & bàn giao."
       );
+
+      // Reload to get updated status
+      loadAssignments();
 
       // Auto navigate to step 3 after 2 seconds
       setTimeout(() => {
         onNextStep?.();
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating progress:", error);
-      showDialog("Lỗi", "Không thể cập nhật tiến độ. Vui lòng thử lại.");
+
+      // Extract detailed error message
+      let errorMessage = "Không thể cập nhật tiến độ. ";
+      if (error.response?.data?.message) {
+        errorMessage += error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage += error.response.data.error;
+      } else if (error.message) {
+        errorMessage += error.message;
+      } else {
+        errorMessage += "Vui lòng thử lại.";
+      }
+
+      showDialog("Lỗi", errorMessage);
     }
   };
 
@@ -249,12 +296,11 @@ export function RepairProgress({
                 assignments.map((assignment) => (
                   <TableRow
                     key={assignment.assignmentID}
-                    className={`cursor-pointer transition-all hover:bg-muted/50 ${
-                      currentWorkingRequest?.assignmentID ===
+                    className={`cursor-pointer transition-all hover:bg-muted/50 ${currentWorkingRequest?.assignmentID ===
                       assignment.assignmentID
-                        ? "bg-blue-50 border-blue-200"
-                        : ""
-                    }`}
+                      ? "bg-blue-50 border-blue-200"
+                      : ""
+                      }`}
                     onClick={() => handleSelectRequest(assignment)}
                   >
                     <TableCell className="font-medium">
@@ -291,7 +337,7 @@ export function RepairProgress({
                       <Button
                         variant={
                           currentWorkingRequest?.assignmentID ===
-                          assignment.assignmentID
+                            assignment.assignmentID
                             ? "default"
                             : "outline"
                         }
@@ -302,7 +348,7 @@ export function RepairProgress({
                         }}
                       >
                         {currentWorkingRequest?.assignmentID ===
-                        assignment.assignmentID
+                          assignment.assignmentID
                           ? "Đã chọn"
                           : "Chọn"}
                       </Button>
@@ -338,14 +384,16 @@ export function RepairProgress({
                   <Label>Trạng thái</Label>
                   <Badge
                     className={
-                      workStatus.status === "Đang thay thế"
+                      currentWorkingRequest.status === "Đang thay thế"
                         ? "bg-yellow-100 text-yellow-800"
                         : "bg-blue-100 text-blue-800"
                     }
                   >
-                    {workStatus.status === "Đang thay thế" &&
+                    {currentWorkingRequest.status === "Đang thay thế" &&
                       "🔧 Đang thay thế"}
-                    {workStatus.status === "Hoàn thành" && "✅ Hoàn thành"}
+                    {currentWorkingRequest.status === "Nhận phụ tùng" &&
+                      "📦 Đã nhận phụ tùng"}
+                    {currentWorkingRequest.status === "Hoàn thành" && "✅ Hoàn thành"}
                   </Badge>
                 </div>
                 <div>
@@ -355,31 +403,28 @@ export function RepairProgress({
                   </p>
                 </div>
                 <div>
-                  <Label>Thời gian bắt đầu</Label>
-                  <Input
-                    type="datetime-local"
-                    value={workStatus.startTime}
-                    onChange={(e) =>
-                      setWorkStatus((prev) => ({
-                        ...prev,
-                        startTime: e.target.value,
-                      }))
-                    }
-                    disabled={workStatus.status === "received"}
-                  />
+                  <Label>Tiến độ công việc</Label>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-1 bg-gray-200 rounded-full h-3">
+                      <div
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${currentWorkingRequest.completionPercentage}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-lg font-semibold text-blue-600">
+                      {currentWorkingRequest.completionPercentage}%
+                    </span>
+                  </div>
                 </div>
                 <div>
-                  <Label>Dự kiến hoàn thành</Label>
-                  <Input
-                    type="datetime-local"
-                    value={workStatus.expectedCompletion}
-                    onChange={(e) =>
-                      setWorkStatus((prev) => ({
-                        ...prev,
-                        expectedCompletion: e.target.value,
-                      }))
-                    }
-                  />
+                  <Label>Thời gian phân công</Label>
+                  <p className="font-medium">
+                    {new Date(currentWorkingRequest.assignedDate).toLocaleString(
+                      "vi-VN"
+                    )}
+                  </p>
                 </div>
               </div>
 
@@ -406,68 +451,127 @@ export function RepairProgress({
             </CardContent>
           </Card>
 
-          {/* Thông tin phụ tùng */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Settings className="w-5 h-5" />
-                <span>🧰 Phụ tùng & thông số</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Card 1: Bắt đầu sửa chữa - Upload ảnh hiện trường */}
+          {currentWorkingRequest?.status === "Nhận phụ tùng" && (
+            <Card className="border-blue-300 bg-blue-50/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-blue-800">
+                  <Settings className="w-5 h-5" />
+                  <span>📸 Bước 1: Chụp ảnh hiện trường trước khi sửa chữa</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <Label>Số seri phụ tùng mới *</Label>
-                  <Input
-                    placeholder="Nhập số seri phụ tùng mới..."
-                    value={partInfo.newPartSerial}
-                    onChange={(e) =>
-                      setPartInfo((prev) => ({
-                        ...prev,
-                        newPartSerial: e.target.value,
-                      }))
-                    }
-                  />
+                  <Label>Ảnh hiện trường (Trước khi bắt đầu thay thế) *</Label>
+                  <div className="mt-2 border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => handleProgressPhotosUpload(e.target.files)}
+                      className="hidden"
+                      id="progress-photos"
+                    />
+                    <label htmlFor="progress-photos" className="cursor-pointer block text-center">
+                      <div className="flex flex-col items-center space-y-2">
+                        <Settings className="w-8 h-8 text-blue-400" />
+                        <p className="text-sm text-gray-600">
+                          📷 Nhấn để chụp/chọn ảnh hiện trường
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG tối đa 10MB mỗi ảnh
+                        </p>
+                      </div>
+                    </label>
+
+                    {progressPhotos.length > 0 && (
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {progressPhotos.map((file, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Progress ${index + 1}`}
+                              className="w-full h-20 object-cover rounded border-2 border-blue-200"
+                            />
+                            <p className="text-xs text-gray-600 mt-1 truncate">
+                              {file.name}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <Label>Ghi chú kỹ thuật</Label>
-                <Textarea
-                  placeholder="Nhập ghi chú về quá trình thay thế phụ tùng..."
-                  value={partInfo.notes}
-                  onChange={(e) =>
-                    setPartInfo((prev) => ({ ...prev, notes: e.target.value }))
-                  }
-                  rows={4}
-                />
-              </div>
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>⚠️ Quan trọng:</strong> Ảnh hiện trường phải được chụp trước khi bắt đầu thay thế phụ tùng.
+                    Đây là bằng chứng về tình trạng xe trước sửa chữa.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-              <div className="flex gap-3">
-                <Button onClick={handleUpdatePartInfo} variant="outline">
-                  Cập nhật thông tin
-                </Button>
-              </div>
+          {/* Card 2: Cập nhật tiến độ thay thế - Nhập ghi chú */}
+          {currentWorkingRequest?.status === "Đang thay thế" && (
+            <Card className="border-orange-300 bg-orange-50/50">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-orange-800">
+                  <Settings className="w-5 h-5" />
+                  <span>📝 Bước 2: Cập nhật tiến độ thay thế phụ tùng</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Ghi chú nội bộ về quá trình thay thế *</Label>
+                  <Textarea
+                    placeholder="Mô tả chi tiết quá trình thay thế phụ tùng: tình trạng phụ tùng cũ, cách thức lắp đặt, kiểm tra chất lượng..."
+                    value={partInfo.internalNotes}
+                    onChange={(e) =>
+                      setPartInfo((prev) => ({ ...prev, internalNotes: e.target.value }))
+                    }
+                    rows={5}
+                    className="bg-white"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 Ghi chú này dùng nội bộ, không hiển thị cho khách hàng.
+                    Nên ghi rõ: phụ tùng đã thay, vấn đề phát hiện, các kiểm tra đã thực hiện.
+                  </p>
+                </div>
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Lưu ý:</strong> Thông tin phụ tùng sẽ được gắn với hồ
-                  sơ xe và đồng bộ với hệ thống quản lý.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="bg-orange-100 p-3 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    <strong>📋 Thông tin cần ghi:</strong> Mô tả chi tiết quá trình thay thế,
+                    tình trạng phụ tùng cũ, phụ tùng mới đã lắp, các kiểm tra kỹ thuật đã thực hiện.
+                  </p>
+                </div>
+
+                {progressPhotos.length > 0 && (
+                  <div className="bg-green-50 p-3 rounded-lg border border-green-300">
+                    <p className="text-sm text-green-700 mb-2">
+                      ✅ Đã có {progressPhotos.length} ảnh hiện trường từ bước trước
+                    </p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {progressPhotos.map((file, index) => (
+                        <div key={index}>
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Progress ${index + 1}`}
+                            className="w-full h-16 object-cover rounded border"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 
-      {/* Nút hành động */}
-      {currentWorkingRequest && workStatus.status === "Hoàn thành" && (
-        <div className="flex justify-end">
-          <Button onClick={onNextStep} size="lg">
-            Tiến tới bước tiếp theo
-          </Button>
-        </div>
-      )}
+      {/* Nút hành động - đã ẩn vì tự động chuyển sau khi hoàn tất */}
 
       {/* Dialog thông báo */}
       <Dialog
