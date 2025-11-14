@@ -1,5 +1,3 @@
-import { WARRANTY_CLAIM_STATUS } from "@/utils/constants";
-
 const ROUTERS_PATH = {
   HOME: "/",
 

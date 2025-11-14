@@ -49,7 +49,7 @@ export function useGetCustomers() {
           const vehicleResult = vehicleResponse.data.result;
           if (vehicleResult) {
             // TODO: Cần xử lý response từ searchVehicle API
-            console.log("🔍 Vehicle search result:", vehicleResult);
+            console.log(" Vehicle search result:", vehicleResult);
           }
           setFilteredCustomers([]);
         } catch {

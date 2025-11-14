@@ -1,9 +1,3 @@
-import { useState, useEffect } from "react";
-import type {
-  CustomerResponse,
-  VehicleResponse,
-  InstalledPart,
-} from "../types/index";
 import { Settings, Loader2, AlertCircle } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,89 +10,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-import { installedPartAPI, customerAPI } from "@/utility/index";
-import { useParams } from "react-router";
+import { useGetCustomerById } from "@/hooks/ManageCustomersHooks/useGetCustomerById";
+import { useGetLastestInstalledParts } from "@/hooks/ManageCustomersHooks/useGetLastestInstalledParts";
 
 export default function PartsManagement() {
-  const { customerId } = useParams<{ customerId: string }>();
-  const [customer, setCustomer] = useState<CustomerResponse | null>(null);
-  const [vehicle, setVehicle] = useState<VehicleResponse | null>(null);
-  const [parts, setParts] = useState<InstalledPart[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string>("");
+  const {
+    customer,
+    vehicle,
+    loading: loadingCustomer,
+    error: customerError,
+  } = useGetCustomerById();
 
-  // Fetch customer data
-  useEffect(() => {
-    const fetchCustomerData = async () => {
-      if (!customerId) {
-        setError("Không tìm thấy ID khách hàng");
-        setLoading(false);
-        return;
-      }
+  const {
+    parts,
+    loading: loadingParts,
+    error: partsError,
+  } = useGetLastestInstalledParts(vehicle?.vin);
 
-      try {
-        setLoading(true);
-        setError("");
-
-        console.log(
-          "🔍 [PartsManagement] Fetching customer with ID:",
-          customerId
-        );
-        const response = await customerAPI.getCustomerById(Number(customerId));
-        const customerData: CustomerResponse = response.data.result;
-
-        setCustomer(customerData);
-
-        // Lấy vehicle đầu tiên
-        if (customerData.vehicles && customerData.vehicles.length > 0) {
-          setVehicle(customerData.vehicles[0]);
-        }
-      } catch (err: any) {
-        setError(
-          err.response?.data?.message || "Không thể tải thông tin khách hàng"
-        );
-        console.error("❌ Error fetching customer:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCustomerData();
-  }, [customerId]);
-
-  // Fetch installed parts khi có vehicle
-  useEffect(() => {
-    const loadInstalledParts = async () => {
-      if (!vehicle?.vin) return;
-
-      try {
-        setLoading(true);
-        setError("");
-
-        console.log(
-          "🔍 [PartsManagement] Fetching parts for VIN:",
-          vehicle.vin
-        );
-        const response = await installedPartAPI.getLatestInstalledParts(
-          vehicle.vin
-        );
-        const partsData = response.data.result || [];
-
-        console.log("✅ Parts data:", partsData);
-        setParts(partsData);
-      } catch (err: any) {
-        setError(
-          err.response?.data?.message || "Không thể tải danh sách phụ tùng"
-        );
-        console.error("❌ Error loading parts:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadInstalledParts();
-  }, [vehicle]);
+  const loading = loadingCustomer || loadingParts;
+  const error = customerError || partsError;
 
   if (loading) {
     return (

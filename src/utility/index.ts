@@ -235,10 +235,10 @@ export const warrantyClaimAPI = {
   getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
 
   syncStatusFromManufacturer: (id: number, status: string, note?: string) => {
-    const params = note !== undefined
-      ? { status, note }
-      : { status };
-    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, { params });
+    const params = note !== undefined ? { status, note } : { status };
+    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
+      params,
+    });
   },
 
   // Giao phụ tùng cho đơn bảo hành đã được chấp nhận
@@ -250,7 +250,7 @@ export const warrantyClaimAPI = {
     axiosInstance.post(`/warranty-claims/${id}/report-missing-parts`, null, {
       params: { note },
     }),
-};// ==================== CLAIM ASSIGNMENT API ====================
+}; // ==================== CLAIM ASSIGNMENT API ====================
 // Backend: ClaimAssignmentController.java
 // Path: /api/claim-assignments/*
 export const claimAssignmentAPI = {
@@ -346,12 +346,16 @@ export const installedPartAPI = {
 // Path: /api/service-history/*
 export const serviceHistoryAPI = {
   // Backend chỉ hỗ trợ lấy theo VIN, không có getByCustomerId
+  getAll: () => axiosInstance.get("/service-history"),
   getByVehicleVin: (vin: string) =>
     axiosInstance.get(`/service-history/vehicle/${vin}`),
 
   // Tạo service history mới
   createServiceHistory: (data: ServiceHistoryRequest) =>
     axiosInstance.post("/service-history", data),
+
+  getByServiceCenter: (id: number) =>
+    axiosInstance.get(`/service-history/service-center/${id}`),
 };
 
 // ==================== CUSTOMER API ====================
