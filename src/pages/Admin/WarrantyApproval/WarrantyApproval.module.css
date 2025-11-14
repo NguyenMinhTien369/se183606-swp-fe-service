@@ -67,6 +67,47 @@
     border-color: #14b8a6;
 }
 
+.refreshButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #14b8a6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.refreshButton:hover:not(:disabled) {
+    background: #0d9488;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(20, 184, 166, 0.2);
+}
+
+.refreshButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Statistics Grid */
 .statsGrid {
     display: grid;

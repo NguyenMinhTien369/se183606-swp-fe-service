@@ -99,6 +99,7 @@ export interface WarrantyClaimResponse {
 }
 
 export interface ClaimPartResponse {
+  claimPartID?: number; // ID của phụ tùng trong claim_parts table
   partSerialNumber: string;
   partTypeName: string;
   partTypeDescription: string;

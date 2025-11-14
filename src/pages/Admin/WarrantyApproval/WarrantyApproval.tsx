@@ -13,6 +13,7 @@ import {
     FaFileAlt,
     FaExternalLinkAlt,
     FaTruck,
+    FaRedo,
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
 import type { WarrantyClaim, ClaimStatus } from './types';
@@ -202,7 +203,7 @@ const WarrantyApproval = () => {
             REJECTED: { label: 'Từ chối', className: styles.statusRejected, icon: FaTimes },
             IN_PROGRESS: { label: 'Đang xử lý', className: styles.statusInProgress, icon: FaExclamationCircle },
             SHIPPING: { label: 'Đang giao hàng', className: styles.statusShipping, icon: FaTruck },
-            RECEIVED: { label: 'Đã nhận hàng', className: styles.statusReceived, icon: FaCheckCircle },
+            RECEIVED: { label: 'Đã nhận', className: styles.statusReceived, icon: FaCheckCircle },
             MISSING_PARTS: { label: 'Thiếu hàng', className: styles.statusMissing, icon: FaExclamationCircle },
             COMPLETED: { label: 'Hoàn thành', className: styles.statusCompleted, icon: FaCheck },
         };
@@ -272,6 +273,16 @@ const WarrantyApproval = () => {
                     <option value="IN_PROGRESS">Đang xử lý</option>
                     <option value="COMPLETED">Hoàn thành</option>
                 </select>
+
+                <button
+                    onClick={fetchClaims}
+                    className={styles.refreshButton}
+                    disabled={loading}
+                    title="Làm mới dữ liệu"
+                >
+                    <FaRedo className={loading ? styles.spinning : ''} />
+                    {loading ? 'Đang tải...' : 'Làm mới'}
+                </button>
             </div>
 
             {/* Statistics */}

@@ -269,6 +269,9 @@ export const claimAssignmentAPI = {
   getAssignmentsByTechnician: (technicianID: number) =>
     axiosInstance.get(`/claim-assignments/technician/${technicianID}`),
 
+  confirmPartsReceipt: (assignmentID: number, data: any) =>
+    axiosInstance.put(`/claim-assignments/${assignmentID}/confirm-parts`, data),
+
   updateAssignmentProgress: (assignmentID: number, formData: FormData) =>
     axiosInstance.put(`/claim-assignments/${assignmentID}/progress`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
