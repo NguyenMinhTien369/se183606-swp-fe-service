@@ -41,7 +41,6 @@ export default function ManageCustomer() {
 
   const navigate = useNavigate();
 
-  // ✅ Navigate đến trang chi tiết khách hàng với customerID
   const handleRowClick = (customer: Customer) => {
     navigate(`${ROUTERS_PATH.MANAGE_CUSTOMER}/${customer.customerID}`);
   };
