@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import type { Customer } from "./types/index";
 import { Search, X, Loader2, Car } from "lucide-react";
@@ -19,6 +17,7 @@ import { useNavigate } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
 import { useGetCustomers } from "@/hooks/ManageCustomersHooks/useGetCustomers";
 import { useGetCustomers as useSearchCustomers } from "@/hooks/ManageCustomersHooks/useSearCustomers";
+import NotRegisteredAlert from "./components/NotRegisteredAlert";
 
 export default function ManageCustomer() {
   const {
@@ -37,6 +36,8 @@ export default function ManageCustomer() {
     setSearchTerm,
     setInitialCustomers,
     clearSearchTerm,
+    showNotFoundDialog,
+    setShowNotFoundDialog,
   } = useSearchCustomers();
 
   const navigate = useNavigate();
@@ -205,6 +206,12 @@ export default function ManageCustomer() {
           </div>
         </CardContent>
       </Card>
+
+      <NotRegisteredAlert
+        open={showNotFoundDialog}
+        onOpenChange={setShowNotFoundDialog}
+        searchKeyword={searchTerm}
+      />
     </div>
   );
 }

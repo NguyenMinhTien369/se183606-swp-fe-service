@@ -28,6 +28,7 @@ const ROUTERS_PATH = {
   //Kiểm tra lại phần này, xóa đi nếu không dùng
   MANAGE_CUSTOMER: "/sc-staff/manage-customer",
   MANAGE_CUSTOMER_DETAIL: "/sc-staff/manage-customer/:customerId", // Dynamic route
+  REGISTER_CUSTOMER: "/sc-staff/register-customer", // Route đăng ký khách hàng mới
   VEHICLE_INFORMATION: "/sc-staff/manage-customer/vehicle-information",
   SERVICE_HISTORY: "/sc-staff/manage-customer/service-history",
   PARTS_MANAGEMENT: "/sc-staff/manage-customer/parts-management",
@@ -57,7 +58,7 @@ export const RELATIVE_PATHS = {
   ASSIGN_TECHNICIAN: "assign-technician",
   PROGRESS: "progress",
   SERVICE_HISTORY_ALL: "service-history-all",
-
+  REGISTER_CUSTOMER: "register-customer",
   // Customer Management Tabs
   VEHICLE_INFORMATION: "vehicle-information",
   SERVICE_HISTORY: "service-history",

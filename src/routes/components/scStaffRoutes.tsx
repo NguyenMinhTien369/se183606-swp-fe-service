@@ -21,6 +21,7 @@ import TrackProgress from "@/pages/SC_Staff/ManageTechnicians/features/TrackProg
 import AssignTechnician from "@/pages/SC_Staff/ManageTechnicians/features/AssignTechnician";
 import ArchiveReports from "@/pages/SC_Staff/ManageTechnicians/features/ArchiveReports";
 import WarrantyRequestList from "@/pages/SC_Staff/ManageTechnicians/features/WarrantyRequestList";
+import CreateCustomerForm from "@/pages/SC_Staff/ManageCustomers/components/CreateCustomerForm";
 
 export const scStaffRoutes = {
   path: ROUTERS_PATH.SC_STAFF_BASE,
@@ -37,6 +38,10 @@ export const scStaffRoutes = {
     {
       path: RELATIVE_PATHS.DASHBOARD,
       element: <SCStaffDashboard />,
+    },
+    {
+      path: RELATIVE_PATHS.REGISTER_CUSTOMER,
+      element: <CreateCustomerForm />,
     },
     {
       path: RELATIVE_PATHS.SERVICE_HISTORY_ALL,

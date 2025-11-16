@@ -148,13 +148,13 @@ export function CreateWarrantyForm({
       if (editMode && claimID) {
         const response = await warrantyClaimAPI.updateClaim(claimID, formData);
         const updatedClaimID = response.data.result;
-        alert(`Đã cập nhật bản nháp thành công! Claim ID: ${updatedClaimID}`);
+
         onSuccess(updatedClaimID, true);
       } else {
         // Create Mode: Create new claim
         const response = await warrantyClaimAPI.createClaim(formData);
         const newClaimID = response.data.result;
-        alert(`Đã lưu bản nháp thành công! Claim ID: ${newClaimID}`);
+
         onSuccess(newClaimID, true);
       }
     } catch (error: any) {
@@ -163,7 +163,7 @@ export function CreateWarrantyForm({
         `Không thể ${
           editMode ? "cập nhật" : "lưu"
         } bản nháp. Vui lòng thử lại.`;
-      alert(errorMsg);
+
       console.error("Error saving draft:", error);
     } finally {
       setLoading(false);
@@ -187,15 +187,13 @@ export function CreateWarrantyForm({
       if (editMode && claimID) {
         const response = await warrantyClaimAPI.updateClaim(claimID, formData);
         const updatedClaimID = response.data.result;
-        alert(
-          `Đã cập nhật yêu cầu bảo hành thành công! Claim ID: ${updatedClaimID}`
-        );
+
         onSuccess(updatedClaimID, false);
       } else {
         // Create Mode: Create new claim
         const response = await warrantyClaimAPI.createClaim(formData);
         const newClaimID = response.data.result;
-        alert(`Đã gửi yêu cầu bảo hành thành công! Claim ID: ${newClaimID}`);
+
         onSuccess(newClaimID, false);
       }
     } catch (error: any) {
