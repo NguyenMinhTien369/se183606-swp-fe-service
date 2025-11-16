@@ -11,6 +11,7 @@ export function useGetCustomers() {
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState<string>("");
+  const [showNotFoundDialog, setShowNotFoundDialog] = useState(false);
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
@@ -21,50 +22,39 @@ export function useGetCustomers() {
     try {
       setSearchLoading(true);
       setSearchError("");
+      setShowNotFoundDialog(false);
 
-      // API mới hỗ trợ search theo name, phone, hoặc vin
-      // Kiểm tra xem searchTerm có phải là số điện thoại không (bắt đầu bằng 0 và có 10 số)
+      // Xác định loại search term
       const isPhone = /^0\d{9}$/.test(searchTerm);
+      const isVIN =
+        searchTerm.length >= 10 && /^[A-Z0-9]+$/.test(searchTerm.toUpperCase());
 
-      // Tạo params dựa trên loại search term
       const searchParams = isPhone
         ? { phone: searchTerm }
-        : searchTerm.length >= 10 &&
-          /^[A-Z0-9]+$/.test(searchTerm.toUpperCase())
-        ? { vin: searchTerm } // VIN thường là chữ in hoa + số, dài
-        : { name: searchTerm }; // Mặc định search theo tên
+        : isVIN
+        ? { vin: searchTerm }
+        : { name: searchTerm };
 
+      // Tìm customer
       const response = await customerAPI.searchCustomers(searchParams);
       const backendResults: CustomerResponse[] = response.data.result || [];
 
-      // Nếu không tìm thấy kết quả, thử search vehicle
-      if (backendResults.length === 0) {
-        try {
-          const vehicleResponse = await customerAPI.searchVehicle({
-            vin: searchTerm,
-            serialNumber: searchTerm,
-          });
-
-          // Backend có thể trả về Vehicle hoặc Customer
-          const vehicleResult = vehicleResponse.data.result;
-          if (vehicleResult) {
-            // TODO: Cần xử lý response từ searchVehicle API
-            console.log(" Vehicle search result:", vehicleResult);
-          }
-          setFilteredCustomers([]);
-        } catch {
-          setFilteredCustomers([]);
-        }
-      } else {
-        // Flatten backend results
+      if (backendResults.length > 0) {
+        // ✅ Tìm thấy → Hiển thị
         const flattenedResults = backendResults.flatMap((customer) =>
           flattenCustomerData(customer)
         );
         setFilteredCustomers(flattenedResults);
+      } else {
+        setFilteredCustomers([]);
+        setShowNotFoundDialog(true);
       }
     } catch (err: any) {
-      setSearchError(err.response?.data?.message || "Lỗi khi tìm kiếm");
-      console.error("Error searching:", err);
+      const errorMessage =
+        err.response?.data?.message || "Có lỗi xảy ra khi tìm kiếm";
+      setSearchError(errorMessage);
+      setFilteredCustomers([]);
+      setShowNotFoundDialog(true);
     } finally {
       setSearchLoading(false);
     }
@@ -74,10 +64,10 @@ export function useGetCustomers() {
     setFilteredCustomers(customers);
   };
 
-  // Function để clear filter (chỉ clear term và error, không reset data)
   const clearSearchTerm = () => {
     setSearchTerm("");
     setSearchError("");
+    setShowNotFoundDialog(false);
   };
 
   return {
@@ -89,5 +79,7 @@ export function useGetCustomers() {
     setSearchTerm,
     setInitialCustomers,
     clearSearchTerm,
+    showNotFoundDialog,
+    setShowNotFoundDialog,
   };
 }
