@@ -12,6 +12,18 @@ export interface VehicleResponse {
   installedParts?: any[]; // List<InstalledPartResponse>
 }
 
+export interface UnassignedVehicle {
+  vin: string;
+  customerName?: string;
+  modelName: string;
+  color?: string;
+  productionYear?: number;
+  licensePlate?: string;
+  batteryCapacity?: number;
+  image?: string;
+  registrationDate?: string;
+}
+
 export interface CustomerResponse {
   customerID: number;
   fullName: string;
@@ -20,6 +32,15 @@ export interface CustomerResponse {
   cmnd: string;
   address: string;
   vehicles: VehicleResponse[];
+}
+
+export interface CustomerRequest {
+  fullName: string;
+  phone: string;
+  email: string;
+  cmnd: string;
+  address: string;
+  vin: string;
 }
 
 // 🔷 Frontend Display Type (flat structure để dễ hiển thị)

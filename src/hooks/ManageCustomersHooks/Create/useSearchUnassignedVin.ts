@@ -1,32 +1,40 @@
-import { useState } from "react";
-import { vehicleAPI } from "@/utility";
-import type { VehicleResponse } from "@/pages/SC_Staff/ManageCustomers/types";
+import { useState, useCallback } from "react";
+import { vehicleAPI } from "@/utility"; // điều chỉnh đường dẫn nếu cần
+import type { UnassignedVehicle } from "@/pages/SC_Staff/ManageCustomers/types";
 
-export function useSearchUnassignedVin() {
-  //chưa đúng
+export const useSearchUnassignedVin = () => {
+  const [vinSuggestions, setVinSuggestions] = useState<UnassignedVehicle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [vin, setVin] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
+  const searchVin = useCallback(async (keyword: string) => {
+    // Không tìm kiếm nếu keyword quá ngắn
+    if (!keyword || keyword.trim().length < 3) {
+      setVinSuggestions([]);
+      setError(null);
+      return;
+    }
 
-  const searchUnassignedVin = async (searchVin: string) => {
     try {
       setLoading(true);
-      setError("");
-      const response = await vehicleAPI.searchUnassignedVehicles(searchVin);
-      const vehicleData: VehicleResponse[] = response.data.result;
-      return vehicleData;
+      setError(null);
+
+      const response = await vehicleAPI.searchUnassignedVehicles(keyword);
+      const vehicles = response.data?.result || [];
+      setVinSuggestions(vehicles);
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Không thể tìm kiếm VIN chưa gán"
-      );
-      return [];
+      console.error("Error searching VIN:", err);
+      setError(err.message || "Không thể tìm kiếm VIN. Vui lòng thử lại!");
+      setVinSuggestions([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  return { vin, setVin, loading, error, searchUnassignedVin };
-}
+  const clearSuggestions = useCallback(() => {
+    setVinSuggestions([]);
+    setError(null);
+  }, []);
 
-//CHƯA XONG
+  return { vinSuggestions, loading, error, searchVin, clearSuggestions };
+};
