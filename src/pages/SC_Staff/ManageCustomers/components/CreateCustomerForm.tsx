@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { ArrowLeft, X, CheckCircle, Loader2, Search } from "lucide-react";
+import { X, CheckCircle, Loader2, Search } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -16,7 +16,6 @@ import { Textarea } from "@/components/ui/textarea";
 import type { CustomerRequest, UnassignedVehicle } from "../types";
 import { useCreateCustomer } from "@/hooks/ManageCustomersHooks/Create/useCreateCustomer";
 import { useSearchUnassignedVin } from "@/hooks/ManageCustomersHooks/Create/useSearchUnassignedVin";
-import { vehicleAPI } from "@/utility";
 import SuccessAlert from "./SuccessAlert";
 import { useGetVehicleDetails } from "@/hooks/ManageCustomersHooks/Create/useGetUnassignedVeByVin";
 
@@ -77,7 +76,7 @@ export default function VehicleRegistrationForm() {
     validationSchema: customerValidationSchema,
     validateOnChange: true,
     validateOnBlur: true,
-    onSubmit: () => {},
+    onSubmit: () => { },
   });
 
   // XỬ LÝ KHI SUCCESS THAY ĐỔI
@@ -229,7 +228,7 @@ export default function VehicleRegistrationForm() {
                   {...customerFormik.getFieldProps("fullName")}
                   className={
                     customerFormik.touched.fullName &&
-                    customerFormik.errors.fullName
+                      customerFormik.errors.fullName
                       ? "border-red-500"
                       : ""
                   }
@@ -320,7 +319,7 @@ export default function VehicleRegistrationForm() {
                   {...customerFormik.getFieldProps("address")}
                   className={
                     customerFormik.touched.address &&
-                    customerFormik.errors.address
+                      customerFormik.errors.address
                       ? "border-red-500"
                       : ""
                   }
