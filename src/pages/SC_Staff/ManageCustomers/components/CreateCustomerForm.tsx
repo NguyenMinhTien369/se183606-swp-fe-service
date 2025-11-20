@@ -13,36 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-// Types
-interface UnassignedVehicle {
-  vin: string;
-  customerName?: string;
-  modelName: string;
-  color?: string;
-  productionYear?: number;
-  licensePlate?: string;
-  batteryCapacity?: number;
-  image?: string;
-  registrationDate?: string;
-}
-
-interface CustomerRequest {
-  fullName: string;
-  phone: string;
-  email: string;
-  cmnd: string;
-  address: string;
-  vin: string;
-  modelName: string;
-  color: string;
-  productionYear: number;
-  licensePlate?: string;
-  batteryCapacity?: number;
-  image?: string;
-  registrationDate: string;
-  internalNotes?: string;
-}
+import type { CustomerRequest, UnassignedVehicle } from "../types";
+import { useCreateCustomer } from "@/hooks/ManageCustomersHooks/Create/useCreateCustomer";
+import { useSearchUnassignedVin } from "@/hooks/ManageCustomersHooks/Create/useSearchUnassignedVin";
+import { vehicleAPI } from "@/utility";
+import SuccessAlert from "./SuccessAlert";
+import { useGetVehicleDetails } from "@/hooks/ManageCustomersHooks/Create/useGetUnassignedVeByVin";
 
 // CHỈ VALIDATE THÔNG TIN KHÁCH HÀNG
 const customerValidationSchema = Yup.object({
@@ -61,18 +37,32 @@ const customerValidationSchema = Yup.object({
   vin: Yup.string().required("VIN không được để trống"),
 });
 
-// BỎ VALIDATION CHO XE - API sẽ xử lý
-
 export default function VehicleRegistrationForm() {
   const [showSuccess, setShowSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [vinSuggestions, setVinSuggestions] = useState<UnassignedVehicle[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loadingVin, setLoadingVin] = useState(false);
   const [selectedVehicle, setSelectedVehicle] =
     useState<UnassignedVehicle | null>(null);
   const vinInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // SỬ DỤNG CUSTOM HOOKS
+  const { createCustomer, loading, error, success, resetState } =
+    useCreateCustomer();
+  const {
+    vinSuggestions,
+    loading: loadingVin,
+    error: vinError,
+    searchVin,
+    clearSuggestions,
+  } = useSearchUnassignedVin();
+
+  const {
+    vehicleDetails, // <-- Biến này sẽ chứa thông tin xe chi tiết đã được load
+    loading: loadingVehicleDetails,
+    error: vehicleDetailsError,
+    getVehicleDetails, // <-- Hàm dùng để kích hoạt việc tải dữ liệu
+    clearVehicleDetails,
+  } = useGetVehicleDetails(); // Gọi hook không tham số
 
   // Formik cho Customer - CÓ VALIDATION
   const customerFormik = useFormik({
@@ -90,87 +80,56 @@ export default function VehicleRegistrationForm() {
     onSubmit: () => {},
   });
 
-  // Formik cho Vehicle - KHÔNG CÓ VALIDATION
-  const vehicleFormik = useFormik({
-    initialValues: {
-      modelName: "",
-      color: "",
-      productionYear: "",
-      licensePlate: "",
-      batteryCapacity: "",
-      image: "",
-      registrationDate: "",
-      internalNotes: "",
-    },
-    // Không có validationSchema
-    onSubmit: () => {},
-  });
+  // XỬ LÝ KHI SUCCESS THAY ĐỔI
+  useEffect(() => {
+    if (success) {
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        // Reset forms
+        customerFormik.resetForm();
+        setSelectedVehicle(null);
+        clearSuggestions();
+        resetState();
+      }, 2000);
+    }
+  }, [success]);
 
-  // Mock API calls (thay bằng API thực của bạn)
-  const mockVehicleAPI = {
-    searchUnassignedVehicles: async (keyword: string) => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return {
-        data: {
-          result: [
-            {
-              vin: "1HGBH41JXMN109186",
-              modelName: "VinFast VF8",
-              color: "Xanh Ocean",
-              productionYear: 2024,
-              batteryCapacity: 87.7,
-            },
-            {
-              vin: "1HGBH41JXMN109187",
-              modelName: "VinFast VF9",
-              color: "Đỏ Ruby",
-              productionYear: 2024,
-              batteryCapacity: 123,
-            },
-          ].filter((v) => v.vin.toLowerCase().includes(keyword.toLowerCase())),
-        },
-      };
-    },
-    getUnassignedVehicles: async (vin: string) => {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      return {
-        data: {
-          result: {
-            vin,
-            modelName: "VinFast VF8 Plus",
-            color: "Xanh Ocean",
-            productionYear: 2024,
-            batteryCapacity: 87.7,
-            licensePlate: "",
-            image: "https://example.com/vf8.jpg",
-            internalNotes: "Xe mới, chưa đăng ký",
-          },
-        },
-      };
-    },
-  };
+  // HIỂN THỊ ERROR TỪ HOOK
+  useEffect(() => {
+    if (error) {
+      alert(error);
+    }
+  }, [error]);
 
-  const mockCustomerAPI = {
-    createCustomer: async (data: CustomerRequest) => {
-      console.log("Creating customer:", data);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return { data: { success: true, message: "Đăng ký thành công!" } };
-    },
-  };
+  // HIỂN THỊ ERROR TỪ VIN SEARCH
+  useEffect(() => {
+    if (vinError) {
+      alert(vinError);
+    }
+  }, [vinError]);
 
   // Debounce search VIN
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       const vinValue = customerFormik.values.vin.trim();
       if (vinValue.length >= 3) {
-        searchVIN(vinValue);
+        searchVin(vinValue);
       } else {
-        setVinSuggestions([]);
+        clearSuggestions();
         setShowSuggestions(false);
       }
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [customerFormik.values.vin]);
+  }, [customerFormik.values.vin, searchVin, clearSuggestions]);
+
+  // Show suggestions when data is available
+  useEffect(() => {
+    if (vinSuggestions.length > 0) {
+      console.log("Dữ liệu API trả về:", vinSuggestions[0]);
+      setShowSuggestions(true);
+    }
+  }, [vinSuggestions]);
 
   // Close suggestions when click outside
   useEffect(() => {
@@ -188,46 +147,13 @@ export default function VehicleRegistrationForm() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const searchVIN = async (keyword: string) => {
-    try {
-      setLoadingVin(true);
-      const response = await mockVehicleAPI.searchUnassignedVehicles(keyword);
-      const vehicles = response.data.result || [];
-      setVinSuggestions(vehicles);
-      setShowSuggestions(vehicles.length > 0);
-    } catch (error) {
-      console.error("Error searching VIN:", error);
-      setVinSuggestions([]);
-      setShowSuggestions(false);
-    } finally {
-      setLoadingVin(false);
-    }
-  };
-
   const handleVinSelect = async (vehicle: UnassignedVehicle) => {
-    try {
-      customerFormik.setFieldValue("vin", vehicle.vin);
-      setSelectedVehicle(vehicle);
-      setShowSuggestions(false);
+    customerFormik.setFieldValue("vin", vehicle.vin);
+    setSelectedVehicle(vehicle); // Vẫn lưu thông tin cơ bản để hiển thị ngay
+    setShowSuggestions(false);
 
-      const response = await mockVehicleAPI.getUnassignedVehicles(vehicle.vin);
-      const vehicleDetails = response.data.result;
-
-      // Auto-fill vehicle form - KHÔNG CẦN VALIDATE
-      vehicleFormik.setValues({
-        modelName: vehicleDetails.modelName || "",
-        color: vehicleDetails.color || "",
-        productionYear: String(vehicleDetails.productionYear) || "",
-        licensePlate: vehicleDetails.licensePlate || "",
-        batteryCapacity: String(vehicleDetails.batteryCapacity) || "",
-        image: vehicleDetails.image || "",
-        registrationDate: vehicleFormik.values.registrationDate,
-        internalNotes: vehicleDetails.internalNotes || "",
-      });
-    } catch (error) {
-      console.error("Error fetching vehicle details:", error);
-      alert("Không thể tải thông tin xe. Vui lòng thử lại!");
-    }
+    // GỌI HÀM MỚI để tải chi tiết xe (tự động cập nhật vehicleDetails)
+    await getVehicleDetails(vehicle.vin);
   };
 
   const handleSubmit = async () => {
@@ -255,7 +181,7 @@ export default function VehicleRegistrationForm() {
       return;
     }
 
-    // Prepare data - API sẽ validate phần xe
+    // Prepare data
     const customerData: CustomerRequest = {
       fullName: customerFormik.values.fullName,
       phone: customerFormik.values.phone,
@@ -263,45 +189,28 @@ export default function VehicleRegistrationForm() {
       cmnd: customerFormik.values.cmnd,
       address: customerFormik.values.address,
       vin: customerFormik.values.vin,
-      modelName: vehicleFormik.values.modelName,
-      color: vehicleFormik.values.color,
-      productionYear: Number(vehicleFormik.values.productionYear),
-      licensePlate: vehicleFormik.values.licensePlate,
-      batteryCapacity: vehicleFormik.values.batteryCapacity
-        ? Number(vehicleFormik.values.batteryCapacity)
-        : undefined,
-      image: vehicleFormik.values.image,
-      registrationDate: vehicleFormik.values.registrationDate,
-      internalNotes: vehicleFormik.values.internalNotes,
     };
 
+    // GỌI CUSTOM HOOK ĐỂ TẠO CUSTOMER
     try {
-      setIsSubmitting(true);
-      const response = await mockCustomerAPI.createCustomer(customerData);
-      console.log("Customer created successfully:", response.data);
-
-      setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        // Reset forms
-        customerFormik.resetForm();
-        vehicleFormik.resetForm();
-        setSelectedVehicle(null);
-      }, 2000);
-    } catch (error: any) {
-      console.error("Error creating customer:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        "Có lỗi xảy ra khi đăng ký khách hàng!";
-      alert(errorMessage);
-    } finally {
-      setIsSubmitting(false);
+      await createCustomer(customerData);
+    } catch (err) {
+      console.error("Error during customer creation:", err);
     }
+  };
+
+  const handleReset = () => {
+    customerFormik.resetForm();
+    setSelectedVehicle(null);
+    clearSuggestions();
+    clearVehicleDetails();
+    setShowSuggestions(false);
+    resetState();
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-200 rounded-2xl to-indigo-100 p-4 md:p-6 lg:p-8">
-      {/* Success Message */}
+      {/* Success Message
       {showSuccess && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
           <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
@@ -309,7 +218,9 @@ export default function VehicleRegistrationForm() {
             <span className="font-semibold">Đăng ký thành công!</span>
           </div>
         </div>
-      )}
+      )} */}
+
+      <SuccessAlert open={showSuccess} setOpen={setShowSuccess} />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto">
@@ -519,24 +430,29 @@ export default function VehicleRegistrationForm() {
               <CardTitle className="text-2xl">Thông Tin Xe</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              {loadingVehicleDetails && (
+                <p className="text-blue-500 flex items-center gap-2">
+                  <Loader2 size={16} className="animate-spin" /> Đang tải thông
+                  tin xe...
+                </p>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="modelName">Tên Model</Label>
                 <Input
                   id="modelName"
-                  placeholder="VinFast VF8"
-                  {...vehicleFormik.getFieldProps("modelName")}
-                  disabled={!selectedVehicle}
+                  value={vehicleDetails?.modelName || ""}
+                  disabled
                   className="bg-gray-50"
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="color">Màu Xe</Label>
                 <Input
                   id="color"
-                  placeholder="Xanh Ocean"
-                  {...vehicleFormik.getFieldProps("color")}
-                  disabled={!selectedVehicle}
+                  type="text"
+                  value={vehicleDetails?.color || ""}
+                  disabled
                   className="bg-gray-50"
                 />
               </div>
@@ -546,9 +462,8 @@ export default function VehicleRegistrationForm() {
                 <Input
                   id="productionYear"
                   type="number"
-                  placeholder="2024"
-                  {...vehicleFormik.getFieldProps("productionYear")}
-                  disabled={!selectedVehicle}
+                  value={vehicleDetails?.productionYear || ""}
+                  disabled
                   className="bg-gray-50"
                 />
               </div>
@@ -557,8 +472,10 @@ export default function VehicleRegistrationForm() {
                 <Label htmlFor="licensePlate">Biển Số Xe</Label>
                 <Input
                   id="licensePlate"
-                  placeholder="29A-12345"
-                  {...vehicleFormik.getFieldProps("licensePlate")}
+                  type="text"
+                  disabled
+                  value={vehicleDetails?.licensePlate || ""}
+                  className="bg-gray-50"
                 />
               </div>
 
@@ -568,9 +485,8 @@ export default function VehicleRegistrationForm() {
                   id="batteryCapacity"
                   type="number"
                   step="0.1"
-                  placeholder="87.7"
-                  {...vehicleFormik.getFieldProps("batteryCapacity")}
-                  disabled={!selectedVehicle}
+                  value={vehicleDetails?.batteryCapacity || ""}
+                  disabled
                   className="bg-gray-50"
                 />
               </div>
@@ -579,8 +495,10 @@ export default function VehicleRegistrationForm() {
                 <Label htmlFor="registrationDate">Ngày Đăng Ký</Label>
                 <Input
                   id="registrationDate"
-                  type="date"
-                  {...vehicleFormik.getFieldProps("registrationDate")}
+                  type="text"
+                  disabled
+                  value={vehicleDetails?.registrationDate || ""}
+                  className="bg-gray-50"
                 />
               </div>
             </CardContent>
@@ -591,23 +509,15 @@ export default function VehicleRegistrationForm() {
         <div className="mt-6 flex justify-end gap-4">
           <Button
             variant="outline"
-            onClick={() => {
-              customerFormik.resetForm();
-              vehicleFormik.resetForm();
-              setSelectedVehicle(null);
-            }}
+            onClick={handleReset}
             className="gap-2"
-            disabled={isSubmitting}
+            disabled={loading}
           >
             <X size={20} />
             Reset
           </Button>
-          <Button
-            onClick={handleSubmit}
-            className="gap-2"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
+          <Button onClick={handleSubmit} className="gap-2" disabled={loading}>
+            {loading ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
                 Đang đăng ký...
