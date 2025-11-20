@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/pages/Login/feature/AuthContext';
 import {
     FaUsers, FaFileAlt, FaBoxOpen, FaCar,
-    FaChartLine, FaClipboardList, FaTachometerAlt
+    FaChartLine, FaTachometerAlt
 } from 'react-icons/fa';
-import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { warrantyClaimAPI, userAPI, productModelAPI, vehicleAPI } from '@/utility';
 import styles from './TechnicianDashboard.module.css';
 
@@ -23,12 +23,6 @@ interface MonthlyData {
     month: string;
     claims: number;
     completed: number;
-}
-
-interface ClaimStatus {
-    name: string;
-    value: number;
-    color: string;
 }
 
 interface StatCard {
@@ -54,7 +48,6 @@ export default function TechnicianDashboard() {
         activeTechnicians: 0
     });
     const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
-    const [claimsByStatus, setClaimsByStatus] = useState<ClaimStatus[]>([]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -137,15 +130,6 @@ export default function TechnicianDashboard() {
             // Calculate monthly data (last 6 months)
             const monthlyStats = calculateMonthlyData(claims);
             setMonthlyData(monthlyStats);
-
-            // Set claims by status for pie chart
-            const statusData: ClaimStatus[] = [
-                { name: 'Chờ duyệt', value: pending, color: '#f59e0b' },
-                { name: 'Đã duyệt', value: approved, color: '#10b981' },
-                { name: 'Từ chối', value: rejected, color: '#ef4444' }
-            ].filter(item => item.value > 0);
-
-            setClaimsByStatus(statusData);
 
             setStats({
                 totalUsers: users.length,
@@ -287,7 +271,6 @@ export default function TechnicianDashboard() {
 
             {/* Charts Row */}
             <div className={styles.chartsGrid}>
-                {/* Area Chart - Claims Trend */}
                 <div className={styles.chartCard}>
                     <h2 className={styles.chartTitle}>
                         <FaChartLine />
@@ -313,33 +296,6 @@ export default function TechnicianDashboard() {
                             <Area type='monotone' dataKey='claims' stroke='#14b8a6' fillOpacity={1} fill='url(#colorClaims)' name='Yêu cầu' />
                             <Area type='monotone' dataKey='completed' stroke='#10b981' fillOpacity={1} fill='url(#colorCompleted)' name='Hoàn thành' />
                         </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-
-                {/* Pie Chart - Claims by Status */}
-                <div className={styles.chartCard}>
-                    <h2 className={styles.chartTitle}>
-                        <FaClipboardList />
-                        Trạng thái yêu cầu
-                    </h2>
-                    <ResponsiveContainer width='100%' height={300}>
-                        <PieChart>
-                            <Pie
-                                data={claimsByStatus}
-                                cx='50%'
-                                cy='50%'
-                                labelLine={false}
-                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                outerRadius={100}
-                                fill='#8884d8'
-                                dataKey='value'
-                            >
-                                {claimsByStatus.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
                     </ResponsiveContainer>
                 </div>
             </div>

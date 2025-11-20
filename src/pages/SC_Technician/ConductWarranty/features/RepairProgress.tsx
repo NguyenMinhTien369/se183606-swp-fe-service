@@ -26,41 +26,33 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../../../../components/ui/dialog";
-import { Settings } from "lucide-react";
+import { Settings, CheckCircle, Loader2 } from "lucide-react";
 import { claimAssignmentAPI } from "@/utility/index";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
-import type { AssignmentProgressResponse } from "../types";
+import type { AssignmentProgressResponse, AssignmentStatus } from "../types";
 
 interface RepairProgressProps {
-  selectedRequest?: any;
   onSelectRequest?: (request: any) => void;
   onNextStep?: () => void;
 }
 
 export function RepairProgress({
-  selectedRequest,
   onSelectRequest,
   onNextStep,
 }: RepairProgressProps) {
-  // Get technician ID from auth context
   const { user } = useAuth();
   const TECHNICIAN_ID = user?.userId;
 
-  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
-    []
-  );
+  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentWorkingRequest, setCurrentWorkingRequest] =
     useState<AssignmentProgressResponse | null>(null);
   const [dialog, setDialog] = useState({ open: false, title: "", message: "" });
-
   const [partInfo, setPartInfo] = useState({
-    internalNotes: "Phụ tùng mới đã được kiểm tra và lắp đặt đúng quy trình",
+    internalNotes: "Phụ tùng mới đã được kiểm tra và lắp đặt đúng quy trình.",
   });
-
   const [progressPhotos, setProgressPhotos] = useState<File[]>([]);
 
-  // Load assignments on mount
   useEffect(() => {
     loadAssignments();
   }, []);
@@ -77,9 +69,7 @@ export function RepairProgress({
 
     setIsLoading(true);
     try {
-      const response = await claimAssignmentAPI.getAssignmentsByTechnician(
-        TECHNICIAN_ID
-      );
+      const response = await claimAssignmentAPI.getAssignmentsByTechnician(TECHNICIAN_ID);
       // Filter assignments ready for repair: "Nhận phụ tùng" (just confirmed) OR "Đang thay thế" (in progress)
       const repairReadyClaims = response.data.result.filter(
         (assignment: AssignmentProgressResponse) =>
@@ -118,6 +108,8 @@ export function RepairProgress({
   const handleSelectRequest = (assignment: AssignmentProgressResponse) => {
     setCurrentWorkingRequest(assignment);
     onSelectRequest?.(assignment);
+    setProgressPhotos([]);
+    setPartInfo({ internalNotes: "Phụ tùng mới đã được kiểm tra và lắp đặt đúng quy trình." });
   };
 
   const handleProgressPhotosUpload = (files: FileList | null) => {
@@ -129,25 +121,17 @@ export function RepairProgress({
 
   const handleStartRepair = async () => {
     if (!currentWorkingRequest) return;
-
-    // Validate progress photos (newProgressFiles - field photos before starting work)
     if (progressPhotos.length === 0) {
       showDialog("Lỗi", "Vui lòng chụp ảnh hiện trường trước khi bắt đầu sửa chữa.");
       return;
     }
 
     try {
-      // Step 8: Start repair → Update status to "Đang thay thế" (20%)
       const formData = new FormData();
-      formData.append("status", "Đang thay thế");
-      formData.append(
-        "internalNotes",
-        `🔧 Bắt đầu thay thế phụ tùng. ${partInfo.internalNotes || "Đang tiến hành thay thế."}`
-      );
-
-      // Upload progress photos (newProgressFiles - field photos)
+      formData.append("status", "Đang thay thế"); // ⬅️ Status Tiếng Việt
+      formData.append("internalNotes", `🔧 Bắt đầu thay thế phụ tùng.`);
       progressPhotos.forEach((file) => {
-        formData.append("newProgressFiles", file);
+        formData.append("newProgressFiles", file); // ⬅️ Khớp DTO
       });
 
       const response = await claimAssignmentAPI.updateAssignmentProgress(
@@ -155,17 +139,15 @@ export function RepairProgress({
         formData
       );
 
-      console.log("Start repair response:", response);
+      showDialog("Bắt đầu", "✅ Đã bắt đầu quá trình thay thế phụ tùng.");
 
-      showDialog("Bắt đầu", "✅ Đã bắt đầu quá trình thay thế phụ tùng. Tiến độ 20%.\n\nBây giờ bạn có thể nhập ghi chú nội bộ về quá trình thay thế.");
-
-      // Reload assignments and update current working request
-      await loadAssignments();
-
-      // Update current request status locally to immediately show Card 2
-      if (response.data?.result) {
-        setCurrentWorkingRequest(response.data.result);
-      }
+      // Cập nhật state local ngay lập tức
+      const updatedAssignment = response.data.result;
+      setCurrentWorkingRequest(updatedAssignment);
+      setAssignments(prev =>
+        prev.map(a => a.assignmentID === updatedAssignment.assignmentID ? updatedAssignment : a)
+      );
+      onSelectRequest?.(updatedAssignment);
     } catch (error) {
       console.error("Error starting repair:", error);
       showDialog("Lỗi", "Không thể bắt đầu sửa chữa. Vui lòng thử lại.");
@@ -174,59 +156,28 @@ export function RepairProgress({
 
   const handleCompleteWork = async () => {
     if (!partInfo.internalNotes.trim()) {
-      showDialog(
-        "Lỗi",
-        "Vui lòng nhập ghi chú nội bộ về quá trình thay thế."
-      );
+      showDialog("Lỗi", "Vui lòng nhập ghi chú nội bộ về quá trình thay thế.");
       return;
     }
-
-    if (!currentWorkingRequest) {
-      showDialog("Lỗi", "Không tìm thấy thông tin yêu cầu đang xử lý.");
-      return;
-    }
+    if (!currentWorkingRequest) return;
 
     try {
-      // Step 8.5: Update to "Đang kiểm tra" status (80%)
       const formData = new FormData();
+      formData.append("status", "Đang kiểm tra"); // ⬅️ Status Tiếng Việt
+      const notes = `✅ Đã thay thế phụ tùng.\nGhi chú: ${partInfo.internalNotes}`;
+      formData.append("internalNotes", notes); // ⬅️ Khớp DTO
 
-      // Backend requires Vietnamese status: "Đang kiểm tra" = 80%
-      formData.append("status", "Đang kiểm tra");
-
-      // Add internal notes
-      const notes = `✅ Đã thay thế phụ tùng thành công.\n\nGhi chú nội bộ:\n${partInfo.internalNotes}`;
-      formData.append("internalNotes", notes);
-
-      // Note: Backend does not use progressPercentage anymore (commented out in DTO)
-      // Progress is auto-calculated based on status
-
-      console.log("Updating assignment progress:", {
-        assignmentID: currentWorkingRequest.assignmentID,
-        status: "Đang kiểm tra",
-        hasNotes: !!partInfo.internalNotes,
-        notesLength: notes.length
-      });
-
-      // Log FormData contents
-      console.log("FormData contents:");
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + (typeof pair[1] === 'string' ? pair[1].substring(0, 100) : pair[1]));
-      }
-
-      const response = await claimAssignmentAPI.updateAssignmentProgress(
+      await claimAssignmentAPI.updateAssignmentProgress(
         currentWorkingRequest.assignmentID,
         formData
       );
 
-      console.log("Update successful:", response);
-
       showDialog(
         "Thành công",
-        "Đã lưu thông tin thay thế phụ tùng. Tiến độ 80%. Vui lòng chuyển sang bước tiếp theo để hoàn tất & bàn giao."
+        "Đã lưu thông tin. Vui lòng chuyển sang bước 3 để Hoàn tất & Bàn giao."
       );
 
-      // Reload to get updated status
-      loadAssignments();
+      loadAssignments(); // Tải lại (yêu cầu này sẽ biến mất)
 
       // Auto navigate to step 3 after 2 seconds
       setTimeout(() => {
@@ -249,6 +200,26 @@ export function RepairProgress({
 
       showDialog("Lỗi", errorMessage);
     }
+  };
+
+  const getStatusBadge = (status: AssignmentStatus) => {
+    if (status === "Nhận phụ tùng") {
+      return (
+        <Badge className="bg-green-100 text-green-800 border-green-300">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Đã nhận phụ tùng
+        </Badge>
+      );
+    }
+    if (status === "Đang thay thế") {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
+          <Settings className="w-3 h-3 mr-1 animate-spin" />
+          Đang thay thế
+        </Badge>
+      );
+    }
+    return <Badge>{status}</Badge>;
   };
 
   return (
@@ -278,10 +249,7 @@ export function RepairProgress({
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
-                      <span className="text-muted-foreground">Đang tải...</span>
-                    </div>
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                   </TableCell>
                 </TableRow>
               ) : assignments.length === 0 ? (
@@ -304,7 +272,7 @@ export function RepairProgress({
                     onClick={() => handleSelectRequest(assignment)}
                   >
                     <TableCell className="font-medium">
-                      #{assignment.claimCode}
+                      {getStatusBadge(assignment.status as AssignmentStatus)}
                     </TableCell>
                     <TableCell>{assignment.vin}</TableCell>
                     <TableCell>{assignment.technicianName}</TableCell>
@@ -433,18 +401,19 @@ export function RepairProgress({
                   <Button
                     onClick={handleStartRepair}
                     className="bg-blue-600 hover:bg-blue-700"
+                    disabled={progressPhotos.length === 0} // Disable nếu chưa có ảnh
                   >
                     <Settings className="w-4 h-4 mr-2" />
-                    Bắt đầu sửa chữa
+                    Bắt đầu sửa chữa (Đã chụp {progressPhotos.length} ảnh)
                   </Button>
                 )}
                 {currentWorkingRequest?.status === "Đang thay thế" && (
                   <Button
                     onClick={handleCompleteWork}
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-green-600 hover:bg-green-700 text-white" // ⬅️ Đổi màu
                   >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Lưu & Chuyển bước tiếp theo
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Lưu & Chuyển sang Bước 3 (Bàn giao)
                   </Button>
                 )}
               </div>
@@ -463,7 +432,8 @@ export function RepairProgress({
               <CardContent className="space-y-4">
                 <div>
                   <Label>Ảnh hiện trường (Trước khi bắt đầu thay thế) *</Label>
-                  <div className="mt-2 border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white">
+                  <div
+                    className="mt-2 border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white">
                     <input
                       type="file"
                       multiple
@@ -505,7 +475,8 @@ export function RepairProgress({
 
                 <div className="bg-blue-100 p-3 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    <strong>⚠️ Quan trọng:</strong> Ảnh hiện trường phải được chụp trước khi bắt đầu thay thế phụ tùng.
+                    <strong>⚠️ Quan trọng:</strong> Ảnh hiện trường phải được chụp trước khi bắt đầu
+                    thay thế phụ tùng.
                     Đây là bằng chứng về tình trạng xe trước sửa chữa.
                   </p>
                 </div>

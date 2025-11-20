@@ -1,30 +1,66 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
-import { Eye, AlertTriangle, CheckCircle } from "lucide-react";
-import { claimAssignmentAPI, warrantyClaimAPI, partAPI } from "@/utility/index";
+import { Eye, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { claimAssignmentAPI, warrantyClaimAPI } from "@/utility";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
-import type {
-  AssignmentProgressResponse, WarrantyClaimResponse,
 
-} from "../types";
+import type {
+  AssignmentProgressResponse,
+  WarrantyClaimResponse,
+  ConfirmPartsRequestDTO,
+  ReportMissingPartsRequestDTO,
+  ClaimPartResponse,
+} from "../types/warranty";
 
 interface ApprovedRequestsListProps {
-  onSelectRequest?: (request: any) => void;
+  onSelectRequest?: (request: ClaimDetailsWithAssignment) => void;
   onNextStep?: () => void;
 }
 
+// State nội bộ để quản lý chi tiết
 interface ClaimDetailsWithAssignment extends AssignmentProgressResponse {
   claimDetails?: WarrantyClaimResponse;
+}
+
+// State để KTV nhập serial mới
+interface PartConfirmation {
+  claimPartID: number;
+  partTypeName: string;
+  partTypeDescription: string;
+  originalSerial: string;
+  newSerialNumber: string;
+  quantity: number;
+  notes: string;
+}
+
+// State mới để quản lý số lượng báo thiếu
+interface MissingPartInput {
+  claimPartID: number;
+  partTypeName: string;
+  quantityRequested: number;
+  missingQuantity: number; // Số lượng KTV nhập
 }
 
 export function ApprovedRequestsList({
@@ -34,77 +70,53 @@ export function ApprovedRequestsList({
   const { user } = useAuth();
   const TECHNICIAN_ID = user?.userId;
 
-  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>(
-    []
-  );
+  const [assignments, setAssignments] = useState<AssignmentProgressResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingClaimDetails, setIsLoadingClaimDetails] = useState(false);
   const [selectedRequestData, setSelectedRequestData] =
     useState<ClaimDetailsWithAssignment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dialogMessage, setDialogMessage] = useState<string | null>(null);
-  const [filters, setFilters] = useState({
-    vin: "",
-    requestCode: "",
-    approvalDate: "",
-    parts: "",
-  });
+  const [filters, setFilters] = useState({ vin: "", requestCode: "" });
 
-  interface PartConfirmation {
-    claimPartID: number | null;
-    partTypeName: string;
-    partTypeDescription: string;
-    originalSerial: string;
-    newSerialNumber: string;
-    quantity: number;
-    notes: string;
-    confirmed: boolean;
-  }
-
+  // State cho Step 1: Xác nhận đủ
   const [partConfirmations, setPartConfirmations] = useState<PartConfirmation[]>([]);
+
+  // State cho Step 2: Báo thiếu
   const [isDiscrepancy, setIsDiscrepancy] = useState(false);
-  const [discrepancyInfo, setDiscrepancyInfo] = useState({
-    discrepancyType: "",
-    discrepancyDescription: "",
-  });
+  const [discrepancyNote, setDiscrepancyNote] = useState("");
+  const [missingParts, setMissingParts] = useState<MissingPartInput[]>([]); //  State mới
 
-  useEffect(() => {
-    loadAssignments();
-  }, []);
-
-  const loadAssignments = async () => {
+  const loadAssignments = useCallback(async () => {
     if (!TECHNICIAN_ID) {
-      console.error("Technician ID not found");
-      setDialogMessage(
-        "❌ Không tìm thấy thông tin kỹ thuật viên. Vui lòng đăng nhập lại."
-      );
+      setDialogMessage("❌ Không tìm thấy thông tin kỹ thuật viên.");
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await claimAssignmentAPI.getAssignmentsByTechnician(
-        TECHNICIAN_ID
-      );
+      const response = await claimAssignmentAPI.getAssignmentsByTechnician(TECHNICIAN_ID);
       const assignedClaims = response.data.result.filter(
         (assignment: AssignmentProgressResponse) =>
           assignment.status === "Đã phân công"
       );
       setAssignments(assignedClaims);
-    } catch (error) {
-      console.error("Error loading assignments:", error);
-      setDialogMessage("❌ Lỗi khi tải danh sách yêu cầu. Vui lòng thử lại.");
+    } catch (err) {
+      console.error("Error loading assignments:", err);
+      setDialogMessage("❌ Lỗi khi tải danh sách yêu cầu.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [TECHNICIAN_ID]);
+
+  useEffect(() => {
+    loadAssignments();
+  }, [loadAssignments]);
 
   const filteredRequests = assignments.filter((assignment) => {
     return (
-      (filters.vin === "" ||
-        assignment.vin.toLowerCase().includes(filters.vin.toLowerCase())) &&
-      (filters.requestCode === "" ||
-        assignment.claimCode.toString().includes(filters.requestCode))
+      (filters.vin === "" || assignment.vin.toLowerCase().includes(filters.vin.toLowerCase())) &&
+      (filters.requestCode === "" || assignment.claimCode.toString().includes(filters.requestCode))
     );
   });
 
@@ -113,36 +125,48 @@ export function ApprovedRequestsList({
     try {
       const response = await warrantyClaimAPI.getClaimById(assignment.claimCode);
       const claimDetails: WarrantyClaimResponse = response.data.result;
-      const combinedData: ClaimDetailsWithAssignment = {
-        ...assignment,
-        claimDetails
-      };
 
-      setSelectedRequestData(combinedData);
+      setSelectedRequestData({ ...assignment, claimDetails });
 
-      // Initialize part confirmations for all affected parts
+      // 2. Khởi tạo state cho KTV nhập liệu
       if (claimDetails.affectedParts && claimDetails.affectedParts.length > 0) {
-        const initialParts: PartConfirmation[] = claimDetails.affectedParts.map(part => ({
-          claimPartID: part.claimPartID || null,
-          partTypeName: part.partTypeName,
-          partTypeDescription: part.partTypeDescription,
-          originalSerial: part.partSerialNumber,
-          newSerialNumber: "",
-          quantity: 1,
-          notes: "",
-          confirmed: false,
-        }));
-        setPartConfirmations(initialParts);
+        const initialPartConfirmations: PartConfirmation[] = [];
+        const initialMissingParts: MissingPartInput[] = [];
+
+        claimDetails.affectedParts.forEach((part: ClaimPartResponse) => {
+          // ⬅️ Lấy số lượng từ DTO (đã cập nhật ở file warranty.ts)
+          const partQuantity = part.quantity || 1;
+
+          initialPartConfirmations.push({
+            claimPartID: part.claimPartID,
+            partTypeName: part.partTypeName,
+            partTypeDescription: part.partTypeDescription,
+            originalSerial: part.partSerialNumber,
+            newSerialNumber: "",
+            quantity: partQuantity,
+            notes: "",
+          });
+
+          initialMissingParts.push({
+            claimPartID: part.claimPartID,
+            partTypeName: part.partTypeName,
+            quantityRequested: partQuantity,
+            missingQuantity: 0, // Mặc định là 0
+          });
+        });
+
+        setPartConfirmations(initialPartConfirmations);
+        setMissingParts(initialMissingParts); // ⬅️ Set state mới
+      } else {
+        setPartConfirmations([]);
+        setMissingParts([]);
       }
 
-      // Reset discrepancy state
+      // 3. Reset form
       setIsDiscrepancy(false);
-      setDiscrepancyInfo({
-        discrepancyType: "",
-        discrepancyDescription: "",
-      });
-
+      setDiscrepancyNote("");
       setIsModalOpen(true);
+
     } catch (error) {
       console.error("Error loading claim details:", error);
       setDialogMessage("❌ Lỗi khi tải thông tin chi tiết đơn bảo hành.");
@@ -151,294 +175,122 @@ export function ApprovedRequestsList({
     }
   };
 
+  // Logic này KHÔNG ĐỔI (vẫn xác nhận 1-1 theo DTO backend)
   const handleConfirmParts = async () => {
-    // Validate that all parts have new serial numbers
     const unconfirmedParts = partConfirmations.filter(p => !p.newSerialNumber.trim());
     if (unconfirmedParts.length > 0) {
-      setDialogMessage(`⚠️ Vui lòng nhập số seri cho tất cả ${partConfirmations.length} phụ tùng.\n` +
-        `Còn ${unconfirmedParts.length} phụ tùng chưa nhập serial.`);
+      setDialogMessage(`⚠️ Vui lòng nhập số seri mới cho tất cả ${partConfirmations.length} phụ tùng.`);
       return;
     }
-
     if (!selectedRequestData) {
       setDialogMessage("⚠️ Không tìm thấy thông tin yêu cầu.");
       return;
     }
 
-    console.log("🔍 [Technician] Confirming parts receipt...");
-    console.log("  Assignment ID:", selectedRequestData.assignmentID);
-    console.log("  Claim Code:", selectedRequestData.claimCode);
-    console.log("  Claim ID:", selectedRequestData.claimDetails?.claimID);
-    console.log("  Total parts:", partConfirmations.length);
+    setIsLoading(true);
 
     try {
-      // Build confirmation note for all parts
-      const partsDetails = partConfirmations.map((part, idx) =>
-        `${idx + 1}. ${part.partTypeName}\n` +
-        `   Serial cũ: ${part.originalSerial}\n` +
-        `   Serial mới: ${part.newSerialNumber}\n` +
-        `   Số lượng: ${part.quantity}\n` +
-        `   ${part.notes ? `Ghi chú: ${part.notes}` : ""}`
-      ).join("\n\n");
+      const partReplacements = partConfirmations.map(p => {
+        const serial = p.newSerialNumber.trim();
+        const repeat = Math.max(1, Number(p.quantity) || 1);
+        const serials = Array.from({ length: repeat }, () => serial);
+        return {
+          claimPartID: p.claimPartID,
+          newPartSerialNumbers: serials,
+        };
+      });
 
-      const confirmationNote =
-        `✅ Đã xác nhận đủ ${partConfirmations.length} phụ tùng.\n\n` +
-        partsDetails +
-        `\n\nPhụ tùng đã được kiểm tra và xác nhận đầy đủ.`;
-
-      // Build part replacements array for all parts
-      const partReplacements = partConfirmations
-        .filter(p => p.claimPartID)
-        .map(p => ({
-          claimPartID: p.claimPartID!,
-          newPartSerialNumber: p.newSerialNumber
-        }));
-
-      console.log("  Part replacements:", partReplacements);
-      console.log("  Parts without claimPartID:", partConfirmations.filter(p => !p.claimPartID).length);
-
-      if (partReplacements.length === 0) {
-        console.warn("⚠️ [Technician] No valid claimPartID found in parts!");
-        setDialogMessage("⚠️ Không tìm thấy ID phụ tùng hợp lệ. Vui lòng thử lại hoặc liên hệ quản trị viên.");
-        return;
-      }
-
-      const requestData = {
-        partReplacements,
-        internalNotes: confirmationNote
+      const requestData: ConfirmPartsRequestDTO = {
+        partReplacements
       };
 
-      console.log("  Request data:", JSON.stringify(requestData, null, 2));
+      await claimAssignmentAPI.confirmPartsReceipt(
+        selectedRequestData.assignmentID,
+        requestData
+      );
 
-      // IMPORTANT: Register new parts in database first to avoid 404 errors
-      console.log("  📝 Registering new parts in database...");
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      const oneYearLater = new Date();
-      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-      const warrantyEndDate = oneYearLater.toISOString().split('T')[0];
-
-      let allPartsRegistered = true;
-      for (const part of partConfirmations) {
-        const cleanSerial = part.newSerialNumber.trim().replace(/\s+/g, ' ');
-        try {
-          // Try to get existing part first
-          try {
-            await partAPI.getPartBySerialNumber(cleanSerial);
-            console.log("    ✅ Part already exists:", cleanSerial);
-          } catch (getError: any) {
-            // Part doesn't exist, create it
-            if (getError.response?.status === 404) {
-              await partAPI.createPart({
-                partSerialNumber: cleanSerial,
-                partTypeID: 1, // Default part type
-                productionDate: today,
-                warrantyPeriod: warrantyEndDate
-              });
-              console.log("    ✅ Registered new part:", cleanSerial);
-            } else {
-              throw getError;
-            }
-          }
-        } catch (partError: any) {
-          console.error("    ❌ Failed to register part:", cleanSerial, partError.response?.data);
-          allPartsRegistered = false;
-        }
-      }
-
-      if (!allPartsRegistered) {
-        console.warn("  ⚠️ Some parts failed to register, will use fallback API");
-      }
-
-      // Try confirmPartsReceipt first, fallback to updateAssignmentProgress if it fails
-      let response;
-      try {
-        console.log("  Calling API: PUT /claim-assignments/" + selectedRequestData.assignmentID + "/confirm-parts");
-        response = await claimAssignmentAPI.confirmPartsReceipt(
-          selectedRequestData.assignmentID,
-          requestData
-        );
-        console.log("  ✅ Used confirmPartsReceipt API");
-      } catch (confirmError: any) {
-        if (confirmError.response?.status === 400 || confirmError.response?.status === 404) {
-          console.log("  ⚠️ confirmPartsReceipt failed (status: " + confirmError.response?.status + ")");
-          console.log("  Error message:", confirmError.response?.data?.message || confirmError.message);
-          console.log("  Trying updateAssignmentProgress instead...");
-
-          // Fallback: Use updateAssignmentProgress with FormData
-          const formData = new FormData();
-
-          // Add part serial numbers to notes for tracking
-          const partsSerialInfo = partConfirmations.map(p =>
-            `${p.partTypeName}: ${p.originalSerial} -> ${p.newSerialNumber}`
-          ).join("; ");
-
-          const fullNote = confirmationNote + "\n\nSerial numbers: " + partsSerialInfo;
-
-          formData.append("status", "Nhận phụ tùng"); // Update status to "Received parts"
-          formData.append("internalNotes", fullNote);
-
-          console.log("  Fallback request:");
-          console.log("    Status:", "Nhận phụ tùng");
-          console.log("    Notes length:", fullNote.length);
-          console.log("  Calling API: PUT /claim-assignments/" + selectedRequestData.assignmentID + "/progress");
-
-          response = await claimAssignmentAPI.updateAssignmentProgress(
-            selectedRequestData.assignmentID,
-            formData
-          );
-          console.log("  ✅ Used updateAssignmentProgress API as fallback");
-
-          // IMPORTANT: updateAssignmentProgress doesn't update claim status, so we need to manually sync it
-          console.log("  🔄 Syncing warranty claim status to 'Đã nhận'...");
-          try {
-            let claimID = selectedRequestData.claimDetails?.claimID;
-
-            // If claimID not found, extract from claimCode (format: "CLM-123" -> 123)
-            if (!claimID && selectedRequestData.claimCode) {
-              const codeStr = String(selectedRequestData.claimCode);
-              const match = codeStr.match(/CLM-(\d+)/) || codeStr.match(/(\d+)/);
-              if (match) {
-                claimID = parseInt(match[1]);
-                console.log("  📝 Extracted claimID from claimCode:", claimID);
-              }
-            }
-
-            if (claimID) {
-              await warrantyClaimAPI.syncStatusFromManufacturer(claimID, "Đã nhận");
-              console.log("  ✅ Claim status synced successfully to 'Đã nhận'");
-            } else {
-              console.warn("  ⚠️ No claimID found, skipping status sync");
-            }
-          } catch (syncError: any) {
-            console.error("  ⚠️ Failed to sync claim status:", syncError);
-            // Don't throw - assignment update was successful
-          }
-        } else {
-          throw confirmError;
-        }
-      }
-
-      console.log("✅ [Technician] Parts confirmed successfully");
-      console.log("  Response:", response.data);
-
-      const serialsList = partConfirmations.map(p => `${p.partTypeName}: ${p.newSerialNumber}`).join(", ");
-      setDialogMessage(`✅ Đã xác nhận đủ ${partConfirmations.length} phụ tùng thành công.\n${serialsList}\nCó thể chuyển sang bước sửa chữa.`);
+      setDialogMessage(`✅ Đã xác nhận đủ ${partConfirmations.length} phụ tùng thành công.`);
       setIsModalOpen(false);
       onSelectRequest?.(selectedRequestData);
-
-      // Reload assignments to reflect new status
       loadAssignments();
 
-      // Automatically move to next step after confirmation
       setTimeout(() => {
         onNextStep?.();
       }, 2000);
 
-      // Reset form
-      setPartConfirmations([]);
-    } catch (error: any) {
-      console.error("❌ [Technician] Error confirming parts:", error);
-      console.error("  Error response:", error.response);
-      console.error("  Error data:", error.response?.data);
-      console.error("  Status code:", error.response?.status);
-      console.error("  Request URL:", error.config?.url);
-      console.error("  Request data:", error.config?.data);
-
-      // Extract detailed error message from response
+    } catch (err: unknown) {
+      console.error("❌ [Technician] Error confirming parts:", err);
       let errorMessage = "Lỗi khi xác nhận phụ tùng!\n\n";
+      const maybeAxios: any = err as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      errorMessage += maybeAxios?.response?.data?.message || (err instanceof Error ? err.message : String(err));
       setDialogMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  // ⬅️ [SỬA HOÀN TOÀN LOGIC NÀY]
   const handleReportDiscrepancy = async () => {
-    if (
-      !discrepancyInfo.discrepancyType ||
-      !discrepancyInfo.discrepancyDescription
-    ) {
-      setDialogMessage("Vui lòng điền đầy đủ thông tin sai lệch.");
+    // 1. Lọc ra những phụ tùng có báo thiếu
+    const partsToReport = missingParts.filter(p => p.missingQuantity > 0);
+
+    if (partsToReport.length === 0) {
+      setDialogMessage("Vui lòng nhập số lượng thiếu cho ít nhất 1 phụ tùng.");
       return;
     }
+    if (!selectedRequestData || !selectedRequestData.claimDetails) return;
 
-    if (!selectedRequestData) return;
+    setIsLoading(true);
 
     try {
-      // Step 7.1: Report discrepancy → Update to "Bị từ chối" status
-      // This is the only valid transition from "Đã phân công" for reporting issues
-      const formData = new FormData();
-      formData.append("status", "Bị từ chối"); // Valid transition for reporting parts discrepancy
-      // Note: completionPercentage is commented out in backend DTO, don't send it
+      const claimID = selectedRequestData.claimCode;
 
-      const discrepancyTypes: Record<string, string> = {
-        missing: "Thiếu phụ tùng",
-        "wrong-code": "Sai mã phụ tùng",
-        damaged: "Phụ tùng bị hỏng",
-        other: "Vấn đề khác"
+      // 2. Build DTO khớp với ReportMissingPartsRequest.java (từ backend)
+      const missingPartsDTO = partsToReport.map(p => ({
+        claimPartID: p.claimPartID,
+        missingQuantity: p.missingQuantity
+      }));
+
+      const requestData: ReportMissingPartsRequestDTO = {
+        missingParts: missingPartsDTO,
+        note: discrepancyNote.trim() || "KTV Báo thiếu hàng."
       };
 
-      // Build report for all parts
-      const partsReport = partConfirmations.map((part, idx) =>
-        `${idx + 1}. ${part.partTypeName}\n` +
-        `   Serial cũ: ${part.originalSerial}\n` +
-        `   Serial mới đã kiểm tra: ${part.newSerialNumber || "N/A"}\n` +
-        `   Số lượng: ${part.quantity}`
-      ).join("\n\n");
+      console.log("Calling API: reportMissingParts", requestData);
 
-      const reportMessage =
-        `❌ BÁO CÁO THIẾU HÀNG\n` +
-        `Tổng số phụ tùng: ${partConfirmations.length}\n\n` +
-        `Danh sách phụ tùng:\n${partsReport}\n\n` +
-        `Loại vấn đề: ${discrepancyTypes[discrepancyInfo.discrepancyType] || discrepancyInfo.discrepancyType}\n` +
-        `Chi tiết: ${discrepancyInfo.discrepancyDescription}\n` +
-        `Thời gian báo cáo: ${new Date().toLocaleString("vi-VN")}`;
-
-      formData.append("internalNotes", reportMessage);
-
-      console.log("Sending discrepancy report...");
-      console.log("Assignment ID:", selectedRequestData.assignmentID);
-      console.log("Report message:", reportMessage);
-
-      await claimAssignmentAPI.updateAssignmentProgress(
-        selectedRequestData.assignmentID,
-        formData
-      );
-
-      console.log("Discrepancy report sent successfully");
+      // 3. GỌI API BÁO THIẾU
+      //
+      await warrantyClaimAPI.reportMissingParts(claimID, requestData);
 
       setDialogMessage(
-        "📨 Đã gửi báo cáo sai lệch thành công.\n\n" +
-        "EVM Staff sẽ nhận được thông báo và xử lý yêu cầu.\n" +
-        "Bạn có thể tiếp tục theo dõi tại danh sách phân công."
+        "📨 Đã gửi báo cáo thiếu hàng thành công.\n" +
+        "Hãng xe sẽ nhận được thông báo để xử lý."
       );
       setIsModalOpen(false);
 
-      // Reload assignments
-      loadAssignments();
-
-      // Reset form
-      setPartConfirmations([]);
-      setIsDiscrepancy(false);
-      setDiscrepancyInfo({
-        discrepancyType: "",
-        discrepancyDescription: "",
-      });
-    } catch (error: any) {
-      console.error("Error reporting discrepancy:", error);
-      console.error("Error response:", error.response?.data);
-
-      let errorMessage = "❌ Lỗi khi gửi báo cáo sai lệch.\n\n";
-      if (error.response?.data?.message) {
-        errorMessage += error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage += error.response.data.error;
-      } else if (error.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += "Vui lòng thử lại sau.";
-      }
-
+    } catch (err: unknown) {
+      console.error("Error reporting discrepancy:", err);
+      let errorMessage = "❌ Lỗi khi gửi báo cáo.\n\n";
+      const maybeAxios: any = err as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      errorMessage += maybeAxios?.response?.data?.message || (err instanceof Error ? err.message : String(err));
       setDialogMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // ⬅️ THÊM: Hàm để cập nhật số lượng thiếu
+  const handleMissingQuantityChange = (claimPartID: number, value: string) => {
+    const qty = parseInt(value) || 0;
+    setMissingParts(prev =>
+      prev.map(p =>
+        p.claimPartID === claimPartID
+          ? { ...p, missingQuantity: qty < 0 ? 0 : qty }
+          : p
+      )
+    );
+  };
+
 
   return (
     <div className="p-6">
@@ -451,6 +303,7 @@ export function ApprovedRequestsList({
       <CardContent className="px-0">
         {/* Bộ lọc */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 border rounded-lg shadow-sm">
+          {/* (Input VIN) */}
           <div>
             <Label htmlFor="vin-filter">VIN</Label>
             <Input
@@ -462,6 +315,7 @@ export function ApprovedRequestsList({
               }
             />
           </div>
+          {/* (Input Mã yêu cầu) */}
           <div>
             <Label htmlFor="request-filter">Mã yêu cầu</Label>
             <Input
@@ -476,29 +330,22 @@ export function ApprovedRequestsList({
               }
             />
           </div>
+          {/* (Input Ngày duyệt - disabled) */}
           <div>
             <Label htmlFor="date-filter">Ngày duyệt</Label>
             <Input
               id="date-filter"
               type="date"
-              value={filters.approvalDate}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  approvalDate: e.target.value,
-                }))
-              }
+              disabled
             />
           </div>
+          {/* (Input Phụ tùng - disabled) */}
           <div>
             <Label htmlFor="parts-filter">Phụ tùng</Label>
             <Input
               id="parts-filter"
               placeholder="Nhập tên phụ tùng..."
-              value={filters.parts}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, parts: e.target.value }))
-              }
+              disabled
             />
           </div>
         </div>
@@ -521,7 +368,7 @@ export function ApprovedRequestsList({
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8">
                   <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                     <span className="text-muted-foreground">Đang tải...</span>
                   </div>
                 </TableCell>
@@ -574,17 +421,18 @@ export function ApprovedRequestsList({
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold">
-                Xác nhận nhận phụ tùng
+                {isDiscrepancy ? "Báo cáo thiếu phụ tùng" : "Xác nhận nhận phụ tùng"}
               </DialogTitle>
             </DialogHeader>
 
             {isLoadingClaimDetails ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                 <span className="ml-3 text-muted-foreground">Đang tải thông tin...</span>
               </div>
             ) : selectedRequestData && (
               <div className="space-y-3">
+                {/* Thông tin chung */}
                 <div className="bg-gray-50 rounded-lg p-2.5 border text-sm">
                   <p className="mb-1">
                     <strong>Mã yêu cầu:</strong> #{selectedRequestData.claimCode}
@@ -597,8 +445,11 @@ export function ApprovedRequestsList({
                   </p>
                 </div>
 
-                {/* Danh sách phụ tùng cần xác nhận */}
-                {partConfirmations.length > 0 && (
+                {/* ⬅️ SỬA: Hiển thị UI dựa trên state isDiscrepancy */}
+                {!isDiscrepancy ? (
+                  // ==========================================
+                  // GIAO DIỆN 1: XÁC NHẬN ĐỦ HÀNG
+                  // ==========================================
                   <div className="space-y-3">
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
                       <p className="text-sm font-semibold text-blue-800 mb-2">
@@ -606,7 +457,7 @@ export function ApprovedRequestsList({
                       </p>
 
                       {partConfirmations.map((part, index) => (
-                        <div key={index} className="mb-4 last:mb-0 bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
+                        <div key={part.claimPartID} className="mb-4 last:mb-0 bg-white rounded-lg p-3 border border-blue-200 shadow-sm">
                           <p className="text-sm font-semibold text-blue-700 mb-2">
                             Phụ tùng {index + 1}: {part.partTypeName}
                           </p>
@@ -619,7 +470,7 @@ export function ApprovedRequestsList({
                           <div className="space-y-2">
                             <div>
                               <Label htmlFor={`newSerial-${index}`} className="text-xs font-semibold">
-                                Số serial mới thay thế *
+                                Số serial mới thay thế * (Nhập 1 serial)
                               </Label>
                               <Input
                                 id={`newSerial-${index}`}
@@ -636,18 +487,14 @@ export function ApprovedRequestsList({
 
                             <div className="grid grid-cols-2 gap-2">
                               <div>
-                                <Label htmlFor={`quantity-${index}`} className="text-xs">Số lượng</Label>
+                                <Label htmlFor={`quantity-${index}`} className="text-xs">Số lượng (Yêu cầu)</Label>
                                 <Input
                                   id={`quantity-${index}`}
                                   type="number"
-                                  min="0"
-                                  value={part.quantity}
-                                  onChange={(e) => {
-                                    const newParts = [...partConfirmations];
-                                    newParts[index].quantity = parseInt(e.target.value) || 0;
-                                    setPartConfirmations(newParts);
-                                  }}
-                                  className="mt-1"
+                                  value={part.quantity} // ⬅️ Hiển thị số lượng
+                                  readOnly
+                                  disabled
+                                  className="mt-1 bg-gray-100"
                                 />
                               </div>
                               <div className="flex items-end">
@@ -679,7 +526,6 @@ export function ApprovedRequestsList({
                         </div>
                       ))}
                     </div>
-
                     {/* Hiển thị tổng số phụ tùng đã nhập serial */}
                     <div className="text-center text-sm">
                       <Badge variant="outline" className="text-blue-700">
@@ -687,95 +533,96 @@ export function ApprovedRequestsList({
                       </Badge>
                     </div>
                   </div>
-                )}
+                ) : (
+                  // ==========================================
+                  // GIAO DIỆN 2: BÁO CÁO THIẾU HÀNG
+                  // ==========================================
+                  <div className="space-y-3">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-2.5">
+                      <p className="text-sm font-semibold text-red-800 mb-2">
+                        ⚠️ Chọn phụ tùng và nhập số lượng bị thiếu:
+                      </p>
 
-                {isDiscrepancy && (
-                  <div className="space-y-2.5 p-3 bg-red-50 rounded-lg border-2 border-red-300">
-                    <div className="flex items-start space-x-2">
-                      <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-semibold text-red-800">Báo cáo thiếu hàng</p>
-                        <p className="text-xs text-red-700 mt-0.5">
-                          Thông tin này sẽ được gửi cho EVM Staff để tạo lại yêu cầu cấp phụ tùng
-                        </p>
+                      {missingParts.map((part) => (
+                        <div key={part.claimPartID} className="mb-2 p-3 bg-white rounded-lg border border-red-200 shadow-sm">
+                          <p className="text-sm font-semibold">{part.partTypeName}</p>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            (Yêu cầu: {part.quantityRequested})
+                          </p>
+                          <Label htmlFor={`missing-${part.claimPartID}`} className="text-xs font-medium">
+                            Số lượng thiếu *
+                          </Label>
+                          <Input
+                            id={`missing-${part.claimPartID}`}
+                            type="number"
+                            min="0"
+                            max={part.quantityRequested} // Không cho nhập lố
+                            value={part.missingQuantity}
+                            onChange={(e) =>
+                              handleMissingQuantityChange(part.claimPartID, e.target.value)
+                            }
+                            className="mt-1"
+                          />
+                        </div>
+                      ))}
+
+                      <div className="mt-4">
+                        <Label htmlFor="discrepancy-desc" className="text-sm">
+                          Ghi chú chung (lý do)
+                        </Label>
+                        <Textarea
+                          id="discrepancy-desc"
+                          placeholder="Mô tả thêm về lý do thiếu hàng..."
+                          value={discrepancyNote}
+                          onChange={(e) => setDiscrepancyNote(e.target.value)}
+                          rows={3}
+                          className="mt-1 bg-white"
+                        />
                       </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="discrepancy-type" className="text-sm">Loại vấn đề *</Label>
-                      <Select
-                        value={discrepancyInfo.discrepancyType}
-                        onValueChange={(value) =>
-                          setDiscrepancyInfo((prev) => ({
-                            ...prev,
-                            discrepancyType: value,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Chọn loại vấn đề" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="missing">Thiếu phụ tùng</SelectItem>
-                          <SelectItem value="wrong-code">Sai mã phụ tùng</SelectItem>
-                          <SelectItem value="damaged">Phụ tùng bị hỏng</SelectItem>
-                          <SelectItem value="other">Vấn đề khác</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="discrepancy-desc" className="text-sm">Mô tả chi tiết vấn đề *</Label>
-                      <Textarea
-                        id="discrepancy-desc"
-                        placeholder="Mô tả chi tiết vấn đề phát hiện..."
-                        value={discrepancyInfo.discrepancyDescription}
-                        onChange={(e) =>
-                          setDiscrepancyInfo((prev) => ({
-                            ...prev,
-                            discrepancyDescription: e.target.value,
-                          }))
-                        }
-                        rows={2}
-                        className="mt-1"
-                      />
                     </div>
                   </div>
                 )}
 
+                {/* Nút actions (đã sửa) */}
                 <div className="flex space-x-2 pt-4">
                   {!isDiscrepancy ? (
+                    // Nút cho Giao diện 1
                     <>
                       <Button
                         onClick={handleConfirmParts}
                         className="flex-1"
-                        disabled={partConfirmations.filter(p => p.newSerialNumber.trim()).length === 0}
+                        disabled={partConfirmations.some(p => !p.newSerialNumber.trim()) || isLoading}
                       >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Xác nhận đủ {partConfirmations.length} phụ tùng
+                        {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                        {isLoading ? "Đang xử lý..." : `Xác nhận đủ ${partConfirmations.length} phụ tùng`}
                       </Button>
                       <Button
                         variant="destructive"
                         onClick={() => setIsDiscrepancy(true)}
                         className="flex-1"
+                        disabled={isLoading}
                       >
                         <AlertTriangle className="w-4 h-4 mr-2" />
-                        Báo cáo sai lệch
+                        Báo cáo thiếu hàng
                       </Button>
                     </>
                   ) : (
+                    // Nút cho Giao diện 2
                     <>
                       <Button
                         variant="outline"
                         onClick={() => setIsDiscrepancy(false)}
+                        disabled={isLoading}
                       >
                         Quay lại
                       </Button>
                       <Button
                         variant="destructive"
-                        onClick={handleReportDiscrepancy}
+                        onClick={handleReportDiscrepancy} // ⬅️ Gọi hàm đã sửa
+                        disabled={missingParts.every(p => p.missingQuantity === 0) || isLoading}
                       >
-                        Gửi báo cáo
+                        {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Gửi báo cáo thiếu hàng
                       </Button>
                     </>
                   )}

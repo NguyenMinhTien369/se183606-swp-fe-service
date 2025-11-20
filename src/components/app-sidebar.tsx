@@ -152,7 +152,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <NavLink
-                to={ROUTERS_PATH.HOME}
+                to=""
                 className="flex items-center gap-2"
                 style={{ textDecoration: "none", color: "black" }}
               >
@@ -179,8 +179,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     to={item.to}
                     style={{ textDecoration: "none", color: "black" }}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${
-                        isActive ? "bg-sidebar-primary" : "hover:bg-muted"
+                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${isActive ? "bg-sidebar-primary" : "hover:bg-muted"
                       }`
                     }
                   >
