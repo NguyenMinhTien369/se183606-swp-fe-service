@@ -84,16 +84,19 @@ export default function VehicleRegistrationForm() {
   useEffect(() => {
     if (success) {
       setShowSuccess(true);
-      setTimeout(() => {
-        setShowSuccess(false);
-        // Reset forms
-        customerFormik.resetForm();
-        setSelectedVehicle(null);
-        clearSuggestions();
-        resetState();
-      }, 2000);
     }
   }, [success]);
+
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+
+    // 2. Reset toàn bộ form và state (Chuyển từ setTimeout xuống đây)
+    customerFormik.resetForm();
+    setSelectedVehicle(null);
+    clearSuggestions();
+    clearVehicleDetails();
+    resetState(); // Reset state của hook createCustomer
+  };
 
   // HIỂN THỊ ERROR TỪ HOOK
   useEffect(() => {
@@ -147,13 +150,13 @@ export default function VehicleRegistrationForm() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleVinSelect = async (vehicle: UnassignedVehicle) => {
-    customerFormik.setFieldValue("vin", vehicle.vin);
-    setSelectedVehicle(vehicle); // Vẫn lưu thông tin cơ bản để hiển thị ngay
+  const handleVinSelect = async (vin: string) => {
+    customerFormik.setFieldValue("vin", vin);
+
     setShowSuggestions(false);
 
     // GỌI HÀM MỚI để tải chi tiết xe (tự động cập nhật vehicleDetails)
-    await getVehicleDetails(vehicle.vin);
+    await getVehicleDetails(vin);
   };
 
   const handleSubmit = async () => {
@@ -168,18 +171,6 @@ export default function VehicleRegistrationForm() {
       address: true,
       vin: true,
     });
-
-    // Check chỉ có lỗi của customer
-    if (Object.keys(customerErrors).length > 0) {
-      alert("Vui lòng điền đầy đủ thông tin khách hàng!");
-      return;
-    }
-
-    // Check xem đã chọn VIN chưa
-    if (!selectedVehicle) {
-      alert("Vui lòng chọn xe từ danh sách VIN!");
-      return;
-    }
 
     // Prepare data
     const customerData: CustomerRequest = {
@@ -210,17 +201,7 @@ export default function VehicleRegistrationForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-200 rounded-2xl to-indigo-100 p-4 md:p-6 lg:p-8">
-      {/* Success Message
-      {showSuccess && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
-            <CheckCircle size={24} />
-            <span className="font-semibold">Đăng ký thành công!</span>
-          </div>
-        </div>
-      )} */}
-
-      <SuccessAlert open={showSuccess} setOpen={setShowSuccess} />
+      <SuccessAlert open={showSuccess} onConfirm={handleCloseSuccess} />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto">
@@ -385,26 +366,31 @@ export default function VehicleRegistrationForm() {
                     ref={suggestionsRef}
                     className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                   >
-                    {vinSuggestions.map((vehicle, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleVinSelect(vehicle)}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className="font-mono font-semibold text-sm text-gray-900">
-                              {vehicle.vin}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {vehicle.modelName} • {vehicle.color} •{" "}
-                              {vehicle.productionYear}
-                            </p>
+                    {vinSuggestions?.map(
+                      (
+                        vinString,
+                        index // "vinString" là chuỗi "VF10..."
+                      ) => (
+                        <div
+                          key={index}
+                          onClick={() => handleVinSelect(vinString)} // Truyền thẳng chuỗi VIN
+                          className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="font-mono font-semibold text-sm text-gray-900">
+                                {vinString}
+                              </p>
+                              {/* Tạm thời bỏ dòng model/color vì API tìm kiếm chưa trả về thông tin này */}
+                              <p className="text-xs text-gray-500 mt-1">
+                                Click để chọn xe này
+                              </p>
+                            </div>
+                            <Search className="h-4 w-4 text-gray-400 flex-shrink-0 mt-1" />
                           </div>
-                          <Search className="h-4 w-4 text-gray-400 flex-shrink-0 mt-1" />
                         </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 )}
 

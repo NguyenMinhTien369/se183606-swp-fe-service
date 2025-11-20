@@ -1,9 +1,8 @@
 import { useState, useCallback } from "react";
 import { vehicleAPI } from "@/utility"; // điều chỉnh đường dẫn nếu cần
-import type { UnassignedVehicle } from "@/pages/SC_Staff/ManageCustomers/types";
 
 export const useSearchUnassignedVin = () => {
-  const [vinSuggestions, setVinSuggestions] = useState<UnassignedVehicle[]>([]);
+  const [vinSuggestions, setVinSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
