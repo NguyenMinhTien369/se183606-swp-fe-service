@@ -38,11 +38,11 @@ export default function VehicleDetail({
   // --- Hiển thị trạng thái bảo hành (isUnderWarranty) ---
   const getWarrantyBadge = (isUnderWarranty: boolean) => {
     return isUnderWarranty ? (
-      <Badge variant="outline" className="text-green-600 border-green-600">
-        Còn bảo hành
+      <Badge variant="outline" className="bg-green-100 text-green-800">
+        Bảo hành
       </Badge>
     ) : (
-      <Badge variant="secondary">Hết bảo hành</Badge>
+      <Badge className="bg-red-100 text-red-800">Hết bảo hành</Badge>
     );
   };
 
@@ -198,7 +198,7 @@ export default function VehicleDetail({
       {/* --- Lịch sử bảo hành --- */}
       <Card>
         <CardHeader>
-          <CardTitle>Lịch sử yêu cầu bảo hành</CardTitle>
+          <CardTitle>Danh sách yêu cầu bảo hành</CardTitle>
         </CardHeader>
         <CardContent>
           {warrantyHistory.length === 0 ? (

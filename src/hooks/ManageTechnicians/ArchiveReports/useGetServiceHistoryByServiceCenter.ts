@@ -26,14 +26,14 @@ export function useGetServiceHistoryByServiceCenter(serviceCenterID: number) {
       const response = await serviceHistoryAPI.getByServiceCenter(
         serviceCenterID
       );
-      console.log("✅ Service History loaded:", response.data);
+      console.log("Service History loaded:", response.data);
       setHistories(response.data.result || response.data || []);
     } catch (err: any) {
       const errorMessage =
         err.response?.data?.message ||
         err.message ||
         "Không thể tải lịch sử bảo hành";
-      console.error("❌ Error loading service history:", errorMessage);
+      console.error("Error loading service history:", errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
