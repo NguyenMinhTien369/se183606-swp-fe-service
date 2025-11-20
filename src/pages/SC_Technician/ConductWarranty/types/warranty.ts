@@ -33,11 +33,11 @@ export interface ClaimAssignmentResponse {
 // Endpoint: GET /api/claim-assignments/progress/{serviceCenterID}
 export interface AssignmentProgressResponse {
   assignmentID: number;
-  claimCode: number;
+  claimCode: number; // Đây là claimID
   vin: string;
   technicianName: string;
-  assignedDate: string; // LocalDate
-  status: string; // ASSIGNED, IN_PROGRESS, AWAITING_PARTS, COMPLETED
+  assignedDate: string; // LocalDate (YYYY-MM-DD)
+  status: string; // Trạng thái Tiếng Việt của Assignment
   completionPercentage: number;
   internalNotes: string;
   canEdit: boolean;
@@ -99,33 +99,53 @@ export interface WarrantyClaimResponse {
 }
 
 export interface ClaimPartResponse {
-  claimPartID?: number; // ID của phụ tùng trong claim_parts table
+  claimPartID: number; // ID của phụ tùng trong claim_parts table
   partSerialNumber: string;
   partTypeName: string;
   partTypeDescription: string;
   description: string;
   createdDate: string;
+  quantity: number;
 }
 
 export interface ClaimAttachmentResponse {
   attachmentID: number;
-  fileName: string;
   fileUrl: string;
   fileType: string;
   uploadDate: string;
 }
 
+export interface ConfirmPartsRequestDTO {
+  partReplacements: {
+    claimPartID: number;
+    newPartSerialNumbers: string[];
+  }[];
+  internalNotes?: string;
+}
+
+export interface ReportMissingPartsRequestDTO {
+  missingParts: {
+    claimPartID: number; // Phụ tùng nào
+    missingQuantity: number; // Thiếu bao nhiêu
+  }[];
+  note?: string; // Ghi chú chung
+}
+
 // ==================== Assignment Status Enums ====================
 export type AssignmentStatus =
   | "Đã phân công"
-  // Đã phân công
-  | "Đang thay thế" // Đang sửa chữa
   | "Nhận phụ tùng"
-  | "Hoàn thành"; // Hoàn tất
+  | "Đang thay thế"
+  | "Đang kiểm tra"
+  | "Hoàn thành"
+  | "Bị từ chối";
 
 export type WarrantyClaimStatus =
+  | "Nháp"
   | "Chờ duyệt"
   | "Được chấp nhận"
-  | "Đang xử lý"
-  | "Đã xử lý"
-  | "Từ chối";
+  | "Từ chối"
+  | "Đang giao phụ tùng"
+  | "Thiếu hàng"
+  | "Đã nhận"
+  | "Hoàn thành";

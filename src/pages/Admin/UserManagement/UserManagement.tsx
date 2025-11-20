@@ -20,7 +20,7 @@ const UserManagement: React.FC = () => {
     useEffect(() => {
         fetchUsers();
         fetchServiceCenters();
-    }, [roleFilter]);
+    }, []);
 
     const fetchUsers = async () => {
         try {
@@ -42,7 +42,6 @@ const UserManagement: React.FC = () => {
                 fullName: user.fullName,
                 email: user.email,
                 phone: user.phone,
-                image: user.image,
                 role: user.role?.roleName || 'UNKNOWN',
                 roleId: user.role?.roleID,
                 serviceCenter: user.serviceCenter ? {
@@ -183,7 +182,7 @@ const UserManagement: React.FC = () => {
                     <p className={styles.subtitle}>Quản lý tài khoản người dùng và quyền</p>
                 </div>
                 <button onClick={() => handleOpenModal('create')} className={styles.createButton}>
-                    <FaPlus /> Create User
+                    <FaPlus /> Tạo User
                 </button>
             </div>
 

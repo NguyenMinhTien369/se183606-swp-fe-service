@@ -109,7 +109,7 @@ const ProductManagement = () => {
             customerID: vehicle.customerID,
             modelID: vehicle.productModelID || 1,
             licensePlate: vehicle.serialNumber || '',
-            batteryCapacity: 0, // Not available in response
+            batteryCapacity: 0,
             image: '',
             registrationDate: vehicle.productionDate || new Date().toISOString().split('T')[0],
         });

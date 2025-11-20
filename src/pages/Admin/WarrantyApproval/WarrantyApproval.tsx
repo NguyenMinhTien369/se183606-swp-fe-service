@@ -101,7 +101,7 @@ const WarrantyApproval = () => {
                     issueDescription: claim.description,
                     status: mapStatus(claim.status),
                     createdDate: claim.creationDate,
-                    estimatedCost: 0, // Not provided by backend
+                    estimatedCost: 0,
                     result: claim.result,
                     affectedParts: claim.affectedParts || [],
                     attachments: claim.attachments || [],
@@ -112,7 +112,7 @@ const WarrantyApproval = () => {
             mappedClaims.sort((a: any, b: any) => {
                 const dateA = new Date(a.createdDate).getTime();
                 const dateB = new Date(b.createdDate).getTime();
-                return dateB - dateA; // Sort giảm dần (mới nhất trước)
+                return dateB - dateA;
             });
 
             console.log('Mapped claims:', mappedClaims);
@@ -267,7 +267,7 @@ const WarrantyApproval = () => {
                     <option value="PENDING">Chờ duyệt</option>
                     <option value="APPROVED">Đã duyệt</option>
                     <option value="SHIPPING">Đang giao hàng</option>
-                    <option value="RECEIVED">Đã nhận hàng</option>
+                    <option value="RECEIVED">Đã nhận</option>
                     <option value="MISSING_PARTS">Thiếu hàng</option>
                     <option value="REJECTED">Từ chối</option>
                     <option value="IN_PROGRESS">Đang xử lý</option>
