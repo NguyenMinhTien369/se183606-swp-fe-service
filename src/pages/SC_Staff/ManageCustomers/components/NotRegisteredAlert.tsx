@@ -57,7 +57,7 @@ export default function NotRegisteredAlert({
             <X className="h-4 w-4" />
             Hủy
           </Button>
-          <Button onClick={handleRegister} className="gap-2">
+          <Button onClick={handleRegister} className="gap-2 ml-2.5 bg-blue-500">
             <UserPlus className="h-4 w-4" />
             Đăng Ký Khách Hàng
           </Button>

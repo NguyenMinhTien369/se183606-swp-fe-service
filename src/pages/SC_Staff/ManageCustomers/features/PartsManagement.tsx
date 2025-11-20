@@ -117,8 +117,9 @@ export default function PartsManagement() {
                   <TableRow>
                     <TableHead>Tên phụ tùng</TableHead>
                     <TableHead>Số seri</TableHead>
-                    <TableHead>Loại</TableHead>
+                    <TableHead>Trạng thái</TableHead>
                     <TableHead>Ngày gắn</TableHead>
+                    <TableHead>Thời hạn bảo hành</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -154,13 +155,18 @@ export default function PartsManagement() {
                         <TableCell className="font-mono text-sm">
                           {part.partSerialNumber}
                         </TableCell>
+
                         <TableCell>
                           <Badge
-                            variant={
-                              part.partTypeID === 1 ? "default" : "secondary"
+                            className={
+                              part.isUnderWarranty === true
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
                             }
                           >
-                            {part.partTypeID === 1 ? "Chính" : "Phụ"}
+                            {part.isUnderWarranty === true
+                              ? "Bảo hành"
+                              : "Hết bảo hành"}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -168,6 +174,13 @@ export default function PartsManagement() {
                             ? new Date(
                                 part.installationDate
                               ).toLocaleDateString("vi-VN")
+                            : "Chưa cập nhật"}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {part.warrantyPeriod
+                            ? new Date(part.warrantyPeriod).toLocaleDateString(
+                                "vi-VN"
+                              )
                             : "Chưa cập nhật"}
                         </TableCell>
                       </TableRow>
