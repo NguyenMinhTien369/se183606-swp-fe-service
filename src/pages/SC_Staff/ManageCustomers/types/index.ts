@@ -146,4 +146,6 @@ export interface InstalledPart {
   partSerialNumber: string;
   partTypeID: number;
   installationDate: string;
+  warrantyPeriod: string;
+  isUnderWarranty: boolean;
 }

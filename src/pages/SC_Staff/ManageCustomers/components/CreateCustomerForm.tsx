@@ -18,6 +18,9 @@ import { useCreateCustomer } from "@/hooks/ManageCustomersHooks/Create/useCreate
 import { useSearchUnassignedVin } from "@/hooks/ManageCustomersHooks/Create/useSearchUnassignedVin";
 import SuccessAlert from "./SuccessAlert";
 import { useGetVehicleDetails } from "@/hooks/ManageCustomersHooks/Create/useGetUnassignedVeByVin";
+import { NavLink } from "react-router";
+import ROUTERS_PATH from "@/constants/routers";
+import { ArrowLeft } from "lucide-react";
 
 // CHỈ VALIDATE THÔNG TIN KHÁCH HÀNG
 const customerValidationSchema = Yup.object({
@@ -85,17 +88,6 @@ export default function VehicleRegistrationForm() {
       setShowSuccess(true);
     }
   }, [success]);
-
-  const handleCloseSuccess = () => {
-    setShowSuccess(false);
-
-    // 2. Reset toàn bộ form và state (Chuyển từ setTimeout xuống đây)
-    customerFormik.resetForm();
-    setSelectedVehicle(null);
-    clearSuggestions();
-    clearVehicleDetails();
-    resetState(); // Reset state của hook createCustomer
-  };
 
   // HIỂN THỊ ERROR TỪ HOOK
   useEffect(() => {
@@ -189,27 +181,36 @@ export default function VehicleRegistrationForm() {
     }
   };
 
-  const handleReset = () => {
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
     customerFormik.resetForm();
     setSelectedVehicle(null);
     clearSuggestions();
     clearVehicleDetails();
-    setShowSuggestions(false);
-    resetState();
+    resetState(); // Reset state của hook createCustomer
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-200 rounded-2xl to-indigo-100 p-4 md:p-6 lg:p-8">
       <SuccessAlert open={showSuccess} onConfirm={handleCloseSuccess} />
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          Đăng Ký Khách Hàng
-        </h1>
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="outline" size="icon" asChild>
+            <NavLink
+              to={ROUTERS_PATH.MANAGE_CUSTOMER}
+              title="Quay về danh sách"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </NavLink>
+          </Button>
+
+          <h1 className="text-3xl font-bold text-gray-800">
+            Đăng Ký Khách Hàng
+          </h1>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Card Khách Hàng */}
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Thông Tin Khách Hàng</CardTitle>
@@ -409,7 +410,6 @@ export default function VehicleRegistrationForm() {
             </CardContent>
           </Card>
 
-          {/* Card Thông Tin Xe */}
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Thông Tin Xe</CardTitle>
@@ -490,11 +490,10 @@ export default function VehicleRegistrationForm() {
           </Card>
         </div>
 
-        {/* Footer Buttons */}
         <div className="mt-6 flex justify-end gap-4">
           <Button
             variant="outline"
-            onClick={handleReset}
+            onClick={handleCloseSuccess}
             className="gap-2"
             disabled={loading}
           >
