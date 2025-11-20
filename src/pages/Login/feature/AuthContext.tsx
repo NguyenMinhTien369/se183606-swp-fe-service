@@ -1,62 +1,14 @@
 ﻿import React, { createContext, useContext, useState, useEffect } from "react";
 import { authAPI } from "@/utility/index";
 import { ROLES, ROLE_PERMISSIONS } from "@/utils/constants";
-
-// ============================================
-// 🔷 TYPE DEFINITIONS
-// ============================================
-
-interface UserRole {
-  roleName: string;
-}
-
-interface User {
-  userId?: number;
-  username: string;
-  email?: string;
-  fullName?: string;
-  role: UserRole;
-  serviceCenterID?: number; // ✅ Added for SC_TECHNICIAN and SC_STAFF
-}
-
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-interface LoginResult {
-  success: boolean;
-  user?: User;
-  error?: string;
-}
-
-interface ForgotPasswordResult {
-  success: boolean;
-  error?: string;
-}
-
-interface ResetPasswordResult {
-  success: boolean;
-  error?: string;
-}
-
-interface AuthContextValue {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  role: string;
-  login: (credentials: LoginCredentials) => Promise<LoginResult>;
-  logout: () => Promise<void>;
-  forgotPassword: (email: string) => Promise<ForgotPasswordResult>;
-  resetPassword: (
-    token: string,
-    newPassword: string
-  ) => Promise<ResetPasswordResult>;
-  hasPermission: (permission: string) => boolean;
-  hasRole: (role: string) => boolean;
-  hasAnyRole: (roles: string[]) => boolean;
-}
-
+import type {
+  AuthContextValue,
+  User,
+  LoginCredentials,
+  LoginResult,
+  ForgotPasswordResult,
+  ResetPasswordResult,
+} from "@/pages/Login/type";
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -160,10 +112,9 @@ credentials: là 1 tham số kiểu LoginCredentials chứa thông tin đăng nh
           roleName: decodedToken?.role || decodedToken?.scope,
         },
         serviceCenterID:
-          decodedToken?.serviceCenterID || decodedToken?.serviceCenterId, // ✅ Added
+          decodedToken?.serviceCenterID || decodedToken?.serviceCenterId,
       };
 
-      console.log("User data:", userData);
       setUser(userData);
 
       return { success: true, user: userData };
