@@ -1,5 +1,4 @@
-import { useNavigate } from "react-router";
-import { UserPlus, X } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,40 +8,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import ROUTERS_PATH from "@/constants/routers";
 import { CheckCircle } from "lucide-react";
 
-interface NotRegisteredAlertProps {
+interface SuccessAlertProps {
   open: boolean;
-  setOpen: (open: boolean) => void;
+  onConfirm: () => void;
 }
 
-export default function NotRegisteredAlert({
-  open,
-  setOpen,
-}: NotRegisteredAlertProps) {
-  const navigate = useNavigate();
-
-  const handleRegister = () => {
-    setOpen(false);
-    // Navigate đến trang đăng ký khách hàng với absolute path
-    navigate(ROUTERS_PATH.MANAGE_CUSTOMER);
-  };
-
+export default function SuccessAlert({ open, onConfirm }: SuccessAlertProps) {
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-lg">Thành công</DialogTitle>
-          <DialogDescription className="text-base">
-            <CheckCircle size={24} />
-            Khách hàng đã được đăng ký thành công khách hàng.
+          <DialogTitle className="text-lg text-green-600">
+            Thành công
+          </DialogTitle>
+          <DialogDescription className="text-base flex items-center gap-3 mt-2">
+            <CheckCircle size={32} className="text-green-500" />
+            <span>Khách hàng đã được đăng ký thành công.</span>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button onClick={handleRegister} className="gap-2">
+          <Button
+            onClick={onConfirm}
+            className="gap-2 bg-green-600 hover:bg-green-700"
+          >
             <UserPlus className="h-4 w-4" />
-            Đóng
+            Hoàn tất & Làm mới
+          </Button>
+          <Button
+            onClick={onConfirm}
+            className="gap-2 bg-blue-600 hover:bg-blue-700"
+          >
+            <UserPlus className="h-4 w-4" />
+            Quay về danh sách
           </Button>
         </DialogFooter>
       </DialogContent>
