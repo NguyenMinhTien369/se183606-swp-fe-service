@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import type { WarrantyClaimResponse } from "../types/warranty";
+import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -25,53 +24,26 @@ import {
   RefreshCw,
   Loader2,
 } from "lucide-react";
-import { warrantyClaimAPI } from "@/utility/index";
+
 import { useAuth } from "@/pages/Login/feature/AuthContext";
+import { useGetClaimsByServiceCenter } from "@/hooks/ManageWarranty/useGetClaimsByServiceCenter";
 
 export default function ManufacturerResponsePanel() {
-  const { user } = useAuth();
-  const [claims, setClaims] = useState<WarrantyClaimResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
 
-  // ✅ Get serviceCenterID from authenticated user
-  const SERVICE_CENTER_ID = user?.serviceCenterID || 1;
+  const {
+    claims,
+    isLoading: isClaimsLoading,
+    refresh,
+  } = useGetClaimsByServiceCenter(user?.serviceCenterID);
 
-  // Load claims on mount
-  useEffect(() => {
-    loadClaims();
-  }, []);
+  const processedClaims = useMemo(() => {
+    return claims.filter((c) =>
+      ["Được chấp nhận", "Từ chối", "Hoàn thành"].includes(c.status)
+    );
+  }, [claims]);
 
-  const loadClaims = async () => {
-    setIsLoading(true);
-    try {
-      const response = await warrantyClaimAPI.getClaimsByServiceCenter(
-        SERVICE_CENTER_ID
-      );
-      const claimsData = response.data.result || [];
-
-      // ✅ Sắp xếp theo ngày tạo mới nhất
-      const sortedClaims = claimsData.sort(
-        (a: WarrantyClaimResponse, b: WarrantyClaimResponse) => {
-          const dateA = new Date(a.creationDate).getTime();
-          const dateB = new Date(b.creationDate).getTime();
-          return dateB - dateA; // Mới nhất trước
-        }
-      );
-
-      setClaims(sortedClaims);
-      console.log("✅ Loaded claims (sorted by newest):", sortedClaims);
-    } catch (error) {
-      console.error("❌ Error loading claims:", error);
-      console.log("Không thể tải danh sách yêu cầu bảo hành");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Filter claims that have been processed (Được chấp nhận, Từ chối, or Hoàn thành)
-  const claimsWithResponse = claims.filter((c) =>
-    ["Được chấp nhận", "Từ chối", "Hoàn thành"].includes(c.status)
-  );
+  const isLoading = authLoading || isClaimsLoading;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -90,20 +62,20 @@ export default function ManufacturerResponsePanel() {
     const config: Record<string, { label: string; className: string }> = {
       "Được chấp nhận": {
         label: "Đã chấp nhận",
-        className: "bg-green-100 text-green-800",
+        className: "bg-green-100 text-green-800 hover:bg-green-100",
       },
       "Từ chối": {
         label: "Đã từ chối",
-        className: "bg-red-100 text-red-800",
+        className: "bg-red-100 text-red-800 hover:bg-red-100",
       },
       "Hoàn thành": {
         label: "Đã hoàn thành",
-        className: "bg-blue-100 text-blue-800",
+        className: "bg-blue-100 text-blue-800 hover:bg-blue-100",
       },
     };
     const { label, className } = config[status] || {
       label: status,
-      className: "",
+      className: "bg-gray-100 text-gray-800",
     };
     return (
       <Badge variant="secondary" className={`text-sm font-medium ${className}`}>
@@ -112,29 +84,22 @@ export default function ManufacturerResponsePanel() {
     );
   };
 
-  const handleViewDetails = (claim: WarrantyClaimResponse) => {
-    // Hiển thị chi tiết claim - có thể mở dialog hoặc navigate
-    console.log("View claim details:", claim);
-    console.log(
-      `Chi tiết Claim #${claim.claimID}\n\nVIN: ${claim.vin}\nTrạng thái: ${claim.status}\nMô tả: ${claim.description}`
-    );
-  };
-
   return (
-    <Card>
+    <Card className="w-full shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Phản hồi từ hệ thống</CardTitle>
             <CardDescription>
-              Các yêu cầu đã được xử lý ({claimsWithResponse.length} yêu cầu)
+              Các yêu cầu đã được xử lý ({processedClaims.length} yêu cầu)
             </CardDescription>
           </div>
           <Button
-            onClick={loadClaims}
-            disabled={isLoading}
+            onClick={refresh}
+            disabled={isLoading || !user?.serviceCenterID}
             variant="outline"
             size="sm"
+            className="transition-all"
           >
             <RefreshCw
               className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -143,18 +108,20 @@ export default function ManufacturerResponsePanel() {
           </Button>
         </div>
       </CardHeader>
+
       <CardContent>
-        {isLoading ? (
+        {isLoading && claims.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <Loader2 className="h-12 w-12 mb-4 animate-spin text-primary" />
             <p className="text-muted-foreground">Đang tải dữ liệu...</p>
           </div>
-        ) : claimsWithResponse.length === 0 ? (
+        ) : processedClaims.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
             <Clock className="h-12 w-12 mb-4 opacity-50" />
             <p>Chưa có yêu cầu nào được xử lý</p>
             <p className="text-sm mt-2">
-              Các yêu cầu đã được chấp nhận/từ chối/hoàn thành sẽ hiển thị ở đây
+              Các yêu cầu đã được chấp nhận, từ chối hoặc hoàn thành sẽ hiển thị
+              tại đây.
             </p>
           </div>
         ) : (
@@ -162,29 +129,32 @@ export default function ManufacturerResponsePanel() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[120px]">Claim ID</TableHead>
+                  <TableHead className="w-[100px]">Claim ID</TableHead>
                   <TableHead className="w-[140px]">VIN</TableHead>
                   <TableHead>Mô tả</TableHead>
-                  <TableHead className="w-[140px]">Trạng thái</TableHead>
-                  <TableHead className="w-[160px]">Kết quả</TableHead>
-                  <TableHead className="w-[120px]">Ngày tạo</TableHead>
+                  <TableHead className="w-[180px]">Trạng thái</TableHead>
+                  <TableHead className="w-[200px]">Kết quả</TableHead>
+                  <TableHead className="w-[120px] text-right">
+                    Ngày tạo
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {claimsWithResponse.map((claim) => (
+                {processedClaims.map((claim) => (
                   <TableRow
                     key={claim.claimID}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleViewDetails(claim)}
+                    className="group hover:bg-muted/50 transition-colors"
                   >
                     <TableCell className="font-mono font-medium">
                       #{claim.claimID}
                     </TableCell>
-                    <TableCell className="font-mono text-sm">
+                    <TableCell className="font-mono text-sm text-muted-foreground">
                       {claim.vin}
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {claim.description}
+                    <TableCell className="max-w-xs">
+                      <p className="truncate" title={claim.description}>
+                        {claim.description}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -194,16 +164,16 @@ export default function ManufacturerResponsePanel() {
                     </TableCell>
                     <TableCell>
                       {claim.result ? (
-                        <div className="max-w-md truncate text-sm">
+                        <div className="text-sm" title={claim.result}>
                           {claim.result}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">
-                          Chưa có kết quả
+                        <span className="text-muted-foreground text-sm italic">
+                          Chưa có thông tin
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-right text-sm text-muted-foreground">
                       {new Date(claim.creationDate).toLocaleDateString("vi-VN")}
                     </TableCell>
                   </TableRow>

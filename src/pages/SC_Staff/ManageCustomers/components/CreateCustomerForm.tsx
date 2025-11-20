@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { X, CheckCircle, Loader2, Search } from "lucide-react";
@@ -59,14 +59,13 @@ export default function VehicleRegistrationForm() {
   } = useSearchUnassignedVin();
 
   const {
-    vehicleDetails, // <-- Biến này sẽ chứa thông tin xe chi tiết đã được load
+    vehicleDetails,
     loading: loadingVehicleDetails,
     error: vehicleDetailsError,
-    getVehicleDetails, // <-- Hàm dùng để kích hoạt việc tải dữ liệu
+    getVehicleDetails,
     clearVehicleDetails,
-  } = useGetVehicleDetails(); // Gọi hook không tham số
+  } = useGetVehicleDetails();
 
-  // Formik cho Customer - CÓ VALIDATION
   const customerFormik = useFormik({
     initialValues: {
       fullName: "",
@@ -89,19 +88,24 @@ export default function VehicleRegistrationForm() {
     }
   }, [success]);
 
-  // HIỂN THỊ ERROR TỪ HOOK
+  // HIỂN THỊ ERROR
   useEffect(() => {
     if (error) {
-      alert(error);
+      console.log(error);
     }
   }, [error]);
 
-  // HIỂN THỊ ERROR TỪ VIN SEARCH
   useEffect(() => {
     if (vinError) {
-      alert(vinError);
+      console.log(vinError);
     }
   }, [vinError]);
+
+  useEffect(() => {
+    if (vehicleDetailsError) {
+      console.log(vehicleDetailsError);
+    }
+  }, [vehicleDetailsError]);
 
   // Debounce search VIN
   useEffect(() => {
