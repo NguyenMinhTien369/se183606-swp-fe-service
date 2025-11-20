@@ -1,7 +1,6 @@
 // Types for warranty management system
 // Đồng bộ với backend DTOs: VehicleInfoResponse, WarrantyClaimResponse, CreateWarrantyClaimRequest
 
-// ✅ Status đồng bộ với backend (tiếng Việt)
 export type WarrantyStatus =
   | "Nháp" // Draft
   | "Chờ duyệt" // Pending

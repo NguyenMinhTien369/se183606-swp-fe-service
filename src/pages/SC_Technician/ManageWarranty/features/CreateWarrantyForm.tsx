@@ -327,9 +327,6 @@ export default function CreateWarrantyForm({
                             <div className="text-sm text-muted-foreground">
                               SN: {part.partSerialNumber}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {part.partTypeDescription}
-                            </div>
                           </Label>
                         </div>
                         {isSelected && (

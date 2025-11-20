@@ -7,60 +7,50 @@ import CreateWarrantyForm from "./CreateWarrantyForm";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import type { VehicleInfo, WarrantyClaimResponse } from "../types/warranty";
-import { warrantyClaimAPI } from "@/utility/index";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
+import { useVehicleInfoByVin } from "@/hooks/ManageWarranty/CreateWarrantyHooks/useVehicleInfoByVin";
+import { useGetClaimByServiceCenter } from "@/hooks/ManageWarranty/CreateWarrantyHooks/useGetClaimByServiceCenter";
 
 export default function Warranty() {
   const { user } = useAuth();
   const location = useLocation();
-  const [currentVehicleInfo, setCurrentVehicleInfo] =
-    useState<VehicleInfo | null>(null);
-  const [warrantyHistory, setWarrantyHistory] = useState<
-    WarrantyClaimResponse[]
-  >([]);
+
+  const SERVICE_CENTER_ID = user?.serviceCenterID || 1;
+
+  const {
+    vehicleInfo: currentVehicleInfo,
+    setVehicleInfo: setCurrentVehicleInfo,
+    getVehicleInfo,
+  } = useVehicleInfoByVin();
+
+  const {
+    history: warrantyHistory,
+    setHistory: setWarrantyHistory,
+    getHistoryByVin,
+  } = useGetClaimByServiceCenter(SERVICE_CENTER_ID);
+
+  // UI State
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingClaim, setEditingClaim] =
     useState<WarrantyClaimResponse | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
 
-  // ✅ Check if we're in edit mode from navigation state
   useEffect(() => {
     const state = location.state as { editingClaim?: WarrantyClaimResponse };
+
     if (state?.editingClaim) {
       const claim = state.editingClaim;
       setEditingClaim(claim);
+      setShowCreateForm(true);
 
-      // Load vehicle info for the VIN
-      const loadVehicleInfo = async () => {
-        try {
-          const response = await warrantyClaimAPI.getVehicleInfoByVin(
-            claim.vin
-          );
-          const vehicleData = response.data.result;
-          setCurrentVehicleInfo(vehicleData);
-          setShowCreateForm(true);
-
-          // Load warranty history
-          const claimsResponse =
-            await warrantyClaimAPI.getClaimsByServiceCenter(
-              user?.serviceCenterID || 1
-            );
-          const allClaims = claimsResponse.data.result || [];
-          const vehicleClaims = allClaims.filter(
-            (c: WarrantyClaimResponse) => c.vin === claim.vin
-          );
-          setWarrantyHistory(vehicleClaims);
-        } catch (error) {
-          console.error("Error loading vehicle info:", error);
-        }
+      const initData = async () => {
+        await getVehicleInfo(claim.vin); // Load thông tin xe
+        await getHistoryByVin(claim.vin); // Load lịch sử
       };
 
-      loadVehicleInfo();
+      initData();
     }
-  }, [location.state, user?.serviceCenterID]);
-
-  // ✅ Get serviceCenterID from authenticated user
-  const SERVICE_CENTER_ID = user?.serviceCenterID || 1;
+  }, [location.state, getVehicleInfo, getHistoryByVin]);
 
   const handleSearch = async (
     vehicleInfo: VehicleInfo | null,
@@ -70,34 +60,21 @@ export default function Warranty() {
       setCurrentVehicleInfo(null);
       setWarrantyHistory([]);
       setShowCreateForm(false);
-      setSearchError(error); // ✅ Lưu error để hiển thị
+      setSearchError(error);
       return;
     }
 
     if (vehicleInfo) {
-      setSearchError(null); // ✅ Clear error khi tìm thấy xe
+      setSearchError(null);
       setCurrentVehicleInfo(vehicleInfo);
       setShowCreateForm(false);
 
-      // Load warranty history for this VIN
-      try {
-        const claimsResponse = await warrantyClaimAPI.getClaimsByServiceCenter(
-          SERVICE_CENTER_ID
-        );
-        const allClaims = claimsResponse.data.result || [];
-        const vehicleClaims = allClaims.filter(
-          (claim: WarrantyClaimResponse) => claim.vin === vehicleInfo.vin
-        );
-        setWarrantyHistory(vehicleClaims);
-      } catch (error) {
-        console.error("Error loading warranty history:", error);
-        setWarrantyHistory([]);
-      }
+      await getHistoryByVin(vehicleInfo.vin);
     }
   };
 
   const handleCreateWarranty = () => {
-    setEditingClaim(null); // Reset edit mode
+    setEditingClaim(null);
     setShowCreateForm(true);
   };
 
@@ -106,30 +83,17 @@ export default function Warranty() {
     setEditingClaim(null);
   };
 
-  const handleCreateSuccess = async (claimID: number, isDraft: boolean) => {
+  const handleCreateSuccess = async () => {
     setShowCreateForm(false);
     setEditingClaim(null);
 
-    // Reload warranty history
     if (currentVehicleInfo) {
-      try {
-        const claimsResponse = await warrantyClaimAPI.getClaimsByServiceCenter(
-          SERVICE_CENTER_ID
-        );
-        const allClaims = claimsResponse.data.result || [];
-        const vehicleClaims = allClaims.filter(
-          (claim: WarrantyClaimResponse) => claim.vin === currentVehicleInfo.vin
-        );
-        setWarrantyHistory(vehicleClaims);
-      } catch (error) {
-        console.error("Error reloading warranty history:", error);
-      }
+      await getHistoryByVin(currentVehicleInfo.vin);
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Search Section */}
         <VehicleSearch onSearch={handleSearch} />
@@ -140,15 +104,12 @@ export default function Warranty() {
             className="border-red-200 text-red-700 bg-red-50 !grid-cols-1"
           >
             <div className="flex items-center justify-between gap-4 col-span-full">
-              {/* Icon + Nội dung - không wrap */}
               <div className="flex items-center gap-2 flex-1">
                 <Car className="h-5 w-5 flex-shrink-0" />
                 <span className="font-semibold flex-1">
                   Không tìm thấy xe với VIN này
                 </span>
               </div>
-
-              {/* Nút đóng - luôn ở bên phải */}
               <Button
                 variant="ghost"
                 size="sm"
