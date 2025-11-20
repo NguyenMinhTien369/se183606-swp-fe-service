@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router";
 import Header from "@/layouts/Header";
 import Footer from "@/layouts/Footer";
 
+
 export default function MLInternalManagement() {
   return (
     <>

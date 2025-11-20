@@ -29,7 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../../../../components/ui/dialog";
-import { claimAssignmentAPI, warrantyClaimAPI } from "@/utility/index";
+import { claimAssignmentAPI } from "@/utility/index";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
 import type { AssignmentProgressResponse } from "../types";
 
@@ -104,7 +104,7 @@ export function CompletionHandover({
       );
       setAssignments(readyForHandover);
 
-      console.log("✅ Assignments ready for handover:", readyForHandover);
+      console.log("Assignments ready for handover:", readyForHandover);
 
       // Update current assignment if it still exists in the list
       if (currentAssignment) {
@@ -113,24 +113,24 @@ export function CompletionHandover({
         );
         if (updatedCurrent) {
           setCurrentAssignment(updatedCurrent);
-          console.log("✅ Updated current assignment:", updatedCurrent);
+          console.log("Updated current assignment:", updatedCurrent);
         } else {
           // Current assignment completed, select first available or clear
           if (readyForHandover.length > 0) {
             setCurrentAssignment(readyForHandover[0]);
-            console.log("✅ Current assignment completed, selected next:", readyForHandover[0]);
+            console.log("Current assignment completed, selected next:", readyForHandover[0]);
           } else {
             setCurrentAssignment(null);
-            console.log("✅ No more assignments ready for handover");
+            console.log("No more assignments ready for handover");
           }
         }
       } else if (readyForHandover.length > 0) {
         // Auto-select first assignment if no current selection
         setCurrentAssignment(readyForHandover[0]);
-        console.log("✅ Auto-selected assignment:", readyForHandover[0]);
+        console.log("Auto-selected assignment:", readyForHandover[0]);
       }
     } catch (error) {
-      console.error("❌ Error loading completed assignments:", error);
+      console.error("Error loading completed assignments:", error);
       showError("Không thể tải danh sách yêu cầu đã hoàn thành.");
     } finally {
       setIsLoading(false);
@@ -179,41 +179,41 @@ export function CompletionHandover({
   };
 
   const extractClaimID = (assignment: any): number | null => {
-    console.log("🔍 Extracting claimID from:", assignment);
+    console.log("Extracting claimID from:", assignment);
 
     // Try from selectedRequest first
     if (selectedRequest?.claimDetails?.claimID) {
-      console.log("✅ Found claimID in selectedRequest:", selectedRequest.claimDetails.claimID);
+      console.log("Found claimID in selectedRequest:", selectedRequest.claimDetails.claimID);
       return selectedRequest.claimDetails.claimID;
     }
 
     // Try from assignment.claimID
     if (assignment.claimID) {
-      console.log("✅ Found claimID in assignment.claimID:", assignment.claimID);
+      console.log("Found claimID in assignment.claimID:", assignment.claimID);
       return assignment.claimID;
     }
 
     // Try from assignment.warrantyClaim?.claimID
     if (assignment.warrantyClaim?.claimID) {
-      console.log("✅ Found claimID in assignment.warrantyClaim:", assignment.warrantyClaim.claimID);
+      console.log("Found claimID in assignment.warrantyClaim:", assignment.warrantyClaim.claimID);
       return assignment.warrantyClaim.claimID;
     }
 
     // Extract from claimCode (format: "CLM-123" or just "123")
     if (assignment.claimCode) {
       const codeStr = String(assignment.claimCode);
-      console.log("🔍 Attempting to extract from claimCode:", codeStr);
+      console.log("Attempting to extract from claimCode:", codeStr);
 
       // Try multiple patterns
       const match = codeStr.match(/CLM-?(\d+)/i) || codeStr.match(/(\d+)/);
       if (match && match[1]) {
         const extractedID = parseInt(match[1]);
-        console.log("✅ Extracted claimID from claimCode:", extractedID);
+        console.log("Extracted claimID from claimCode:", extractedID);
         return extractedID;
       }
     }
 
-    console.warn("❌ Could not extract claimID from assignment");
+    console.warn("Could not extract claimID from assignment");
     return null;
   };
 
@@ -246,13 +246,13 @@ export function CompletionHandover({
     setIsSubmitting(true);
 
     try {
-      console.log("🚀 Starting handover process...");
-      console.log("📋 Assignment ID:", currentAssignment.assignmentID);
-      console.log("🔍 Current assignment:", currentAssignment);
+      console.log("Starting handover process...");
+      console.log("Assignment ID:", currentAssignment.assignmentID);
+      console.log("Current assignment:", currentAssignment);
 
       // Step 1: Extract claimID BEFORE making any updates
       const claimID = extractClaimID(currentAssignment);
-      console.log("🎯 ClaimID for sync:", claimID);
+      console.log("ClaimID for sync:", claimID);
 
       // Step 2: Update assignment to "Hoàn thành" - COMBINE EVERYTHING IN ONE REQUEST
       const formData = new FormData();
@@ -261,13 +261,13 @@ export function CompletionHandover({
 
       // Internal notes with completion details AND sync request
       const completionNotes =
-        `✅ HOÀN THÀNH BẢO HÀNH\n` +
+        `HOÀN THÀNH BẢO HÀNH\n` +
         `Thời gian hoàn tất: ${new Date(completionData.completionTime).toLocaleString("vi-VN")}\n` +
         `Mô tả công việc: ${completionData.workDescription}\n` +
         `Biên bản bàn giao: ${uploadedFiles.handoverDoc?.name || "N/A"}\n` +
         `Số ảnh hoàn tất: ${uploadedFiles.completionImages.length}\n` +
         `Số ảnh bàn giao: ${uploadedFiles.handoverImages.length}\n\n` +
-        `🚨 AUTOMATIC STATUS SYNC REQUEST\n` +
+        `AUTOMATIC STATUS SYNC REQUEST\n` +
         `Assignment completed, please update warranty claim ${claimID || 'N/A'} to "Hoàn thành"\n` +
         `Technician: ${user?.username || 'Unknown'}`;
 
@@ -292,26 +292,26 @@ export function CompletionHandover({
         formData
       );
 
-      console.log("✅ Assignment update successful:", response.data);
+      console.log("Assignment update successful:", response.data);
 
       // Step 3: Log sync status (no additional API calls needed)
       if (claimID) {
-        console.log(`📝 Assignment ${currentAssignment.assignmentID} completed. ` +
+        console.log(`Assignment ${currentAssignment.assignmentID} completed. ` +
           `Warranty claim ${claimID} sync requested in internal notes.`);
       } else {
-        console.warn("⚠️ No claimID found - SC Staff will need to manually update warranty claim");
+        console.warn("No claimID found - SC Staff will need to manually update warranty claim");
       }
 
       // Success message
       setDialog({
         open: true,
-        title: "✅ Hoàn tất bàn giao thành công",
+        title: "Hoàn tất bàn giao thành công",
         message:
           "Đã hoàn tất bảo hành và bàn giao xe thành công!\n\n" +
-          "📋 Assignment đã được cập nhật trạng thái Hoàn thành\n" +
-          "📝 Đã gửi yêu cầu sync trạng thái warranty claim\n" +
-          "📧 Thông báo đã được gửi cho SC Staff\n" +
-          "✅ Có thể chuyển sang yêu cầu tiếp theo",
+          "Assignment đã được cập nhật trạng thái Hoàn thành\n" +
+          "Đã gửi yêu cầu sync trạng thái warranty claim\n" +
+          "Thông báo đã được gửi cho SC Staff\n" +
+          "Có thể chuyển sang yêu cầu tiếp theo",
         type: "success",
       });
 
@@ -336,7 +336,7 @@ export function CompletionHandover({
       }
 
     } catch (error: any) {
-      console.error("❌ Error confirming handover:", error);
+      console.error("Error confirming handover:", error);
 
       // Extract detailed error message
       let errorMessage = "Không thể hoàn thành bàn giao. ";
