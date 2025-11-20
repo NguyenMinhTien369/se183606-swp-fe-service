@@ -1,4 +1,5 @@
 ﻿import axiosInstance from "./axios";
+import type { ConfirmPartsRequestDTO, ReportMissingPartsRequestDTO } from "@/pages/SC_Technician/ConductWarranty/types/warranty";
 
 // Lưu ý: Các API dưới đây đã được chuẩn hóa theo backend hiện tại trong EVWarrantyHub.
 // Những endpoint chưa có ở backend đã được gỡ bỏ hoặc thay đổi cho phù hợp.
@@ -246,10 +247,8 @@ export const warrantyClaimAPI = {
     axiosInstance.post(`/warranty-claims/${id}/ship-parts`),
 
   // Báo thiếu phụ tùng
-  reportMissingParts: (id: number, note: string) =>
-    axiosInstance.post(`/warranty-claims/${id}/report-missing-parts`, null, {
-      params: { note },
-    }),
+  reportMissingParts: (id: number, data: ReportMissingPartsRequestDTO) =>
+    axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
 }; // ==================== CLAIM ASSIGNMENT API ====================
 // Backend: ClaimAssignmentController.java
 // Path: /api/claim-assignments/*
@@ -269,7 +268,7 @@ export const claimAssignmentAPI = {
   getAssignmentsByTechnician: (technicianID: number) =>
     axiosInstance.get(`/claim-assignments/technician/${technicianID}`),
 
-  confirmPartsReceipt: (assignmentID: number, data: any) =>
+  confirmPartsReceipt: (assignmentID: number, data: ConfirmPartsRequestDTO) =>
     axiosInstance.put(`/claim-assignments/${assignmentID}/confirm-parts`, data),
 
   updateAssignmentProgress: (assignmentID: number, formData: FormData) =>
@@ -397,12 +396,6 @@ export const vehicleAPI = {
   updateVehicleNotes: (vin: string, notes: string) =>
     axiosInstance.put(`/vehicles/${vin}/notes`, { notes }),
   deleteVehicle: (vin: string) => axiosInstance.delete(`/vehicles/${vin}`),
-  getUnassignedVehicles: (vin: string) =>
-    axiosInstance.get(`/vehicles/unassigned/${vin}`),
-  searchUnassignedVehicles: (keyword: string) =>
-    axiosInstance.get("/vehicles/unassigned/search", {
-      params: { keyword },
-    }),
 };
 
 // ==================== PRODUCT MODEL API ====================

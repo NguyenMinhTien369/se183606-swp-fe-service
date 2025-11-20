@@ -504,7 +504,6 @@ export function ApprovedRequestsList({
         </div>
 
         {/* Bảng */}
-        {/* Bảng */}
         <Table>
           <TableHeader>
             <TableRow>

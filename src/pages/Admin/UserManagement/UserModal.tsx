@@ -135,7 +135,7 @@ const UserModal: React.FC<UserModalProps> = ({
         <div className={styles.modalOverlay} onClick={onClose}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.modalHeader}>
-                    <h2>{mode === 'create' ? 'Create New User' : 'Edit User'}</h2>
+                    <h2>{mode === 'create' ? 'Tạo User' : 'Edit User'}</h2>
                     <button onClick={onClose} className={styles.closeButton}>
                         <FaTimes />
                     </button>
