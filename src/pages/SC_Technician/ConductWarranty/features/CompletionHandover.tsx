@@ -13,14 +13,7 @@ import { Textarea } from "../../../../components/ui/textarea";
 import { Label } from "../../../../components/ui/label";
 import { Checkbox } from "../../../../components/ui/checkbox";
 import { Badge } from "../../../../components/ui/badge";
-import {
-  Upload,
-  FileText,
-  Camera,
-  Save,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { Upload, FileText, Camera, Save, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,14 +27,10 @@ import { useAuth } from "@/pages/Login/feature/AuthContext";
 import type { AssignmentProgressResponse } from "../types";
 
 interface CompletionHandoverProps {
-  selectedRequest?: any;
-  onNextStep?: () => void;
   onComplete?: () => void;
 }
 
 export function CompletionHandover({
-  selectedRequest,
-  onNextStep,
   onComplete,
 }: CompletionHandoverProps) {
   // Get technician ID from auth context
@@ -62,13 +51,13 @@ export function CompletionHandover({
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<{
-    handoverDoc: File | null;
-    handoverImages: File[];
-    completionImages: File[];
+    newHandoverFiles_PDF: File | null; // DTO dùng key "newHandoverFiles"
+    newHandoverFiles_Images: File[]; // DTO dùng key "newHandoverFiles"
+    newProgressFiles_Images: File[]; // DTO dùng key "newProgressFiles"
   }>({
-    handoverDoc: null,
-    handoverImages: [],
-    completionImages: [],
+    newHandoverFiles_PDF: null,
+    newHandoverFiles_Images: [],
+    newProgressFiles_Images: [],
   });
 
   const [dialog, setDialog] = useState({
@@ -104,33 +93,21 @@ export function CompletionHandover({
       );
       setAssignments(readyForHandover);
 
-      console.log("Assignments ready for handover:", readyForHandover);
-
-      // Update current assignment if it still exists in the list
+      // Logic auto-select assignment
       if (currentAssignment) {
         const updatedCurrent = readyForHandover.find(
           (a: AssignmentProgressResponse) => a.assignmentID === currentAssignment.assignmentID
         );
         if (updatedCurrent) {
           setCurrentAssignment(updatedCurrent);
-          console.log("Updated current assignment:", updatedCurrent);
         } else {
-          // Current assignment completed, select first available or clear
-          if (readyForHandover.length > 0) {
-            setCurrentAssignment(readyForHandover[0]);
-            console.log("Current assignment completed, selected next:", readyForHandover[0]);
-          } else {
-            setCurrentAssignment(null);
-            console.log("No more assignments ready for handover");
-          }
+          setCurrentAssignment(readyForHandover.length > 0 ? readyForHandover[0] : null);
         }
       } else if (readyForHandover.length > 0) {
-        // Auto-select first assignment if no current selection
         setCurrentAssignment(readyForHandover[0]);
-        console.log("Auto-selected assignment:", readyForHandover[0]);
       }
     } catch (error) {
-      console.error("Error loading completed assignments:", error);
+      console.error("❌ Error loading completed assignments:", error);
       showError("Không thể tải danh sách yêu cầu đã hoàn thành.");
     } finally {
       setIsLoading(false);
@@ -149,10 +126,11 @@ export function CompletionHandover({
   ) => {
     if (!files) return;
 
-    if (type === "handoverDoc") {
+    // [SỬA LẠI KEY CHO ĐÚNG]
+    if (type === "newHandoverFiles_PDF") {
       setUploadedFiles((prev) => ({
         ...prev,
-        handoverDoc: files[0],
+        newHandoverFiles_PDF: files[0], // Sửa key
       }));
     } else {
       setUploadedFiles((prev) => ({
@@ -178,67 +156,26 @@ export function CompletionHandover({
     });
   };
 
-  const extractClaimID = (assignment: any): number | null => {
-    console.log("Extracting claimID from:", assignment);
-
-    // Try from selectedRequest first
-    if (selectedRequest?.claimDetails?.claimID) {
-      console.log("Found claimID in selectedRequest:", selectedRequest.claimDetails.claimID);
-      return selectedRequest.claimDetails.claimID;
-    }
-
-    // Try from assignment.claimID
-    if (assignment.claimID) {
-      console.log("Found claimID in assignment.claimID:", assignment.claimID);
-      return assignment.claimID;
-    }
-
-    // Try from assignment.warrantyClaim?.claimID
-    if (assignment.warrantyClaim?.claimID) {
-      console.log("Found claimID in assignment.warrantyClaim:", assignment.warrantyClaim.claimID);
-      return assignment.warrantyClaim.claimID;
-    }
-
-    // Extract from claimCode (format: "CLM-123" or just "123")
-    if (assignment.claimCode) {
-      const codeStr = String(assignment.claimCode);
-      console.log("Attempting to extract from claimCode:", codeStr);
-
-      // Try multiple patterns
-      const match = codeStr.match(/CLM-?(\d+)/i) || codeStr.match(/(\d+)/);
-      if (match && match[1]) {
-        const extractedID = parseInt(match[1]);
-        console.log("Extracted claimID from claimCode:", extractedID);
-        return extractedID;
-      }
-    }
-
-    console.warn("Could not extract claimID from assignment");
-    return null;
-  };
-
+  // [LOGIC ĐÃ SỬA HOÀN TOÀN]
   const handleConfirmHandover = async () => {
     if (isSubmitting) return;
 
+    // 1. Validate
     if (!completionData.workDescription.trim()) {
       return showError("Vui lòng nhập mô tả công việc đã thực hiện");
     }
-    if (!completionData.completionTime) {
-      return showError("Vui lòng chọn thời gian hoàn tất");
-    }
-    if (uploadedFiles.completionImages.length === 0) {
+    if (uploadedFiles.newProgressFiles_Images.length === 0) {
       return showError("Vui lòng tải lên ít nhất 1 ảnh sau khi hoàn tất");
     }
-    if (!uploadedFiles.handoverDoc) {
+    if (!uploadedFiles.newHandoverFiles_PDF) {
       return showError("Vui lòng tải lên biên bản bàn giao xe (PDF)");
     }
-    if (uploadedFiles.handoverImages.length === 0) {
+    if (uploadedFiles.newHandoverFiles_Images.length === 0) {
       return showError("Vui lòng tải lên ít nhất 1 ảnh bàn giao");
     }
     if (!completionData.isDocumentComplete) {
       return showError("Vui lòng xác nhận đầy đủ chứng từ");
     }
-
     if (!currentAssignment) {
       return showError("Không tìm thấy thông tin assignment");
     }
@@ -246,110 +183,74 @@ export function CompletionHandover({
     setIsSubmitting(true);
 
     try {
-      console.log("Starting handover process...");
-      console.log("Assignment ID:", currentAssignment.assignmentID);
-      console.log("Current assignment:", currentAssignment);
-
-      // Step 1: Extract claimID BEFORE making any updates
-      const claimID = extractClaimID(currentAssignment);
-      console.log("ClaimID for sync:", claimID);
-
-      // Step 2: Update assignment to "Hoàn thành" - COMBINE EVERYTHING IN ONE REQUEST
+      // 2. Build FormData
       const formData = new FormData();
+
+      // CHỈ CẦN GỬI STATUS NÀY
+      // Backend (ClaimAssignmentServiceImpl) sẽ tự động:
+      // 1. Cập nhật status WarrantyClaim -> "Hoàn thành"
+      // 2. Tạo ServiceHistory
       formData.append("status", "Hoàn thành");
-      formData.append("completionPercentage", "100");
 
-      // Internal notes with completion details AND sync request
       const completionNotes =
-        `HOÀN THÀNH BẢO HÀNH\n` +
+        `✅ HOÀN THÀNH BẢO HÀNH\n` +
         `Thời gian hoàn tất: ${new Date(completionData.completionTime).toLocaleString("vi-VN")}\n` +
-        `Mô tả công việc: ${completionData.workDescription}\n` +
-        `Biên bản bàn giao: ${uploadedFiles.handoverDoc?.name || "N/A"}\n` +
-        `Số ảnh hoàn tất: ${uploadedFiles.completionImages.length}\n` +
-        `Số ảnh bàn giao: ${uploadedFiles.handoverImages.length}\n\n` +
-        `AUTOMATIC STATUS SYNC REQUEST\n` +
-        `Assignment completed, please update warranty claim ${claimID || 'N/A'} to "Hoàn thành"\n` +
-        `Technician: ${user?.username || 'Unknown'}`;
-
+        `Mô tả công việc: ${completionData.workDescription}`;
       formData.append("internalNotes", completionNotes);
 
-      // Append files
-      uploadedFiles.completionImages.forEach((file) => {
+      // 3. Append files với ĐÚNG KEY DTO (UpdateAssignmentRequest.java)
+      // Key "newProgressFiles" cho ảnh hoàn tất (ảnh "sau")
+      uploadedFiles.newProgressFiles_Images.forEach((file) => {
         formData.append("newProgressFiles", file);
       });
 
-      if (uploadedFiles.handoverDoc) {
-        formData.append("newHandoverFiles", uploadedFiles.handoverDoc);
+      // Key "newHandoverFiles" cho cả PDF và ảnh bàn giao
+      if (uploadedFiles.newHandoverFiles_PDF) {
+        formData.append("newHandoverFiles", uploadedFiles.newHandoverFiles_PDF);
       }
-
-      uploadedFiles.handoverImages.forEach((file) => {
+      uploadedFiles.newHandoverFiles_Images.forEach((file) => {
         formData.append("newHandoverFiles", file);
       });
 
-      console.log("📤 Sending assignment update...");
+      console.log("📤 Sending assignment update (Hoàn thành)...");
+
+      // 4. GỌI API DUY NHẤT
       const response = await claimAssignmentAPI.updateAssignmentProgress(
         currentAssignment.assignmentID,
         formData
       );
 
-      console.log("Assignment update successful:", response.data);
+      console.log("✅ Assignment update successful:", response.data);
 
-      // Step 3: Log sync status (no additional API calls needed)
-      if (claimID) {
-        console.log(`Assignment ${currentAssignment.assignmentID} completed. ` +
-          `Warranty claim ${claimID} sync requested in internal notes.`);
-      } else {
-        console.warn("No claimID found - SC Staff will need to manually update warranty claim");
-      }
-
-      // Success message
       setDialog({
         open: true,
-        title: "Hoàn tất bàn giao thành công",
-        message:
-          "Đã hoàn tất bảo hành và bàn giao xe thành công!\n\n" +
-          "Assignment đã được cập nhật trạng thái Hoàn thành\n" +
-          "Đã gửi yêu cầu sync trạng thái warranty claim\n" +
-          "Thông báo đã được gửi cho SC Staff\n" +
-          "Có thể chuyển sang yêu cầu tiếp theo",
+        title: "✅ Hoàn tất bàn giao thành công",
+        message: "Đã hoàn tất bảo hành và bàn giao xe. Trạng thái đã được cập nhật.",
         type: "success",
       });
 
-      // Reset form data
+      // 5. Reset form và tải lại
       setCompletionData({
         workDescription: "",
         completionTime: new Date().toISOString().slice(0, 16),
         isDocumentComplete: false,
       });
       setUploadedFiles({
-        handoverDoc: null,
-        handoverImages: [],
-        completionImages: [],
+        newHandoverFiles_PDF: null,
+        newHandoverFiles_Images: [],
+        newProgressFiles_Images: [],
       });
 
-      // Reload the assignments list to remove completed one
-      await loadCompletedAssignments();
+      await loadCompletedAssignments(); // Tải lại (yêu cầu này sẽ biến mất)
 
-      // Call onComplete callback if provided
       if (onComplete) {
         onComplete();
       }
 
     } catch (error: any) {
-      console.error("Error confirming handover:", error);
-
-      // Extract detailed error message
+      console.error("❌ Error confirming handover:", error);
       let errorMessage = "Không thể hoàn thành bàn giao. ";
-      if (error.response?.data?.message) {
-        errorMessage += error.response.data.message;
-      } else if (error.response?.data?.error) {
-        errorMessage += error.response.data.error;
-      } else if (error.message) {
-        errorMessage += error.message;
-      } else {
-        errorMessage += "Vui lòng thử lại.";
-      }
-
+      errorMessage += error.response?.data?.message || error.message || "Vui lòng thử lại.";
       showError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -460,14 +361,15 @@ export function CompletionHandover({
                 </div>
 
                 <div>
-                  <Label>Hình ảnh hoàn tất (ảnh "sau")</Label>
-                  <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                  <Label>Hình ảnh hoàn tất (ảnh "sau") *</Label> {/* SỬA LẠI LABEL */}
+                  <div
+                    className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
                     <input
                       type="file"
                       multiple
                       accept="image/*"
                       onChange={(e) =>
-                        handleFileUpload("completionImages", e.target.files)
+                        handleFileUpload("newProgressFiles_Images", e.target.files) // SỬA KEY
                       }
                       className="hidden"
                       id="completion-images"
@@ -482,9 +384,9 @@ export function CompletionHandover({
                       </p>
                     </label>
 
-                    {uploadedFiles.completionImages.length > 0 && (
+                    {uploadedFiles.newProgressFiles_Images.length > 0 && ( // SỬA KEY
                       <div className="mt-4 grid grid-cols-3 gap-2">
-                        {uploadedFiles.completionImages.map((file, index) => (
+                        {uploadedFiles.newProgressFiles_Images.map((file, index) => ( // SỬA KEY
                           <div key={index} className="relative">
                             <img
                               src={URL.createObjectURL(file)}
@@ -514,12 +416,13 @@ export function CompletionHandover({
               <CardContent className="space-y-4">
                 <div>
                   <Label>Biên bản bàn giao xe (PDF) *</Label>
-                  <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                  <div
+                    className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) =>
-                        handleFileUpload("handoverDoc", e.target.files)
+                        handleFileUpload("newHandoverFiles_PDF", e.target.files) // SỬA KEY
                       }
                       className="hidden"
                       id="handover-doc"
@@ -532,12 +435,12 @@ export function CompletionHandover({
                       </p>
                     </label>
 
-                    {uploadedFiles.handoverDoc && (
+                    {uploadedFiles.newHandoverFiles_PDF && ( // SỬA KEY
                       <div className="mt-4 p-3 bg-green-50 rounded-lg">
                         <div className="flex items-center space-x-2">
                           <FileText className="w-5 h-5 text-green-600" />
                           <span className="text-green-800 font-medium">
-                            {uploadedFiles.handoverDoc.name}
+                            {uploadedFiles.newHandoverFiles_PDF.name}
                           </span>
                         </div>
                       </div>
@@ -546,14 +449,15 @@ export function CompletionHandover({
                 </div>
 
                 <div>
-                  <Label>Ảnh bàn giao / khách hàng ký nhận</Label>
-                  <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                  <Label>Ảnh bàn giao / khách hàng ký nhận *</Label> {/* SỬA LABEL */}
+                  <div
+                    className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
                     <input
                       type="file"
                       multiple
                       accept="image/*"
                       onChange={(e) =>
-                        handleFileUpload("handoverImages", e.target.files)
+                        handleFileUpload("newHandoverFiles_Images", e.target.files) // SỬA KEY
                       }
                       className="hidden"
                       id="handover-images"
@@ -566,9 +470,9 @@ export function CompletionHandover({
                       </p>
                     </label>
 
-                    {uploadedFiles.handoverImages.length > 0 && (
+                    {uploadedFiles.newHandoverFiles_Images.length > 0 && ( // SỬA KEY
                       <div className="mt-4 grid grid-cols-2 gap-2">
-                        {uploadedFiles.handoverImages.map((file, index) => (
+                        {uploadedFiles.newHandoverFiles_Images.map((file, index) => ( // SỬA KEY
                           <div key={index} className="relative">
                             <img
                               src={URL.createObjectURL(file)}
@@ -633,7 +537,7 @@ export function CompletionHandover({
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center mt-8 pt-6 border-t">
-            <Button variant="outline" onClick={handleSaveDraft}>
+            <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting}>
               <Save className="w-4 h-4 mr-2" />
               Lưu nháp
             </Button>
@@ -645,16 +549,11 @@ export function CompletionHandover({
               className="bg-green-600 hover:bg-green-700 text-white"
             >
               {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Đang xử lý...
-                </>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Xác nhận bàn giao
-                </>
+                <CheckCircle className="w-4 h-4 mr-2" />
               )}
+              {isSubmitting ? "Đang xử lý..." : "Xác nhận bàn giao"}
             </Button>
           </div>
         </CardContent>
