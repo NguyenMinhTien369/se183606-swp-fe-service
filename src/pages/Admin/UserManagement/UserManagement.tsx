@@ -157,9 +157,6 @@ const UserManagement: React.FC = () => {
     const handleToggleStatus = async (user: User) => {
         try {
             setLoading(true);
-
-            // Kiểm tra trạng thái hiện tại để gọi API đúng
-            // Giả sử trạng thái 'ACTIVE' là đang hoạt động
             if (user.status === 'ACTIVE') {
                 // Nếu đang Active -> Gọi API Vô hiệu hóa
                 await userAPI.deactivateUser(user.id);

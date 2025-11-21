@@ -12,8 +12,9 @@ const ROUTERS_PATH = {
   // EVM Staff Routes
   EVM_BASE: "/evm",
   EVM_DASHBOARD: "/evm/dashboard",
-  EVM_CAMPAIGNS: "/evm/campaigns",
   EVM_WARRANTY_CLAIMS: "/evm/warranty-claims",
+  EVM_INVENTORY: "/evm/inventory",
+  EVM_PRODUCT_MANAGEMENT: "/evm/product-management",
 
   // Auth Routes
   LOGIN: "/login",
@@ -82,6 +83,8 @@ export const RELATIVE_PATHS = {
   // EVM
   CAMPAIGNS: "campaigns",
   WARRANTY_CLAIMS: "warranty-claims",
+  INVENTORY: "inventory",
+  PRODUCT_MANAGEMENT: "product-management",
 } as const;
 
 export default ROUTERS_PATH;

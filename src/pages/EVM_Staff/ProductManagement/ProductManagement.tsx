@@ -50,9 +50,9 @@ const ProductManagement = () => {
                 vin: vehicle.vin,
                 serialNumber: vehicle.licensePlate || 'N/A',
                 productionDate: vehicle.productionYear ? `${vehicle.productionYear}-01-01` : 'N/A',
-                productModelID: 0,
+                productModelID: 0, // Không có trong response
                 productModelName: vehicle.modelName || 'N/A',
-                customerID: 0,
+                customerID: 0, // Không có trong response
                 customerName: vehicle.customerName || 'N/A',
                 notes: vehicle.internalNotes || ''
             }));
@@ -154,6 +154,7 @@ const ProductManagement = () => {
             setLoading(true);
 
             if (activeTab === 'vehicles') {
+                // Prepare vehicle data - only include non-empty fields
                 const vehicleData: any = {
                     vin: vehicleForm.vin.trim(),
                     modelID: vehicleForm.modelID,
@@ -161,6 +162,7 @@ const ProductManagement = () => {
                     registrationDate: vehicleForm.registrationDate
                 };
 
+                // Add optional fields only if they have values
                 if (vehicleForm.customerID) {
                     vehicleData.customerID = vehicleForm.customerID;
                 }
