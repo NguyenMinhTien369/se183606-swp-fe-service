@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { warrantyClaimAPI } from "@/utility/index";
-import type { WarrantyClaimResponse } from "@/pages/SC_Technician/ManageWarranty/types/warranty";
+import type { WarrantyClaimResponse } from "@/pages/SC_Staff/ManageWarranty/types/warranty";
 
 export const useGetClaimByServiceCenter = (serviceCenterID: number) => {
   const [history, setHistory] = useState<WarrantyClaimResponse[]>([]);
