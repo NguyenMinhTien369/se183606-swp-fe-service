@@ -457,6 +457,10 @@ const WarrantyApproval = () => {
                                                 <div key={part.claimPartID} className={styles.partItem}>
                                                     <div><strong>{part.partTypeName}</strong><span className={styles.partSerial}> (SN: {part.partSerialNumber})</span></div>
                                                     {part.description && <p className={styles.partDesc}>{part.description}</p>}
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        <small>SL: <strong>{part.quantity ?? '-'}</strong></small>
+                                                        {part.missingQuantity ? <small style={{ color: 'red', marginLeft: '8px' }}> (Thiếu: {part.missingQuantity})</small> : null}
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
