@@ -187,6 +187,8 @@ export const userAPI = {
   updateUser: (id: number, userData: UserUpdateRequest) =>
     axiosInstance.put(`/users/${id}`, userData),
   deleteUser: (id: number) => axiosInstance.delete(`/users/${id}`),
+  activateUser: (id: number) => axiosInstance.put(`/admin/users/${id}/activate`),
+  deactivateUser: (id: number) => axiosInstance.put(`/admin/users/${id}/deactivate`),
 
   // Authentication & Password recovery
   logout: () => axiosInstance.post("/users/logout"),

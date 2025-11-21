@@ -231,6 +231,20 @@
     opacity: 0.8;
 }
 
+.btnBan {
+    background-color: #fee2e2;
+    color: rgb(223, 10, 10);
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 5px;
+    transition: background-color 0.1s;
+}
+
 .btnDelete {
     background: #fee2e2;
     color: #991b1b;
