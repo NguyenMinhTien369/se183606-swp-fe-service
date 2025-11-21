@@ -1,7 +1,3 @@
-// ==================== BACKEND DTO TYPES ====================
-// Synchronized with backend response structures
-
-// ✅ Warranty Claim Status đồng bộ với backend (tiếng Việt)
 export type WarrantyStatus =
   | "Nháp" // Draft
   | "Chờ duyệt" // Pending
@@ -46,16 +42,18 @@ export interface WarrantyClaimResponse {
 }
 
 export interface ClaimPartResponse {
+  claimPartID: number;
   partSerialNumber: string;
   partTypeName: string;
   partTypeDescription: string;
   description: string;
   createdDate: string;
+  quantity: number;
+  quantityReportedMissing: number;
 }
 
 export interface ClaimAttachmentResponse {
   attachmentID: number;
-  fileName: string;
   fileUrl: string;
   fileType: string;
   uploadDate: string;
@@ -71,9 +69,9 @@ export interface AssignmentProgress {
   vin: string;
   technicianName: string;
   assignedDate: string;
-  status: string; // ASSIGNED, IN_PROGRESS, AWAITING_PARTS, COMPLETED
-  completionPercentage: number; // Note: Backend uses completionPercentage
-  internalNotes: string;
+  status: string;
+  completionPercentage: number;
+  internalNotes: string | null;
   canEdit: boolean;
   canDelete: boolean;
 }
@@ -142,11 +140,6 @@ export interface UpdateAssignmentProgressRequest {
   // attachments: File[] (sent via FormData)
 }
 
-// ==================== DEPRECATED TYPES ====================
-// Keep for backward compatibility, will be removed in future versions
-
-/** @deprecated Use WarrantyClaimResponse instead */
 export type WarrantyRequest = WarrantyClaimResponse;
 
-/** @deprecated Use TechnicianUser instead */
 export type Technician = TechnicianUser;

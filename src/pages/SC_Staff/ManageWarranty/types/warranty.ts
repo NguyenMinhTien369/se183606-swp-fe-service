@@ -1,47 +1,38 @@
-// Types for warranty management system
-// Đồng bộ với backend DTOs: VehicleInfoResponse, WarrantyClaimResponse, CreateWarrantyClaimRequest
-
 export type WarrantyStatus =
-  | "Nháp" // Draft
-  | "Chờ duyệt" // Pending
-  | "Được chấp nhận" // Approved
-  | "Đang xử lý" // In Progress
-  | "Hoàn thành" // Completed
-  | "Bị từ chối"; // Rejected
+  | "Nháp"
+  | "Chờ duyệt"
+  | "Được chấp nhận"
+  | "Đang xử lý"
+  | "Hoàn thành"
+  | "Bị từ chối";
 
-// ==================== VehicleInfoResponse.java ====================
-// Backend: WarrantyClaimController.getVehicleInfoByVin()
-// Endpoint: GET /api/warranty-claims/vehicle-info?vin={vin}
-// Response: ApiResponse<VehicleInfoResponse>
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface VehicleInfo {
-  vin: string; // ✅ String vin
-  licensePlate: string; // ✅ String licensePlate
-  registrationDate: string; // ✅ LocalDate registrationDate
-  modelName: string; // ✅ String modelName
-  color: string; // ✅ String color
-  productionYear: number; // ✅ Integer productionYear
-  batteryCapacity: number; // ✅ Double batteryCapacity
-  customerName: string; // ✅ String customerName
-  customerPhone: string; // ✅ String customerPhone
-  customerEmail: string; // ✅ String customerEmail
-  customerCmnd: string; // ✅ String customerCmnd
-  customerAddress: string; // ✅ String customerAddress
-  installedParts: InstalledPartInfo[]; // ✅ List<InstalledPartInfo> installedParts
+  vin: string;
+  licensePlate: string;
+  registrationDate: string;
+  modelName: string;
+  color: string;
+  productionYear: number;
+  batteryCapacity: number;
+  customerName: string;
+  // customerPhone: string;
+  // customerEmail: string;
+  // customerCmnd: string;
+  // customerAddress: string;
+  image?: string;
+  internalNotes?: string | null;
+  installedParts: InstalledPartInfo[];
 }
 
-// VehicleInfoResponse.InstalledPartInfo (nested class)
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface InstalledPartInfo {
-  partSerialNumber: string; // ✅ String partSerialNumber
-  partTypeName: string; // ✅ String partTypeName
-  partTypeDescription: string; // ✅ String partTypeDescription
-  installationDate: string; // ✅ LocalDate installationDate
-  warrantyPeriod: string; // ✅ LocalDate warrantyPeriod
-  isUnderWarranty: boolean; // ✅ Boolean isUnderWarranty
+  id: string;
+  partSerialNumber: string;
+  partTypeName: string;
+  installationDate: string;
+  warrantyPeriod: string;
+  isUnderWarranty: boolean;
 }
 
-// Deprecated: Giữ để tương thích, sẽ migrate sang VehicleInfo
 export interface Vehicle {
   vin: string;
   model: string;
@@ -51,7 +42,6 @@ export interface Vehicle {
   dealer: string;
 }
 
-// Deprecated: Giữ để tương thích, sẽ migrate sang InstalledPartInfo
 export interface Part {
   id: string;
   partCode: string;
@@ -60,79 +50,62 @@ export interface Part {
   status: "active" | "replaced" | "warranty";
 }
 
-// ==================== WarrantyClaimResponse.java ====================
-// Backend: WarrantyClaimController.getClaimById()
-// Endpoint: GET /api/warranty-claims/{claimId}
-// Response: ApiResponse<WarrantyClaimResponse>
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface WarrantyClaimResponse {
-  claimID: number; // ✅ Integer claimID
-  vin: string; // ✅ String vin (từ Vehicle)
-  licensePlate: string; // ✅ String licensePlate (từ Vehicle)
-  registrationDate: string; // ✅ LocalDate registrationDate (từ Vehicle)
-  modelName: string; // ✅ String modelName (từ ProductModel)
-  color: string; // ✅ String color (từ Vehicle)
-  batteryCapacity: number; // ✅ Double batteryCapacity (từ ProductModel)
-  productionYear: number; // ✅ Integer productionYear (từ Vehicle)
-  customerName: string; // ✅ String customerName (từ Customer)
-  customerPhone: string; // ✅ String customerPhone (từ Customer)
-  customerEmail: string; // ✅ String customerEmail (từ Customer)
-  customerCmnd: string; // ✅ String customerCmnd (từ Customer)
-  customerAddress: string; // ✅ String customerAddress (từ Customer)
-  serviceCenterName: string; // ✅ String serviceCenterName (từ ServiceCenter)
-  serviceCenterAddress: string; // ✅ String serviceCenterAddress (từ ServiceCenter)
-  serviceCenterPhone: string; // ✅ String serviceCenterPhone (từ ServiceCenter)
-  creationDate: string; // ✅ LocalDate creationDate
-  status: string; // ✅ String status (enum: PENDING, APPROVED, REJECTED, etc.)
-  description: string; // ✅ String description
-  result: string | null; // ✅ String result (nullable)
-  affectedParts: ClaimPartResponse[]; // ✅ List<ClaimPartResponse> affectedParts
-  attachments: ClaimAttachmentResponse[]; // ✅ List<ClaimAttachmentResponse> attachments
+  claimID: number;
+  vin: string;
+  licensePlate: string;
+  registrationDate: string;
+  modelName: string;
+  color: string;
+  batteryCapacity: number;
+  productionYear: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerCmnd: string;
+  customerAddress: string;
+  serviceCenterName: string;
+  serviceCenterAddress: string;
+  serviceCenterPhone: string;
+  creationDate: string;
+  status: string;
+  description?: string;
+  result: string | null;
+  affectedParts: ClaimPartResponse[];
+  attachments: ClaimAttachmentResponse[];
 }
 
-// WarrantyClaimResponse.ClaimPartResponse (nested class)
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface ClaimPartResponse {
-  partSerialNumber: string; // ✅ String partSerialNumber
-  partTypeName: string; // ✅ String partTypeName
-  partTypeDescription: string; // ✅ String partTypeDescription
-  description: string; // ✅ String description
-  createdDate: string; // ✅ LocalDate createdDate
+  partSerialNumber: string;
+  partTypeName: string;
+  partTypeDescription: string;
+  description: string;
+  createdDate: string;
 }
 
-// WarrantyClaimResponse.ClaimAttachmentResponse (nested class)
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface ClaimAttachmentResponse {
-  attachmentID: number; // ✅ Integer attachmentID
-  fileName: string; // ✅ String fileName
-  fileUrl: string; // ✅ String fileUrl
-  fileType: string; // ✅ String fileType
-  uploadDate: string; // ✅ LocalDate uploadDate
+  attachmentID: number;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  uploadDate: string;
 }
 
-// ==================== CreateWarrantyClaimRequest.java ====================
-// Backend: WarrantyClaimController.createWarrantyClaim()
-// Endpoint: POST /api/warranty-claims
-// Request: multipart/form-data (FormData)
-// Response: ApiResponse<Integer> (claimID)
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface CreateWarrantyClaimRequest {
-  vin: string; // ✅ @RequestParam String vin (required)
-  serviceCenterID: number; // ✅ @RequestParam Integer serviceCenterID (required)
-  description: string; // ✅ @RequestParam String description (required)
-  claimParts: ClaimPartRequest[]; // ✅ @RequestParam List<ClaimPartRequest> claimParts (JSON array)
-  attachmentFiles?: File[]; // ✅ @RequestParam(required=false) List<MultipartFile> attachmentFiles
-  isDraft?: boolean; // ✅ @RequestParam(defaultValue="false") boolean isDraft
+  vin: string;
+  serviceCenterID: number;
+  description: string;
+  claimParts: ClaimPartRequest[];
+  attachmentFiles?: File[];
+  isDraft?: boolean;
 }
 
-// CreateWarrantyClaimRequest.ClaimPartRequest (nested class)
-// Status: ✅ ĐÚNG - Đã đồng bộ hoàn toàn với backend
 export interface ClaimPartRequest {
-  partSerialNumber: string; // ✅ String partSerialNumber (required)
-  description?: string; // ✅ String description (optional)
+  partSerialNumber: string;
+  description?: string;
+  quantity?: number;
 }
 
-// Deprecated: Giữ để tương thích với code cũ
 export interface WarrantyHistory {
   id: string;
   requestCode: string;
@@ -142,7 +115,6 @@ export interface WarrantyHistory {
   handler: string;
 }
 
-// Deprecated: Giữ để tương thích với code cũ, migrate sang WarrantyClaimResponse
 export interface WarrantyClaim {
   id: string;
   requestCode: string;
