@@ -125,6 +125,7 @@ export default function AdminDashboard() {
             const pending = statusCounts['PENDING'] || statusCounts['WAITING_FOR_APPROVAL'] || 0;
             const approved = statusCounts['APPROVED'] || 0;
             const rejected = statusCounts['REJECTED'] || 0;
+            const completed = statusCounts['COMPLETED'] || 0;
 
             // Count technicians
             const technicians = users.filter((u: any) =>
@@ -139,7 +140,8 @@ export default function AdminDashboard() {
             const statusData: ClaimStatus[] = [
                 { name: 'Chờ duyệt', value: pending, color: '#f59e0b' },
                 { name: 'Đã duyệt', value: approved, color: '#10b981' },
-                { name: 'Từ chối', value: rejected, color: '#ef4444' }
+                { name: 'Từ chối', value: rejected, color: '#ef4444' },
+                { name: 'Hoàn thành', value: completed, color: '#3b82f6' }
             ].filter(item => item.value > 0);
 
             setClaimsByStatus(statusData);
@@ -166,26 +168,30 @@ export default function AdminDashboard() {
         const now = new Date();
         const monthlyMap = new Map<string, { claims: number; completed: number }>();
 
-        // Initialize last 6 months
         for (let i = 5; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthKey = `${months[date.getMonth()]}`;
             monthlyMap.set(monthKey, { claims: 0, completed: 0 });
         }
 
-        // Count claims per month
         claims.forEach((claim: any) => {
-            if (claim.claimDate) {
-                const claimDate = new Date(claim.claimDate);
+            const dateStr = claim.creationDate || claim.createdDate;
+
+            if (dateStr) {
+                const claimDate = new Date(dateStr);
                 const monthKey = months[claimDate.getMonth()];
 
                 if (monthlyMap.has(monthKey)) {
                     const data = monthlyMap.get(monthKey)!;
                     data.claims++;
 
-                    if (claim.status?.toUpperCase() === 'APPROVED' ||
-                        claim.status?.toUpperCase() === 'COMPLETED' ||
-                        claim.status?.toUpperCase() === 'RESOLVED') {
+                    const status = claim.status?.toUpperCase() || '';
+                    const completedStatuses = [
+                        'APPROVED', 'COMPLETED', 'RESOLVED',
+                        'ĐƯỢC CHẤP NHẬN', 'ĐÃ DUYỆT', 'HOÀN THÀNH', 'ĐÃ HOÀN THÀNH'
+                    ];
+
+                    if (completedStatuses.includes(status)) {
                         data.completed++;
                     }
                     monthlyMap.set(monthKey, data);
