@@ -16,11 +16,77 @@ import {
     FaRedo,
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
-import type { WarrantyClaim, ClaimStatus } from './types';
+import type {
+    WarrantyClaimResponse,
+    ClaimStatus,
+    ClaimPartResponse,
+    ClaimAttachmentResponse
+} from './types';
+import type { IconType } from 'react-icons';
 import styles from './WarrantyApproval.module.css';
 
+interface MappedWarrantyClaim {
+    id: number;
+    claimNumber: string;
+    customer: {
+        fullName: string;
+        email: string;
+        phone?: string;
+    };
+    vehicle: {
+        vin: string;
+        model: string;
+        licensePlate?: string;
+    };
+    issueDescription: string;
+    status: ClaimStatus;
+    createdDate: string;
+    result: string | null;
+    affectedParts: ClaimPartResponse[];
+    attachments: (ClaimAttachmentResponse & { fileName: string })[];
+}
+
+interface ExtendedClaimPart extends ClaimPartResponse {
+    quantityRequested?: number;
+    requestedQuantity?: number;
+    quantityReportedMissing?: number;
+    reportedMissingQuantity?: number;
+    quantityMissing?: number;
+}
+
+// Map status từ BE (Tiếng Việt) -> FE ClaimStatus
+const mapStatusFromBE = (status: string): ClaimStatus => {
+    const map: Record<string, ClaimStatus> = {
+        'Chờ duyệt': 'PENDING',
+        'Được chấp nhận': 'APPROVED',
+        'Từ chối': 'REJECTED',
+        'Đang giao phụ tùng': 'SHIPPING',
+        'Thiếu hàng': 'MISSING_PARTS',
+        'Đã nhận': 'RECEIVED',
+        'Đang xử lý': 'IN_PROGRESS',
+        'Hoàn thành': 'COMPLETED',
+    };
+    return map[status] ?? 'PENDING';
+};
+
+// Map FE status -> BE (Tiếng Việt) cho API filter
+const mapStatusForAPI = (status: ClaimStatus | 'ALL'): string | null => {
+    if (status === 'ALL') return null;
+    const map: Record<ClaimStatus, string> = {
+        PENDING: 'Chờ duyệt',
+        APPROVED: 'Được chấp nhận',
+        REJECTED: 'Từ chối',
+        SHIPPING: 'Đang giao phụ tùng',
+        MISSING_PARTS: 'Thiếu hàng',
+        RECEIVED: 'Đã nhận',
+        IN_PROGRESS: 'Đang xử lý',
+        COMPLETED: 'Hoàn thành',
+    };
+    return map[status];
+};
+
 const WarrantyApproval = () => {
-    const [claims, setClaims] = useState<WarrantyClaim[]>([]);
+    const [claims, setClaims] = useState<MappedWarrantyClaim[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'ALL'>('ALL');
@@ -28,128 +94,89 @@ const WarrantyApproval = () => {
     const [showApproveModal, setShowApproveModal] = useState(false);
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [showShipPartsModal, setShowShipPartsModal] = useState(false);
-    const [selectedClaim, setSelectedClaim] = useState<WarrantyClaim | null>(null);
+    const [selectedClaim, setSelectedClaim] = useState<MappedWarrantyClaim | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+    const [modalLoading, setModalLoading] = useState(false);
 
-    useEffect(() => {
-        fetchClaims();
-    }, [statusFilter]);
+    // Helper: map 1 claim từ BE -> FE
+    const mapClaimFromResponse = (claim: WarrantyClaimResponse): MappedWarrantyClaim => {
+        const mappedParts: ClaimPartResponse[] = (claim.affectedParts || []).map((p: ExtendedClaimPart) => ({
+            ...p,
+            quantity: p.quantity ?? p.quantityRequested ?? p.requestedQuantity ?? undefined,
+            missingQuantity: p.missingQuantity ?? p.quantityReportedMissing ?? p.reportedMissingQuantity ?? p.quantityMissing ?? undefined,
+        }));
+        const mappedAttachments = (claim.attachments || []).map((att: ClaimAttachmentResponse) => ({
+            ...att,
+            fileName: (att.fileUrl || '').split('/').pop() || 'attachment',
+        }));
+        return {
+            id: claim.claimID,
+            claimNumber: `CLM-${claim.claimID}`,
+            customer: {
+                fullName: claim.customerName,
+                email: claim.customerEmail,
+                phone: claim.customerPhone,
+            },
+            vehicle: {
+                vin: claim.vin,
+                model: claim.modelName,
+                licensePlate: claim.licensePlate,
+            },
+            issueDescription: claim.description,
+            status: mapStatusFromBE(claim.status),
+            createdDate: claim.creationDate,
+            result: claim.result,
+            affectedParts: mappedParts,
+            attachments: mappedAttachments,
+        };
+    };
 
     const fetchClaims = async () => {
         try {
             setLoading(true);
-            console.log('Fetching claims with status filter:', statusFilter);
-
-            // Convert English status to Vietnamese for API
-            const mapStatusForAPI = (status: ClaimStatus | 'ALL'): string => {
-                const statusMap: Record<string, string> = {
-                    'PENDING': 'Chờ duyệt',
-                    'APPROVED': 'Được chấp nhận',
-                    'REJECTED': 'Từ chối',
-                    'IN_PROGRESS': 'Đang xử lý',
-                    'SHIPPING': 'Đang giao phụ tùng',
-                    'RECEIVED': 'Đã nhận',
-                    'MISSING_PARTS': 'Thiếu hàng',
-                    'COMPLETED': 'Hoàn thành',
-                };
-                return statusMap[status] || status;
-            };
-
-            const response = statusFilter === 'ALL'
-                ? await warrantyClaimAPI.getAllClaims()
-                : await warrantyClaimAPI.getClaimsByStatus(mapStatusForAPI(statusFilter));
-
-            console.log('API Response:', response);
-            console.log('Result data:', response.data.result);
-
-            // Map Vietnamese status to English
-            const mapStatus = (status: string): ClaimStatus => {
-                const statusMap: Record<string, ClaimStatus> = {
-                    'Chờ duyệt': 'PENDING',
-                    'Được chấp nhận': 'APPROVED',
-                    'Đã duyệt': 'APPROVED',
-                    'Từ chối': 'REJECTED',
-                    'Đang xử lý': 'IN_PROGRESS',
-                    'Đang giao phụ tùng': 'SHIPPING',
-                    'Đã nhận': 'RECEIVED',
-                    'Thiếu hàng': 'MISSING_PARTS',
-                    'Hoàn thành': 'COMPLETED',
-                };
-
-                const upperStatus = status?.toUpperCase();
-                if (['PENDING', 'APPROVED', 'REJECTED', 'IN_PROGRESS', 'SHIPPING', 'RECEIVED', 'MISSING_PARTS', 'COMPLETED'].includes(upperStatus)) {
-                    return upperStatus as ClaimStatus;
-                }
-                return statusMap[status] || 'PENDING';
-            };
-
-            const mappedClaims = (response.data.result || []).map((claim: any) => {
-                console.log('Mapping claim:', claim.claimID, 'Status:', claim.status);
-                return {
-                    id: claim.claimID,
-                    claimNumber: `CLM-${claim.claimID}`,
-                    customer: {
-                        fullName: claim.customerName,
-                        email: claim.customerEmail,
-                        phone: claim.customerPhone,
-                    },
-                    vehicle: {
-                        vin: claim.vin,
-                        model: claim.modelName,
-                        licensePlate: claim.licensePlate,
-                    },
-                    issueDescription: claim.description,
-                    status: mapStatus(claim.status),
-                    createdDate: claim.creationDate,
-                    estimatedCost: 0,
-                    result: claim.result,
-                    affectedParts: claim.affectedParts || [],
-                    attachments: claim.attachments || [],
-                };
-            });
-
-            // Sắp xếp các đơn bảo hành mới nhất lên đầu
-            mappedClaims.sort((a: any, b: any) => {
-                const dateA = new Date(a.createdDate).getTime();
-                const dateB = new Date(b.createdDate).getTime();
-                return dateB - dateA;
-            });
-
-            console.log('Mapped claims:', mappedClaims);
-            console.log('Total claims:', mappedClaims.length);
-            setClaims(mappedClaims);
-        } catch (error: any) {
-            console.error('Error fetching claims:', error);
-            console.error('Error response:', error.response);
-            console.error('Error details:', error.response?.data);
-            setClaims([]);
-
-            // Hiển thị lỗi chi tiết
-            if (error.response?.status === 403) {
-                alert('Lỗi: Bạn không có quyền truy cập! Vui lòng đăng nhập với tài khoản Admin hoặc EVM_Staff.');
-            } else if (error.response?.status === 401) {
-                alert('Lỗi: Phiên đăng nhập đã hết hạn! Vui lòng đăng nhập lại.');
+            const apiStatus = mapStatusForAPI(statusFilter);
+            let response;
+            if (statusFilter === 'ALL' || !apiStatus) {
+                response = await warrantyClaimAPI.getAllClaims();
             } else {
-                alert(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải dữ liệu'}`);
+                response = await warrantyClaimAPI.getClaimsByStatus(apiStatus);
+            }
+            const rawList = response.data?.result || response.data || [];
+            const mappedClaims: MappedWarrantyClaim[] = (rawList || []).map((claim: WarrantyClaimResponse) => mapClaimFromResponse(claim));
+            // Sắp xếp mới nhất lên đầu (creationDate giảm dần)
+            mappedClaims.sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+            setClaims(mappedClaims);
+        } catch (error: unknown) {
+            const err: any = error; // intentional cast for accessing response
+            console.error('Error fetching claims:', err);
+            setClaims([]);
+            if (err.response?.status === 403) {
+                alert('Lỗi: Bạn không có quyền truy cập! Vui lòng đăng nhập với tài khoản Admin hoặc EVM_Staff.');
+            } else {
+                alert(`Lỗi: ${err.response?.data?.message || err.message || 'Không thể tải dữ liệu'}`);
             }
         } finally {
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        fetchClaims();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [statusFilter]);
+
     const handleApproveClaim = async () => {
         if (!selectedClaim) return;
-
         try {
             setLoading(true);
             await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'Được chấp nhận');
-
             alert('Phê duyệt yêu cầu thành công!');
             setShowApproveModal(false);
             fetchClaims();
-        } catch (error: any) {
-            console.error('Error approving claim:', error);
-            alert(`Lỗi: ${error.response?.data?.message || 'Không thể phê duyệt!'}`);
+        } catch (error: unknown) {
+            const err: any = error;
+            console.error('Error approving claim:', err);
+            alert(`Lỗi: ${err.response?.data?.message || 'Không thể phê duyệt!'}`);
         } finally {
             setLoading(false);
         }
@@ -160,19 +187,17 @@ const WarrantyApproval = () => {
             alert('Vui lòng nhập lý do từ chối!');
             return;
         }
-
         try {
             setLoading(true);
-            // SỬA: Gửi status bằng tiếng Việt thay vì tiếng Anh
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'Từ chối');
-
+            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'Từ chối', rejectReason);
             alert('Từ chối yêu cầu thành công!');
             setShowRejectModal(false);
             setRejectReason('');
             fetchClaims();
-        } catch (error: any) {
-            console.error('Error rejecting claim:', error);
-            alert(`Lỗi: ${error.response?.data?.message || 'Không thể từ chối!'}`);
+        } catch (error: unknown) {
+            const err: any = error;
+            console.error('Error rejecting claim:', err);
+            alert(`Lỗi: ${err.response?.data?.message || 'Không thể từ chối!'}`);
         } finally {
             setLoading(false);
         }
@@ -180,24 +205,38 @@ const WarrantyApproval = () => {
 
     const handleShipParts = async () => {
         if (!selectedClaim) return;
-
         try {
             setLoading(true);
             await warrantyClaimAPI.shipParts(selectedClaim.id);
-
             alert('✅ Đã tạo yêu cầu giao phụ tùng thành công! Trạng thái: Đang giao phụ tùng');
             setShowShipPartsModal(false);
             fetchClaims();
-        } catch (error: any) {
-            console.error('Error shipping parts:', error);
-            alert(`Lỗi: ${error.response?.data?.message || 'Không thể giao phụ tùng!'}`);
+        } catch (error: unknown) {
+            const err: any = error;
+            console.error('Error shipping parts:', err);
+            alert(`Lỗi: ${err.response?.data?.message || 'Không thể giao phụ tùng!'}`);
         } finally {
             setLoading(false);
         }
     };
 
+    const openShipPartsModal = async (claim: MappedWarrantyClaim) => {
+        setSelectedClaim(claim);
+        setShowShipPartsModal(true);
+        try {
+            setModalLoading(true);
+            const resp = await warrantyClaimAPI.getClaimById(claim.id);
+            const raw = resp.data?.result ?? resp.data;
+            if (raw) setSelectedClaim(mapClaimFromResponse(raw as WarrantyClaimResponse));
+        } catch (error: unknown) {
+            console.error('Error loading claim details:', error);
+        } finally {
+            setModalLoading(false);
+        }
+    };
+
     const getStatusBadge = (status: ClaimStatus) => {
-        const config: Record<ClaimStatus, { label: string; className: string; icon: any }> = {
+        const config: Record<ClaimStatus, { label: string; className: string; icon: IconType }> = {
             PENDING: { label: 'Chờ duyệt', className: styles.statusPending, icon: FaClock },
             APPROVED: { label: 'Đã duyệt', className: styles.statusApproved, icon: FaCheckCircle },
             REJECTED: { label: 'Từ chối', className: styles.statusRejected, icon: FaTimes },
@@ -207,10 +246,8 @@ const WarrantyApproval = () => {
             MISSING_PARTS: { label: 'Thiếu hàng', className: styles.statusMissing, icon: FaExclamationCircle },
             COMPLETED: { label: 'Hoàn thành', className: styles.statusCompleted, icon: FaCheck },
         };
-
-        const statusConfig = config[status] || config.PENDING; // Fallback to PENDING if status not found
+        const statusConfig = config[status] || config.PENDING;
         const { label, className, icon: Icon } = statusConfig;
-
         return (
             <span className={`${styles.statusBadge} ${className}`}>
                 <Icon /> {label}
@@ -219,28 +256,23 @@ const WarrantyApproval = () => {
     };
 
     const filteredClaims = claims.filter((claim) => {
-        // Không cần filter theo status nữa vì đã filter từ API
         const search = searchTerm.toLowerCase();
-        const matchesSearch =
-            claim.claimNumber?.toLowerCase().includes(search) ||
-            claim.customer?.fullName?.toLowerCase().includes(search) ||
-            claim.vehicle?.vin?.toLowerCase().includes(search) ||
-            claim.vehicle?.model?.toLowerCase().includes(search);
-        return matchesSearch;
+        return (
+            claim.claimNumber.toLowerCase().includes(search) ||
+            claim.customer.fullName.toLowerCase().includes(search) ||
+            claim.vehicle.vin.toLowerCase().includes(search) ||
+            claim.vehicle.model.toLowerCase().includes(search)
+        );
     });
 
-    const getStatCount = (status: ClaimStatus) => {
-        return claims.filter((c) => c.status === status).length;
-    };
+    const getStatCount = (status: ClaimStatus) => claims.filter((c) => c.status === status).length;
 
     return (
         <div className={styles.container}>
             {/* Header */}
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>
-                        <FaClipboardList /> Phê duyệt Bảo hành
-                    </h1>
+                    <h1 className={styles.title}><FaClipboardList /> Phê duyệt Bảo hành</h1>
                     <p className={styles.subtitle}>Quản lý và phê duyệt yêu cầu bảo hành</p>
                 </div>
             </div>
@@ -257,7 +289,6 @@ const WarrantyApproval = () => {
                         className={styles.searchInput}
                     />
                 </div>
-
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as ClaimStatus | 'ALL')}
@@ -267,13 +298,12 @@ const WarrantyApproval = () => {
                     <option value="PENDING">Chờ duyệt</option>
                     <option value="APPROVED">Đã duyệt</option>
                     <option value="SHIPPING">Đang giao hàng</option>
-                    <option value="RECEIVED">Đã nhận</option>
+                    <option value="RECEIVED">Đã nhận hàng</option>
                     <option value="MISSING_PARTS">Thiếu hàng</option>
                     <option value="REJECTED">Từ chối</option>
                     <option value="IN_PROGRESS">Đang xử lý</option>
                     <option value="COMPLETED">Hoàn thành</option>
                 </select>
-
                 <button
                     onClick={fetchClaims}
                     className={styles.refreshButton}
@@ -288,40 +318,20 @@ const WarrantyApproval = () => {
             {/* Statistics */}
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon} style={{ background: '#fef3c7' }}>
-                        <FaClock style={{ color: '#f59e0b' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{getStatCount('PENDING')}</h3>
-                        <p>Chờ phê duyệt</p>
-                    </div>
+                    <div className={styles.statIcon} style={{ background: '#fef3c7' }}><FaClock style={{ color: '#f59e0b' }} /></div>
+                    <div className={styles.statContent}><h3>{getStatCount('PENDING')}</h3><p>Chờ phê duyệt</p></div>
                 </div>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon} style={{ background: '#d1fae5' }}>
-                        <FaCheckCircle style={{ color: '#10b981' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{getStatCount('APPROVED')}</h3>
-                        <p>Đã duyệt</p>
-                    </div>
+                    <div className={styles.statIcon} style={{ background: '#d1fae5' }}><FaCheckCircle style={{ color: '#10b981' }} /></div>
+                    <div className={styles.statContent}><h3>{getStatCount('APPROVED')}</h3><p>Đã duyệt</p></div>
                 </div>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon} style={{ background: '#fee2e2' }}>
-                        <FaTimes style={{ color: '#ef4444' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{getStatCount('REJECTED')}</h3>
-                        <p>Từ chối</p>
-                    </div>
+                    <div className={styles.statIcon} style={{ background: '#fee2e2' }}><FaTimes style={{ color: '#ef4444' }} /></div>
+                    <div className={styles.statContent}><h3>{getStatCount('REJECTED')}</h3><p>Từ chối</p></div>
                 </div>
                 <div className={styles.statCard}>
-                    <div className={styles.statIcon} style={{ background: '#dbeafe' }}>
-                        <FaExclamationCircle style={{ color: '#3b82f6' }} />
-                    </div>
-                    <div className={styles.statContent}>
-                        <h3>{getStatCount('IN_PROGRESS')}</h3>
-                        <p>Đang xử lý</p>
-                    </div>
+                    <div className={styles.statIcon} style={{ background: '#dbeafe' }}><FaExclamationCircle style={{ color: '#3b82f6' }} /></div>
+                    <div className={styles.statContent}><h3>{getStatCount('IN_PROGRESS')}</h3><p>Đang xử lý</p></div>
                 </div>
             </div>
 
@@ -345,9 +355,7 @@ const WarrantyApproval = () => {
                         <tbody>
                             {filteredClaims.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className={styles.noData}>
-                                        Không có dữ liệu
-                                    </td>
+                                    <td colSpan={7} className={styles.noData}>Không có dữ liệu</td>
                                 </tr>
                             ) : (
                                 filteredClaims.map((claim) => (
@@ -357,8 +365,8 @@ const WarrantyApproval = () => {
                                             <div className={styles.customerInfo}>
                                                 <FaUser />
                                                 <div>
-                                                    <div>{claim.customer?.fullName}</div>
-                                                    <small>{claim.customer?.email}</small>
+                                                    <div>{claim.customer.fullName}</div>
+                                                    <small>{claim.customer.email}</small>
                                                 </div>
                                             </div>
                                         </td>
@@ -366,24 +374,21 @@ const WarrantyApproval = () => {
                                             <div className={styles.vehicleInfo}>
                                                 <FaCar />
                                                 <div>
-                                                    <div>{claim.vehicle?.model}</div>
-                                                    <small>{claim.vehicle?.vin}</small>
+                                                    <div>{claim.vehicle.model}</div>
+                                                    <small>{claim.vehicle.vin}</small>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className={styles.issueDesc}>
-                                            {claim.issueDescription?.substring(0, 50)}
-                                            {claim.issueDescription?.length > 50 && '...'}
+                                            {claim.issueDescription.substring(0, 50)}
+                                            {claim.issueDescription.length > 50 && '...'}
                                         </td>
                                         <td>{new Date(claim.createdDate).toLocaleDateString('vi-VN')}</td>
                                         <td>{getStatusBadge(claim.status)}</td>
                                         <td>
                                             <div className={styles.actions}>
                                                 <button
-                                                    onClick={() => {
-                                                        setSelectedClaim(claim);
-                                                        setShowDetailModal(true);
-                                                    }}
+                                                    onClick={() => { setSelectedClaim(claim); setShowDetailModal(true); }}
                                                     className={styles.viewButton}
                                                     title="Xem chi tiết"
                                                 >
@@ -392,20 +397,14 @@ const WarrantyApproval = () => {
                                                 {claim.status === 'PENDING' && (
                                                     <>
                                                         <button
-                                                            onClick={() => {
-                                                                setSelectedClaim(claim);
-                                                                setShowApproveModal(true);
-                                                            }}
+                                                            onClick={() => { setSelectedClaim(claim); setShowApproveModal(true); }}
                                                             className={styles.approveButton}
                                                             title="Phê duyệt"
                                                         >
                                                             <FaCheck />
                                                         </button>
                                                         <button
-                                                            onClick={() => {
-                                                                setSelectedClaim(claim);
-                                                                setShowRejectModal(true);
-                                                            }}
+                                                            onClick={() => { setSelectedClaim(claim); setShowRejectModal(true); }}
                                                             className={styles.rejectButton}
                                                             title="Từ chối"
                                                         >
@@ -413,16 +412,13 @@ const WarrantyApproval = () => {
                                                         </button>
                                                     </>
                                                 )}
-                                                {claim.status === 'APPROVED' && (
+                                                {(claim.status === 'APPROVED' || claim.status === 'MISSING_PARTS') && (
                                                     <button
-                                                        onClick={() => {
-                                                            setSelectedClaim(claim);
-                                                            setShowShipPartsModal(true);
-                                                        }}
+                                                        onClick={() => openShipPartsModal(claim)}
                                                         className={styles.shipButton}
-                                                        title="Giao phụ tùng"
+                                                        title={claim.status === 'MISSING_PARTS' ? 'Giao phụ tùng thiếu' : 'Giao phụ tùng'}
                                                     >
-                                                        <FaTruck /> Giao hàng
+                                                        <FaTruck /> {claim.status === 'MISSING_PARTS' ? 'Giao phụ tùng thiếu' : 'Giao phụ tùng'}
                                                     </button>
                                                 )}
                                             </div>
@@ -441,113 +437,56 @@ const WarrantyApproval = () => {
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <h2>Chi tiết yêu cầu bảo hành</h2>
-                            <button onClick={() => setShowDetailModal(false)} className={styles.closeButton}>
-                                <FaTimes />
-                            </button>
+                            <button onClick={() => setShowDetailModal(false)} className={styles.closeButton}><FaTimes /></button>
                         </div>
                         <div className={styles.modalBody}>
                             <div className={styles.detailGrid}>
-                                <div className={styles.detailItem}>
-                                    <label>Mã Claim:</label>
-                                    <p>{selectedClaim.claimNumber}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>Trạng thái:</label>
-                                    <p>{getStatusBadge(selectedClaim.status)}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>Khách hàng:</label>
-                                    <p>{selectedClaim.customer?.fullName}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>Email:</label>
-                                    <p>{selectedClaim.customer?.email}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>Model xe:</label>
-                                    <p>{selectedClaim.vehicle?.model}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>VIN:</label>
-                                    <p>{selectedClaim.vehicle?.vin}</p>
-                                </div>
-                                <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
-                                    <label>Mô tả vấn đề:</label>
-                                    <p>{selectedClaim.issueDescription}</p>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <label>Ngày tạo:</label>
-                                    <p>{new Date(selectedClaim.createdDate).toLocaleString('vi-VN')}</p>
-                                </div>
-
-                                {/* Linh kiện bị ảnh hưởng */}
-                                {selectedClaim.affectedParts && selectedClaim.affectedParts.length > 0 && (
+                                <div className={styles.detailItem}><label>Mã Claim:</label><p>{selectedClaim.claimNumber}</p></div>
+                                <div className={styles.detailItem}><label>Trạng thái:</label><p>{getStatusBadge(selectedClaim.status)}</p></div>
+                                <div className={styles.detailItem}><label>Khách hàng:</label><p>{selectedClaim.customer.fullName}</p></div>
+                                <div className={styles.detailItem}><label>Email:</label><p>{selectedClaim.customer.email}</p></div>
+                                <div className={styles.detailItem}><label>Model xe:</label><p>{selectedClaim.vehicle.model}</p></div>
+                                <div className={styles.detailItem}><label>VIN:</label><p>{selectedClaim.vehicle.vin}</p></div>
+                                <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}><label>Mô tả vấn đề:</label><p>{selectedClaim.issueDescription}</p></div>
+                                <div className={styles.detailItem}><label>Ngày tạo:</label><p>{new Date(selectedClaim.createdDate).toLocaleString('vi-VN')}</p></div>
+                                {selectedClaim.affectedParts?.length > 0 && (
                                     <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
                                         <label>Linh kiện bị ảnh hưởng:</label>
                                         <div className={styles.partsList}>
-                                            {selectedClaim.affectedParts.map((part) => (
-                                                <div key={part.partID} className={styles.partItem}>
-                                                    <div>
-                                                        <strong>{part.partName}</strong>
-                                                        <span className={styles.partSerial}> (SN: {part.partSerialNumber})</span>
-                                                    </div>
-                                                    {part.description && (
-                                                        <p className={styles.partDesc}>{part.description}</p>
-                                                    )}
+                                            {selectedClaim.affectedParts.map(part => (
+                                                <div key={part.claimPartID} className={styles.partItem}>
+                                                    <div><strong>{part.partTypeName}</strong><span className={styles.partSerial}> (SN: {part.partSerialNumber})</span></div>
+                                                    {part.description && <p className={styles.partDesc}>{part.description}</p>}
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Hình ảnh và tài liệu đính kèm */}
-                                {selectedClaim.attachments && selectedClaim.attachments.length > 0 && (
+                                {selectedClaim.attachments?.length > 0 && (
                                     <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
-                                        <label>
-                                            <FaFileAlt /> Tài liệu & Hình ảnh đính kèm ({selectedClaim.attachments.length})
-                                        </label>
+                                        <label><FaFileAlt /> Tài liệu & Hình ảnh đính kèm ({selectedClaim.attachments.length})</label>
                                         <div className={styles.attachmentsList}>
-                                            {selectedClaim.attachments.map((attachment) => {
-                                                const isImage = attachment.fileType?.toLowerCase().includes('image') ||
-                                                    /\.(jpg|jpeg|png|gif|webp)$/i.test(attachment.fileName);
-
+                                            {selectedClaim.attachments.map(att => {
+                                                const isImage = att.fileType?.toLowerCase().includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(att.fileName);
                                                 return (
-                                                    <div key={attachment.attachmentID} className={styles.attachmentItem}>
+                                                    <div key={att.attachmentID} className={styles.attachmentItem}>
                                                         {isImage ? (
                                                             <div className={styles.imagePreview}>
-                                                                <img
-                                                                    src={attachment.fileUrl}
-                                                                    alt={attachment.fileName}
-                                                                    className={styles.thumbnailImage}
-                                                                />
+                                                                <img src={att.fileUrl} alt={att.fileName} className={styles.thumbnailImage} />
                                                                 <div className={styles.imageOverlay}>
-                                                                    <a
-                                                                        href={attachment.fileUrl}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className={styles.viewImageButton}
-                                                                    >
+                                                                    <a href={att.fileUrl} target="_blank" rel="noopener noreferrer" className={styles.viewImageButton}>
                                                                         <FaExternalLinkAlt /> Xem đầy đủ
                                                                     </a>
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <div className={styles.filePreview}>
-                                                                <FaFileAlt className={styles.fileIcon} />
-                                                            </div>
+                                                            <div className={styles.filePreview}><FaFileAlt className={styles.fileIcon} /></div>
                                                         )}
                                                         <div className={styles.attachmentInfo}>
-                                                            <p className={styles.fileName}>{attachment.fileName}</p>
-                                                            <p className={styles.fileDate}>
-                                                                {new Date(attachment.uploadDate).toLocaleDateString('vi-VN')}
-                                                            </p>
+                                                            <p className={styles.fileName}>{att.fileName}</p>
+                                                            <p className={styles.fileDate}>{new Date(att.uploadDate).toLocaleDateString('vi-VN')}</p>
                                                             {!isImage && (
-                                                                <a
-                                                                    href={attachment.fileUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className={styles.downloadLink}
-                                                                >
+                                                                <a href={att.fileUrl} target="_blank" rel="noopener noreferrer" className={styles.downloadLink}>
                                                                     <FaExternalLinkAlt /> Xem tài liệu
                                                                 </a>
                                                             )}
@@ -558,14 +497,10 @@ const WarrantyApproval = () => {
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Kết quả xử lý */}
                                 {selectedClaim.result && (
                                     <div className={styles.detailItem} style={{ gridColumn: '1 / -1' }}>
                                         <label>Kết quả xử lý:</label>
-                                        <div className={styles.resultBox}>
-                                            <p>{selectedClaim.result}</p>
-                                        </div>
+                                        <div className={styles.resultBox}><p>{selectedClaim.result}</p></div>
                                     </div>
                                 )}
                             </div>
@@ -581,14 +516,8 @@ const WarrantyApproval = () => {
                         <h3>Xác nhận phê duyệt</h3>
                         <p>Bạn có chắc chắn muốn phê duyệt yêu cầu {selectedClaim.claimNumber}?</p>
                         <div className={styles.confirmActions}>
-                            <button onClick={() => setShowApproveModal(false)} className={styles.btnCancel}>
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleApproveClaim}
-                                className={styles.btnApprove}
-                                disabled={loading}
-                            >
+                            <button onClick={() => setShowApproveModal(false)} className={styles.btnCancel}>Hủy</button>
+                            <button onClick={handleApproveClaim} className={styles.btnApprove} disabled={loading}>
                                 {loading ? 'Đang xử lý...' : 'Phê duyệt'}
                             </button>
                         </div>
@@ -602,9 +531,7 @@ const WarrantyApproval = () => {
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
                             <h2>Từ chối yêu cầu bảo hành</h2>
-                            <button onClick={() => setShowRejectModal(false)} className={styles.closeButton}>
-                                <FaTimes />
-                            </button>
+                            <button onClick={() => setShowRejectModal(false)} className={styles.closeButton}><FaTimes /></button>
                         </div>
                         <div className={styles.modalBody}>
                             <div className={styles.formGroup}>
@@ -619,14 +546,8 @@ const WarrantyApproval = () => {
                             </div>
                         </div>
                         <div className={styles.modalFooter}>
-                            <button onClick={() => setShowRejectModal(false)} className={styles.cancelButton}>
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleRejectClaim}
-                                className={styles.rejectButtonMain}
-                                disabled={loading}
-                            >
+                            <button onClick={() => setShowRejectModal(false)} className={styles.cancelButton}>Hủy</button>
+                            <button onClick={handleRejectClaim} className={styles.rejectButtonMain} disabled={loading || !rejectReason.trim()}>
                                 {loading ? 'Đang xử lý...' : 'Từ chối'}
                             </button>
                         </div>
@@ -638,35 +559,67 @@ const WarrantyApproval = () => {
             {showShipPartsModal && selectedClaim && (
                 <div className={styles.modalOverlay} onClick={() => setShowShipPartsModal(false)}>
                     <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
-                        <h3>Xác nhận giao phụ tùng</h3>
-                        <p>
-                            Bạn có chắc chắn muốn tạo yêu cầu giao phụ tùng cho đơn <strong>{selectedClaim.claimNumber}</strong>?
-                        </p>
-                        <p className={styles.infoText}>
-                            <FaTruck /> Hệ thống sẽ tự động tạo phiếu xuất kho và phân phối phụ tùng đến trung tâm bảo hành.
-                        </p>
-                        {selectedClaim.affectedParts && selectedClaim.affectedParts.length > 0 && (
-                            <div className={styles.partsListPreview}>
-                                <strong>Phụ tùng cần giao:</strong>
-                                <ul>
-                                    {selectedClaim.affectedParts.map((part) => (
-                                        <li key={part.partID}>
-                                            {part.partName} (SN: {part.partSerialNumber})
-                                        </li>
-                                    ))}
-                                </ul>
+                        <h3>{selectedClaim.status === 'MISSING_PARTS' ? 'Xác nhận giao phụ tùng thiếu' : 'Xác nhận giao phụ tùng'}</h3>
+                        <p>Bạn có chắc chắn muốn tạo yêu cầu giao phụ tùng cho đơn <strong>{selectedClaim.claimNumber}</strong>?</p>
+                        {selectedClaim.status === 'MISSING_PARTS' && (
+                            <div className={styles.infoText} style={{ background: '#f0f7ff' }}>
+                                Một số phụ tùng bị thiếu ở lần giao trước. Thực hiện giao bổ sung.
                             </div>
                         )}
+                        <div className={styles.infoText}>
+                            <FaTruck /> Hệ thống sẽ tự động tạo phiếu xuất kho và phân phối phụ tùng đến trung tâm bảo hành.
+                        </div>
+                        {modalLoading ? (
+                            <p className={styles.loading}>Đang tải chi tiết phụ tùng...</p>
+                        ) : (() => {
+                            const isSupplement = selectedClaim.status === 'MISSING_PARTS';
+                            const allParts = selectedClaim.affectedParts || [];
+                            const displayParts = isSupplement
+                                ? allParts.filter(p => p.missingQuantity && p.missingQuantity > 0)
+                                : allParts; // show all requested parts when approved
+                            return (
+                                <div className={styles.partsBox}>
+                                    <h4>Phụ tùng cần giao:</h4>
+                                    <table className={styles.partsTable}>
+                                        <thead>
+                                            <tr>
+                                                <th>Tên phụ tùng</th>
+                                                <th>SN</th>
+                                                <th>{isSupplement ? 'Bổ sung' : 'Số lượng'}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {displayParts.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={3} className={styles.noMissing}>
+                                                        {isSupplement ? 'Không có phụ tùng thiếu cần bổ sung' : 'Không có phụ tùng cần giao'}
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {displayParts.map(p => (
+                                                <tr key={p.claimPartID}>
+                                                    <td className={styles.partNameCell}>{p.partTypeName}</td>
+                                                    <td>{p.partSerialNumber}</td>
+                                                    <td>
+                                                        {isSupplement ? (
+                                                            <span className={styles.missingBadge}>+ {p.missingQuantity}</span>
+                                                        ) : (
+                                                            <span className={styles.missingBadge} style={{ background: '#10b981' }}>
+                                                                {typeof p.quantity === 'number' ? p.quantity : '-'}
+                                                            </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            );
+                        })()}
                         <div className={styles.confirmActions}>
-                            <button onClick={() => setShowShipPartsModal(false)} className={styles.btnCancel}>
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleShipParts}
-                                className={styles.btnShip}
-                                disabled={loading}
-                            >
-                                {loading ? 'Đang xử lý...' : '🚚 Xác nhận giao hàng'}
+                            <button onClick={() => setShowShipPartsModal(false)} className={styles.btnCancel}>Hủy</button>
+                            <button onClick={handleShipParts} className={styles.btnApprove} disabled={loading || modalLoading}>
+                                {loading ? 'Đang xử lý...' : (selectedClaim.status === 'MISSING_PARTS' ? 'Giao phụ tùng thiếu' : 'Giao phụ tùng')}
                             </button>
                         </div>
                     </div>

@@ -1,8 +1,8 @@
 // Wrapper component to inject serviceCenterID from auth context
 import { useAuth } from "@/pages/Login/feature/AuthContext";
 import { useNavigate } from "react-router";
-import WarrantyList from "@/pages/SC_Technician/ManageWarranty/features/WarrantyList";
-import type { WarrantyClaimResponse } from "@/pages/SC_Technician/ManageWarranty/types/warranty";
+import WarrantyList from "@/pages/SC_Staff/ManageWarranty/features/WarrantyList";
+import type { WarrantyClaimResponse } from "@/pages/SC_Staff/ManageWarranty/types/warranty";
 
 export default function WarrantyListWithAuth() {
   const { user } = useAuth();

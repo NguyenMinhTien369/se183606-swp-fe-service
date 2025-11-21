@@ -5,7 +5,7 @@ import Home from "@/pages/Home/Home";
 import LOGIN_ROUTE from "@/constants/loginrouter";
 import { ResetPasswordFlow } from "@/pages/Auth";
 
-import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
+import ROUTERS_PATH from "@/constants/routers";
 import { scStaffRoutes } from "./components/scStaffRoutes";
 import { technicianRoutes } from "./components/technicianRoutes";
 import { evmStaffRoutes } from "./components/evmStaffRoutes";
