@@ -331,7 +331,7 @@ const WarrantyApproval = () => {
                 </div>
                 <div className={styles.statCard}>
                     <div className={styles.statIcon} style={{ background: '#dbeafe' }}><FaExclamationCircle style={{ color: '#3b82f6' }} /></div>
-                    <div className={styles.statContent}><h3>{getStatCount('IN_PROGRESS')}</h3><p>Đang xử lý</p></div>
+                    <div className={styles.statContent}><h3>{getStatCount('COMPLETED')}</h3><p>Hoàn Thành</p></div>
                 </div>
             </div>
 

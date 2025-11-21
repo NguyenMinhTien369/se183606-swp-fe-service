@@ -153,26 +153,30 @@ export default function TechnicianDashboard() {
         const now = new Date();
         const monthlyMap = new Map<string, { claims: number; completed: number }>();
 
-        // Initialize last 6 months
         for (let i = 5; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const monthKey = `${months[date.getMonth()]}`;
             monthlyMap.set(monthKey, { claims: 0, completed: 0 });
         }
 
-        // Count claims per month
         claims.forEach((claim: any) => {
-            if (claim.creationDate) {
-                const claimDate = new Date(claim.creationDate);
+            const dateStr = claim.creationDate || claim.createdDate;
+
+            if (dateStr) {
+                const claimDate = new Date(dateStr);
                 const monthKey = months[claimDate.getMonth()];
 
                 if (monthlyMap.has(monthKey)) {
                     const data = monthlyMap.get(monthKey)!;
                     data.claims++;
 
-                    if (claim.status?.toUpperCase() === 'APPROVED' ||
-                        claim.status?.toUpperCase() === 'COMPLETED' ||
-                        claim.status?.toUpperCase() === 'RESOLVED') {
+                    const status = claim.status?.toUpperCase() || '';
+                    const completedStatuses = [
+                        'APPROVED', 'COMPLETED', 'RESOLVED',
+                        'ĐƯỢC CHẤP NHẬN', 'ĐÃ DUYỆT', 'HOÀN THÀNH', 'ĐÃ HOÀN THÀNH'
+                    ];
+
+                    if (completedStatuses.includes(status)) {
                         data.completed++;
                     }
                     monthlyMap.set(monthKey, data);
