@@ -43,6 +43,7 @@ export const ROLE_ACCESSIBLE_ROUTES: Record<string, string[]> = {
     "/evm/products", // Quản lý products
     "/evm/campaigns", // Quản lý chiến dịch
     "/evm/warranty-approval", // Duyệt bảo hành
+    "/evm/inventory", // Quản lý tồn kho
   ],
   [ROLES.SC_STAFF]: [
     "/sc-staff/dashboard", // SC Staff Dashboard
@@ -78,6 +79,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     "view_warranty_claims",
     "manage_parts",
     "view_reports",
+    "manage_inventory",
   ],
   [ROLES.SC_STAFF]: [
     "manage_customers",

@@ -58,6 +58,25 @@ interface AssignTechnicianRequest {
   internalNotes?: string; // Backend dùng 'internalNotes'
 }
 
+// ==================== INVENTORY TYPES ====================
+export interface PartInventoryRequest {
+  partSerialNumber: string;
+  partName?: string; // Backend có thể không cần, nhưng UI cần để hiển thị form
+  quantity: number;
+  location: string;
+  minQuantity?: number; // Dùng cho logic cảnh báo low-stock
+}
+
+export interface PartInventoryResponse {
+  inventoryId: number;
+  partSerialNumber: string;
+  partName: string;
+  quantity: number;
+  location: string;
+  lastUpdated: string;
+  // Thêm các trường khác nếu backend trả về
+}
+
 // UpdateAssignmentRequest.java - Backend yêu cầu multipart/form-data
 // Không cần interface, sử dụng FormData trực tiếp khi gọi updateAssignmentProgress()
 
@@ -447,4 +466,41 @@ export const partDistributionAPI = {
     axiosInstance.get(
       `/distributions/part/${serialNumber}/service-center/${serviceCenterId}`
     ),
+};
+// ==================== INVENTORY API ====================
+export const inventoryAPI = {
+  // @GetMapping
+  getAllInventories: () =>
+    axiosInstance.get("/inventory"),
+
+  // @GetMapping("/part/{serialNumber}")
+  getInventoryByPart: (serialNumber: string) =>
+    axiosInstance.get(`/inventory/part/${serialNumber}`),
+
+  // @PostMapping
+  createOrUpdateInventory: (data: PartInventoryRequest) =>
+    axiosInstance.post("/inventory", data),
+
+  // @PutMapping("/{partSerialNumber}")
+  updateInventory: (serialNumber: string, data: PartInventoryRequest) =>
+    axiosInstance.put(`/inventory/${serialNumber}`, data),
+
+  // @PutMapping("/{partSerialNumber}/quantity")
+  // Lưu ý: Backend nhận param "quantity" là Integer (số lượng MỚI, không phải số cộng thêm)
+  updateInventoryQuantity: (serialNumber: string, quantity: number) =>
+    axiosInstance.put(`/inventory/${serialNumber}/quantity`, null, {
+      params: { quantity },
+    }),
+
+  // @DeleteMapping("/{partSerialNumber}")
+  deleteInventory: (serialNumber: string) =>
+    axiosInstance.delete(`/inventory/${serialNumber}`),
+
+  // @GetMapping("/low-stock")
+  getLowStockParts: (minQuantity: number = 10) =>
+    axiosInstance.get("/inventory/low-stock", { params: { minQuantity } }),
+
+  // @GetMapping("/location")
+  getInventoryByLocation: (location: string) =>
+    axiosInstance.get("/inventory/location", { params: { location } }),
 };

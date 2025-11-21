@@ -8,8 +8,9 @@ import NotFound from "@/pages/NotFound";
 // EVM Staff Pages
 import {
     EVMDashboard,
-    CampaignManagement,
     WarrantyClaims,
+    InventoryManagement,
+    ProductManagement,
 } from "@/pages/EVM_Staff";
 
 export const evmStaffRoutes = {
@@ -29,12 +30,16 @@ export const evmStaffRoutes = {
             element: <EVMDashboard />,
         },
         {
-            path: RELATIVE_PATHS.CAMPAIGNS,
-            element: <CampaignManagement />,
+            path: RELATIVE_PATHS.PRODUCT_MANAGEMENT,
+            element: <ProductManagement />,
         },
         {
             path: RELATIVE_PATHS.WARRANTY_CLAIMS,
             element: <WarrantyClaims />,
+        },
+        {
+            path: RELATIVE_PATHS.INVENTORY,
+            element: <InventoryManagement />,
         },
         { path: "*", element: <NotFound /> },
     ],

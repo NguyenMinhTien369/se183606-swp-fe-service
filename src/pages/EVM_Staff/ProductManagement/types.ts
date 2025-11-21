@@ -6,6 +6,7 @@ export interface Vehicle {
     productModelID: number;
     productModelName?: string;
     customerID: number;
+    batteryCapacity: number;
     customerName?: string;
     notes?: string;
 }

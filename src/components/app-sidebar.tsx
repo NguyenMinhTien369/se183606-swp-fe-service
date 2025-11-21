@@ -7,12 +7,12 @@ import {
   LayoutDashboard,
   Package,
   CheckCircle,
-  Megaphone,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
 import { ROLES } from "@/utils/constants";
+import { Box } from "lucide-react";
 
 import {
   Sidebar,
@@ -76,17 +76,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {
           title: "Quản Lý Sản Phẩm",
           icon: <Package className="size-4" />,
-          to: "/evm/products",
-        },
-        {
-          title: "Quản Lý Chiến Dịch",
-          icon: <Megaphone className="size-4" />,
-          to: ROUTERS_PATH.EVM_CAMPAIGNS,
+          to: ROUTERS_PATH.EVM_PRODUCT_MANAGEMENT,
         },
         {
           title: "Quản Lý Đơn Bảo Hành",
           icon: <CheckCircle className="size-4" />,
           to: ROUTERS_PATH.EVM_WARRANTY_CLAIMS,
+        },
+        {
+          title: "Quản Lý Kho",
+          icon: <Box className="size-4" />,
+          to: ROUTERS_PATH.EVM_INVENTORY,
         },
       ];
     }
@@ -108,8 +108,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Quản Lí Nội Bộ",
           icon: <Building2 className="size-4" />,
           to: ROUTERS_PATH.INTERNAL_MANAGEMENT,
-        },       
-         {
+        },
+        {
           title: "Tạo Bảo Hành",
           icon: <ClipboardPlus className="size-4" />,
           to: ROUTERS_PATH.MANAGE_WARRANTY,
