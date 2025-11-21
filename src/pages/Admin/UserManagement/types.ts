@@ -21,6 +21,7 @@ export interface User {
     roleId: number;
     serviceCenter?: ServiceCenter;
     createdDate: string;
+    status?: 'ACTIVE' | 'INACTIVE' | string;
 }
 
 export interface UserFormData {

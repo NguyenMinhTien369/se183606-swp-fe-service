@@ -129,6 +129,7 @@ const UserModal: React.FC<UserModalProps> = ({
         }
     };
 
+
     if (!isOpen) return null;
 
     return (

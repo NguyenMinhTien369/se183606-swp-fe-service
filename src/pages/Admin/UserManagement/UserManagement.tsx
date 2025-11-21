@@ -51,7 +51,8 @@ const UserManagement: React.FC = () => {
                     email: user.serviceCenter.email,
                     address: user.serviceCenter.address
                 } : undefined,
-                createdDate: user.createdDate || new Date().toISOString()
+                createdDate: user.createdDate || new Date().toISOString(),
+                status: user.status || (user.isActive ? 'ACTIVE' : 'INACTIVE') || 'ACTIVE',
             }));
 
             setUsers(mappedUsers);
@@ -153,6 +154,31 @@ const UserManagement: React.FC = () => {
             setLoading(false);
         }
     };
+    const handleToggleStatus = async (user: User) => {
+        try {
+            setLoading(true);
+
+            // Kiểm tra trạng thái hiện tại để gọi API đúng
+            // Giả sử trạng thái 'ACTIVE' là đang hoạt động
+            if (user.status === 'ACTIVE') {
+                // Nếu đang Active -> Gọi API Vô hiệu hóa
+                await userAPI.deactivateUser(user.id);
+                alert(`Đã vô hiệu hóa tài khoản ${user.username}`);
+            } else {
+                // Ngược lại -> Gọi API Kích hoạt
+                await userAPI.activateUser(user.id);
+                alert(`Đã kích hoạt lại tài khoản ${user.username}`);
+            }
+            fetchUsers();
+
+        } catch (error: any) {
+            console.error('Error changing user status:', error);
+            const message = error.response?.data?.message || "Không thể thay đổi trạng thái";
+            alert(`Lỗi: ${message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredUsers = users.filter(user => {
         const matchesSearch =
@@ -224,6 +250,7 @@ const UserManagement: React.FC = () => {
                         users={filteredUsers}
                         onEdit={(user) => handleOpenModal('edit', user)}
                         onDelete={handleDelete}
+                        onToggleStatus={handleToggleStatus}
                     />
                 </div>
             )}
