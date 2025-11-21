@@ -43,8 +43,13 @@ export default function CreateWarrantyForm({
   initialSelectedParts = [],
 }: CreateWarrantyFormProps) {
   const [description, setDescription] = useState(initialDescription);
-  const [selectedParts, setSelectedParts] =
-    useState<ClaimPartRequest[]>(initialSelectedParts);
+  const [selectedParts, setSelectedParts] = useState<ClaimPartRequest[]>(
+    initialSelectedParts.map((p) => ({
+      ...p,
+      quantity:
+        typeof p.quantity === "number" && p.quantity > 0 ? p.quantity : 1,
+    }))
+  );
   const [partDescriptions, setPartDescriptions] = useState<
     Record<string, string>
   >(() => {
@@ -69,24 +74,35 @@ export default function CreateWarrantyForm({
           {
             partSerialNumber,
             description: partDescriptions[partSerialNumber] || "",
+            quantity: 1, // default quantity
           },
         ];
       }
     });
   };
 
-  const handlePartDescriptionChange = (
+  const handlePartDetailChange = (
     partSerialNumber: string,
-    desc: string
+    field: "description" | "quantity",
+    value: string | number
   ) => {
-    setPartDescriptions((prev) => ({ ...prev, [partSerialNumber]: desc }));
     setSelectedParts((prev) =>
       prev.map((p) =>
         p.partSerialNumber === partSerialNumber
-          ? { ...p, description: desc }
+          ? {
+              ...p,
+              [field]:
+                field === "quantity" ? Math.max(1, Number(value) || 1) : value,
+            }
           : p
       )
     );
+    if (field === "description") {
+      setPartDescriptions((prev) => ({
+        ...prev,
+        [partSerialNumber]: String(value),
+      }));
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,6 +124,13 @@ export default function CreateWarrantyForm({
       console.log("Vui lòng chọn ít nhất một phụ tùng cần bảo hành.");
       return false;
     }
+    // Validate quantities
+    for (const part of selectedParts) {
+      if (!part.quantity || part.quantity <= 0) {
+        console.log("Số lượng phải lớn hơn 0");
+        return false;
+      }
+    }
     return true;
   };
 
@@ -117,7 +140,7 @@ export default function CreateWarrantyForm({
     formData.append("serviceCenterID", serviceCenterID.toString());
     formData.append("description", description);
 
-    // ✅ FIX: Gửi từng claimPart như array elements cho Spring Boot
+    // ✅ Gửi từng claimPart như array elements cho Spring Boot + quantity
     selectedParts.forEach((part, index) => {
       formData.append(
         `claimParts[${index}].partSerialNumber`,
@@ -126,6 +149,10 @@ export default function CreateWarrantyForm({
       formData.append(
         `claimParts[${index}].description`,
         part.description || ""
+      );
+      formData.append(
+        `claimParts[${index}].quantity`,
+        String(part.quantity ?? 1)
       );
     });
 
@@ -300,44 +327,73 @@ export default function CreateWarrantyForm({
                 </Label>
                 <div className="border rounded-md p-3 space-y-3 max-h-64 overflow-y-auto">
                   {installedParts.map((part, index) => {
-                    const isSelected = selectedParts.some(
+                    const selectedPart = selectedParts.find(
                       (p) => p.partSerialNumber === part.partSerialNumber
                     );
+                    const isSelected = !!selectedPart;
                     return (
                       <div
                         key={`${part.partSerialNumber}-${index}`}
                         className="space-y-2"
                       >
-                        <div className="flex items-start space-x-2">
-                          <Checkbox
-                            id={part.partSerialNumber}
-                            checked={isSelected}
-                            onCheckedChange={() =>
-                              handlePartToggle(part.partSerialNumber)
-                            }
-                            disabled={loading}
-                          />
-                          <Label
-                            htmlFor={part.partSerialNumber}
-                            className="flex-1 cursor-pointer"
-                          >
-                            <div className="font-medium">
-                              {part.partTypeName}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-start space-x-2">
+                            <Checkbox
+                              id={part.partSerialNumber}
+                              checked={isSelected}
+                              onCheckedChange={() =>
+                                handlePartToggle(part.partSerialNumber)
+                              }
+                              disabled={loading}
+                            />
+                            <Label
+                              htmlFor={part.partSerialNumber}
+                              className="flex-1 cursor-pointer"
+                            >
+                              <div className="font-medium">
+                                {part.partTypeName}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                SN: {part.partSerialNumber}
+                              </div>
+                            </Label>
+                          </div>
+
+                          {isSelected && (
+                            <div className="flex items-center gap-2">
+                              <Label
+                                htmlFor={`qty-${part.partSerialNumber}`}
+                                className="text-xs text-muted-foreground"
+                              >
+                                SL
+                              </Label>
+                              <Input
+                                id={`qty-${part.partSerialNumber}`}
+                                type="number"
+                                min="1"
+                                value={selectedPart?.quantity ?? 1}
+                                onChange={(e) =>
+                                  handlePartDetailChange(
+                                    part.partSerialNumber,
+                                    "quantity",
+                                    e.target.value
+                                  )
+                                }
+                                disabled={loading}
+                                className="w-20 h-8 text-sm"
+                              />
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              SN: {part.partSerialNumber}
-                            </div>
-                          </Label>
+                          )}
                         </div>
+
                         {isSelected && (
                           <Input
                             placeholder="Mô tả chi tiết lỗi của phụ tùng này (tùy chọn)"
-                            value={
-                              partDescriptions[part.partSerialNumber] || ""
-                            }
+                            value={selectedPart?.description || ""}
                             onChange={(e) =>
-                              handlePartDescriptionChange(
+                              handlePartDetailChange(
                                 part.partSerialNumber,
+                                "description",
                                 e.target.value
                               )
                             }
