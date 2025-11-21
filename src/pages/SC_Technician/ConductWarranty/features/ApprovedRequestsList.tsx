@@ -35,8 +35,10 @@ import type {
 } from "../types/warranty";
 
 interface ApprovedRequestsListProps {
+  selectedRequest?: any;
   onSelectRequest?: (request: ClaimDetailsWithAssignment) => void;
   onNextStep?: () => void;
+  onComplete?: () => void;
 }
 
 // State nội bộ để quản lý chi tiết
