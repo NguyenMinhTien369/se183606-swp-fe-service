@@ -2,6 +2,15 @@ import { useState, useEffect } from "react";
 import type { WarrantyClaimResponse } from "../types/warranty";
 import { warrantyClaimAPI } from "@/utility/index";
 import WarrantyDetailsDialog from "./WarrantyDetailsDialog";
+// Thêm các icon này vào dòng import ở đầu file
+import {
+  Clock, // Icon cho Chờ duyệt
+  CheckCircle2, // Icon cho Đã duyệt (dùng CheckCircle2 đẹp hơn)
+  XCircle, // Icon cho Từ chối
+  Truck, // Icon cho Đang giao hàng
+  FileText, // Icon cho Nháp
+  RefreshCw, // Icon cho Đang xử lý
+} from "lucide-react";
 
 import {
   Card,
@@ -33,16 +42,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 import { Edit, Search, Trash2, Loader2 } from "lucide-react";
+import SuccessDelete from "../AlertComponents/SuccessDelete";
 
 interface WarrantyListProps {
   serviceCenterID: number;
@@ -84,10 +86,7 @@ export default function WarrantyList({
       );
 
       setClaims(sortedClaims);
-      console.log(
-        "✅ Loaded warranty claims (sorted by newest):",
-        sortedClaims
-      );
+      console.log("Loaded warranty claims (sorted by newest):", sortedClaims);
     } catch (error) {
       console.error("Error loading claims:", error);
       console.log("Không thể tải danh sách yêu cầu bảo hành");
@@ -141,42 +140,49 @@ export default function WarrantyList({
     const configs: Record<
       string,
       {
-        label: string;
-        color: string;
-        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string; // Tên hiển thị
+        className: string; // Class màu sắc (bg + text)
+        icon: any; // Component Icon
       }
     > = {
       Nháp: {
-        label: "📝 Nháp",
-        color: "bg-gray-100 text-gray-800",
-        variant: "outline",
+        label: "Bản nháp",
+        className: "bg-gray-100 text-gray-600 hover:bg-gray-200",
+        icon: FileText,
       },
       "Chờ duyệt": {
-        label: "🟡 Chờ duyệt",
-        color: "bg-yellow-100 text-yellow-800",
-        variant: "outline",
+        label: "Chờ duyệt",
+        className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", // Vàng cam
+        icon: Clock,
       },
       "Được chấp nhận": {
-        label: "🟢 Được chấp nhận",
-        color: "bg-green-100 text-green-800",
-        variant: "default",
+        label: "Đã duyệt", // Đổi text hiển thị cho giống hình
+        className: "bg-green-100 text-green-700 hover:bg-green-200", // Xanh lá
+        icon: CheckCircle2,
+      },
+      "Đang giao phụ tùng": {
+        label: "Đang giao hàng", // Đổi text cho giống hình
+        className: "bg-purple-100 text-purple-700 hover:bg-purple-200", // Tím
+        icon: Truck,
       },
       "Đang xử lý": {
-        label: "🔵 Đang xử lý",
-        color: "bg-blue-100 text-blue-800",
-        variant: "secondary",
+        label: "Đang xử lý",
+        className: "bg-blue-100 text-blue-700 hover:bg-blue-200", // Xanh dương
+        icon: RefreshCw,
       },
       "Hoàn thành": {
-        label: "✅ Hoàn thành",
-        color: "bg-green-100 text-green-800",
-        variant: "default",
+        label: "Hoàn thành",
+        className: "bg-green-100 text-green-700 hover:bg-green-200",
+        icon: CheckCircle2,
       },
       "Từ chối": {
-        label: "🔴 Từ chối",
-        color: "bg-red-100 text-red-800",
-        variant: "destructive",
+        label: "Từ chối",
+        className: "bg-red-100 text-red-700 hover:bg-red-200", // Đỏ
+        icon: XCircle,
       },
     };
+
+    // Mặc định nếu không tìm thấy status
     return configs[status] || configs["Chờ duyệt"];
   };
 
@@ -189,7 +195,7 @@ export default function WarrantyList({
     return matchesVin && matchesStatus;
   });
 
-  // ✅ Đồng bộ với backend: chỉ cho phép edit "Chờ duyệt" hoặc "Nháp"
+  // chỉ cho phép edit "Chờ duyệt" hoặc "Nháp"
   const canEdit = (status: string) =>
     status === "Chờ duyệt" || status === "Nháp";
 
@@ -222,14 +228,15 @@ export default function WarrantyList({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem value="Nháp">📝 Nháp</SelectItem>
-                <SelectItem value="Chờ duyệt">🟡 Chờ duyệt</SelectItem>
-                <SelectItem value="Được chấp nhận">
-                  🟢 Được chấp nhận
+                <SelectItem value="Nháp">Nháp</SelectItem>
+                <SelectItem value="Chờ duyệt">Chờ duyệt</SelectItem>
+                <SelectItem value="Được chấp nhận">Được chấp nhận</SelectItem>
+                <SelectItem value="Đang giao phụ tùng">
+                  Đang giao phụ tùng
                 </SelectItem>
-                <SelectItem value="Đang xử lý">🔵 Đang xử lý</SelectItem>
-                <SelectItem value="Hoàn thành">✅ Hoàn thành</SelectItem>
-                <SelectItem value="Từ chối">🔴 Từ chối</SelectItem>
+                <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
+                <SelectItem value="Hoàn thành">Hoàn thành</SelectItem>
+                <SelectItem value="Từ chối">Từ chối</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -290,11 +297,20 @@ export default function WarrantyList({
                             )}
                           </TableCell>
                           <TableCell>
-                            <span
-                              className={`${statusConfig.color} px-2 py-1 rounded-md text-sm`}
-                            >
-                              {statusConfig.label}
-                            </span>
+                            <div className="flex items-center">
+                              <span
+                                className={`
+            flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border border-transparent transition-colors
+            ${statusConfig.className}
+          `}
+                              >
+                                {/* Render Icon với kích thước nhỏ */}
+                                <statusConfig.icon className="w-3.5 h-3.5" />
+
+                                {/* Text trạng thái */}
+                                {statusConfig.label}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell>{claim.serviceCenterName}</TableCell>
 
@@ -367,26 +383,12 @@ export default function WarrantyList({
         onClose={handleCloseDetails}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xác nhận xóa yêu cầu bảo hành</DialogTitle>
-            <DialogDescription>
-              Bạn có chắc chắn muốn xóa yêu cầu bảo hành này không? Hành động
-              này không thể hoàn tác.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={handleCancelDelete}>
-              Hủy
-            </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
-              Xóa
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SuccessDelete
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }
