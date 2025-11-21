@@ -331,7 +331,7 @@ const WarrantyApproval = () => {
                 </div>
                 <div className={styles.statCard}>
                     <div className={styles.statIcon} style={{ background: '#dbeafe' }}><FaExclamationCircle style={{ color: '#3b82f6' }} /></div>
-                    <div className={styles.statContent}><h3>{getStatCount('IN_PROGRESS')}</h3><p>Đang xử lý</p></div>
+                    <div className={styles.statContent}><h3>{getStatCount('COMPLETED')}</h3><p>Hoàn Thành</p></div>
                 </div>
             </div>
 
@@ -457,6 +457,10 @@ const WarrantyApproval = () => {
                                                 <div key={part.claimPartID} className={styles.partItem}>
                                                     <div><strong>{part.partTypeName}</strong><span className={styles.partSerial}> (SN: {part.partSerialNumber})</span></div>
                                                     {part.description && <p className={styles.partDesc}>{part.description}</p>}
+                                                    <div style={{ marginTop: '4px' }}>
+                                                        <small>SL: <strong>{part.quantity ?? '-'}</strong></small>
+                                                        {part.missingQuantity ? <small style={{ color: 'red', marginLeft: '8px' }}> (Thiếu: {part.missingQuantity})</small> : null}
+                                                    </div>
                                                 </div>
                                             ))}
                                         </div>
