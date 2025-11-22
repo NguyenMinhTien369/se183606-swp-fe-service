@@ -13,45 +13,41 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  /*
-Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
-- @param e: là một sự kiện của biểu mẫu (form event) được truyền vào khi người dùng gửi biểu mẫu đăng nhập.
-- chuyển trang dựa vào role của user sau khi đăng nhập thành công. Chuyển về trang home chứ không phải trang login nữa.
-*/
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const result = await login(formData);
-    if (result.success) {
-      // Giải nén user từ kết quả login
-      const user = result.user;
 
-      // Kiểm tra có tồn tại user và role không
-      let roleName = "";
-      if (user && user.role) {
-        // Nếu role là object có key roleName
-        if (typeof user.role === "object" && "roleName" in user.role) {
-          roleName = user.role.roleName;
-        } else if (typeof user.role === "string") {
-          // Nếu role là chuỗi, ví dụ "ROLE_ADMIN"
-          roleName = user.role;
+    try {
+      const result = await login(formData);
+
+      if (result.success) {
+        // Giải nén user từ kết quả login
+        const user = result.user;
+
+        // Kiểm tra có tồn tại user và role không
+        let roleName = "";
+        if (user && user.role) {
+          if (typeof user.role === "object" && "roleName" in user.role) {
+            roleName = user.role.roleName;
+          } else if (typeof user.role === "string") {
+            roleName = user.role;
+          }
         }
+
+        console.log("🔵 Navigating with role:", roleName);
+
+        const destination = getHomeRoute(roleName);
+        navigate(destination);
+      } else {
+        setError("Tài khoản hoặc mật khẩu không đúng");
       }
-
-      console.log("🔵 Navigating with role:", roleName);
-
-      // ✅ Sử dụng helper function để lấy home route với full role name
-      const destination = getHomeRoute(roleName);
-      console.log("🔵 Destination:", destination);
-      navigate(destination);
-    } else {
-      // Đăng nhập thất bại
-      const errorMessage = result.error ?? "Đăng nhập thất bại";
-      setError(errorMessage);
+    } catch (err) {
+      setError("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -99,7 +95,7 @@ Mình nghĩ: Cần sửa lại hàm handleSubmit như sau:
               <p className={styles.welcomeSubtitle}>Log in to your account to continue</p>
             </div>
 
-            {/* Error Message */}
+            {/* Error Message - Hiển thị lỗi ở đây */}
             {error && (
               <div className={styles.errorMessage}>{error}</div>
             )}

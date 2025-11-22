@@ -128,10 +128,10 @@ export function RepairProgress({
 
     try {
       const formData = new FormData();
-      formData.append("status", "Đang thay thế"); // ⬅️ Status Tiếng Việt
+      formData.append("status", "Đang thay thế");
       formData.append("internalNotes", `🔧 Bắt đầu thay thế phụ tùng.`);
       progressPhotos.forEach((file) => {
-        formData.append("newProgressFiles", file); // ⬅️ Khớp DTO
+        formData.append("newProgressFiles", file);
       });
 
       const response = await claimAssignmentAPI.updateAssignmentProgress(
@@ -163,9 +163,9 @@ export function RepairProgress({
 
     try {
       const formData = new FormData();
-      formData.append("status", "Đang kiểm tra"); // ⬅️ Status Tiếng Việt
-      const notes = `✅ Đã thay thế phụ tùng.\nGhi chú: ${partInfo.internalNotes}`;
-      formData.append("internalNotes", notes); // ⬅️ Khớp DTO
+      formData.append("status", "Đang kiểm tra");
+      const notes = `Đã thay thế phụ tùng.\nGhi chú: ${partInfo.internalNotes}`;
+      formData.append("internalNotes", notes);
 
       await claimAssignmentAPI.updateAssignmentProgress(
         currentWorkingRequest.assignmentID,
@@ -177,9 +177,8 @@ export function RepairProgress({
         "Đã lưu thông tin. Vui lòng chuyển sang bước 3 để Hoàn tất & Bàn giao."
       );
 
-      loadAssignments(); // Tải lại (yêu cầu này sẽ biến mất)
+      loadAssignments();
 
-      // Auto navigate to step 3 after 2 seconds
       setTimeout(() => {
         onNextStep?.();
       }, 2000);
