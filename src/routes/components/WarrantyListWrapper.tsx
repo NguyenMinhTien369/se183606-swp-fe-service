@@ -15,7 +15,7 @@ export default function WarrantyListWithAuth() {
   const handleEdit = (claim: WarrantyClaimResponse) => {
     console.log("Editing claim:", claim);
     // Navigate to create-warranty route with state
-    navigate("/technician/manage-warranty/create-warranty", {
+    navigate("/sc-staff/manage-warranty/create-warranty", {
       state: { editingClaim: claim },
     });
   };

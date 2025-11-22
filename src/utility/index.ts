@@ -1,5 +1,8 @@
 ﻿import axiosInstance from "./axios";
-import type { ConfirmPartsRequestDTO, ReportMissingPartsRequestDTO } from "@/pages/SC_Technician/ConductWarranty/types/warranty";
+import type {
+  ConfirmPartsRequestDTO,
+  ReportMissingPartsRequestDTO,
+} from "@/pages/SC_Technician/ConductWarranty/types/warranty";
 
 // Lưu ý: Các API dưới đây đã được chuẩn hóa theo backend hiện tại trong EVWarrantyHub.
 // Những endpoint chưa có ở backend đã được gỡ bỏ hoặc thay đổi cho phù hợp.
@@ -206,8 +209,10 @@ export const userAPI = {
   updateUser: (id: number, userData: UserUpdateRequest) =>
     axiosInstance.put(`/users/${id}`, userData),
   deleteUser: (id: number) => axiosInstance.delete(`/users/${id}`),
-  activateUser: (id: number) => axiosInstance.put(`/admin/users/${id}/activate`),
-  deactivateUser: (id: number) => axiosInstance.put(`/admin/users/${id}/deactivate`),
+  activateUser: (id: number) =>
+    axiosInstance.put(`/admin/users/${id}/activate`),
+  deactivateUser: (id: number) =>
+    axiosInstance.put(`/admin/users/${id}/deactivate`),
 
   // Authentication & Password recovery
   logout: () => axiosInstance.post("/users/logout"),
@@ -247,21 +252,20 @@ export const warrantyClaimAPI = {
   getClaimsByServiceCenter: (serviceCenterID: number) =>
     axiosInstance.get(`/warranty-claims/service-center/${serviceCenterID}`),
 
-  getClaimById: (id: number) => axiosInstance.get(`/warranty-claims/${id}`),
-
   // Backend yêu cầu multipart/form-data cho tạo/cập nhật claim
   createClaim: (formData: FormData) =>
     axiosInstance.post("/warranty-claims", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+  getClaimById: (id: number) => axiosInstance.get(`/warranty-claims/${id}`),
   updateClaim: (id: number, formData: FormData) =>
     axiosInstance.put(`/warranty-claims/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  deleteClaim: (id: number) => axiosInstance.delete(`/warranty-claims/${id}`),
 
   submitClaim: (id: number) =>
     axiosInstance.post(`/warranty-claims/${id}/submit`),
+  deleteClaim: (id: number) => axiosInstance.delete(`/warranty-claims/${id}`),
   //API  của table  phân công kỹ thuật viên
   getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
 
@@ -479,8 +483,7 @@ export const partDistributionAPI = {
 // ==================== INVENTORY API ====================
 export const inventoryAPI = {
   // @GetMapping
-  getAllInventories: () =>
-    axiosInstance.get("/inventory"),
+  getAllInventories: () => axiosInstance.get("/inventory"),
 
   // @GetMapping("/part/{serialNumber}")
   getInventoryByPart: (serialNumber: string) =>
