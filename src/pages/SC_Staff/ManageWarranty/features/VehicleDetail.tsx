@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
@@ -24,6 +23,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import StatusBadge from "@/components/StatusBadge";
+
 interface VehicleDetailsProps {
   vehicleInfo: VehicleInfo;
   warrantyHistory: WarrantyClaimResponse[];
@@ -35,35 +36,6 @@ export default function VehicleDetail({
   warrantyHistory,
   onCreateWarranty,
 }: VehicleDetailsProps) {
-  // --- Hiển thị trạng thái bảo hành (isUnderWarranty) ---
-  const getWarrantyBadge = (isUnderWarranty: boolean) => {
-    return isUnderWarranty ? (
-      <Badge variant="outline" className="bg-green-100 text-green-800">
-        Bảo hành
-      </Badge>
-    ) : (
-      <Badge className="bg-red-100 text-red-800">Hết bảo hành</Badge>
-    );
-  };
-
-  // --- Hiển thị trạng thái claim bảo hành ---
-  const getClaimStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; color: string }> = {
-      Nháp: { label: "📝 Nháp", color: "text-gray-600" },
-      "Chờ duyệt": { label: "🟡 Chờ duyệt", color: "text-yellow-600" },
-      "Được chấp nhận": {
-        label: "🟢 Được chấp nhận",
-        color: "text-green-600",
-      },
-      "Đang xử lý": { label: "🔵 Đang xử lý", color: "text-blue-600" },
-      "Hoàn thành": { label: "✅ Hoàn thành", color: "text-green-600" },
-      "Từ chối": { label: "🔴 Từ chối", color: "text-red-600" },
-    };
-
-    const { label, color } = config[status] || config["Chờ duyệt"];
-    return <span className={color}>{label}</span>;
-  };
-
   return (
     <div className="space-y-6">
       {/* --- Thông tin xe --- */}
@@ -155,7 +127,6 @@ export default function VehicleDetail({
                       <TableRow>
                         <TableHead>Serial Number</TableHead>
                         <TableHead>Loại phụ tùng</TableHead>
-                        <TableHead>Mô tả</TableHead>
                         <TableHead>Ngày gắn</TableHead>
                         <TableHead>Hạn bảo hành</TableHead>
                         <TableHead>Trạng thái</TableHead>
@@ -168,9 +139,7 @@ export default function VehicleDetail({
                             {part.partSerialNumber}
                           </TableCell>
                           <TableCell>{part.partTypeName}</TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {part.partTypeDescription}
-                          </TableCell>
+
                           <TableCell>
                             {new Date(part.installationDate).toLocaleDateString(
                               "vi-VN"
@@ -181,8 +150,15 @@ export default function VehicleDetail({
                               "vi-VN"
                             )}
                           </TableCell>
+
                           <TableCell>
-                            {getWarrantyBadge(part.isUnderWarranty)}
+                            <StatusBadge
+                              status={
+                                part.isUnderWarranty
+                                  ? "Bảo hành"
+                                  : "Hết bảo hành"
+                              }
+                            />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -231,9 +207,11 @@ export default function VehicleDetail({
                       <TableCell className="max-w-xs truncate">
                         {history.description}
                       </TableCell>
+
                       <TableCell>
-                        {getClaimStatusBadge(history.status)}
+                        <StatusBadge status={history.status} />
                       </TableCell>
+
                       <TableCell>{history.serviceCenterName}</TableCell>
                     </TableRow>
                   ))}

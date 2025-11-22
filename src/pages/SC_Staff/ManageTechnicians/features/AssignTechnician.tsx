@@ -30,11 +30,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import type { WarrantyClaimResponse, TechnicianUser } from "../types";
-import {
-  getClaimStatusLabel,
-  getClaimStatusColor,
-} from "../lib/utils-warranty";
 import { claimAssignmentAPI, warrantyClaimAPI } from "@/utility/index";
+
+import StatusBadge from "@/components/StatusBadge";
 
 export default function AssignTechnician() {
   const [claims, setClaims] = useState<WarrantyClaimResponse[]>([]);
@@ -56,10 +54,8 @@ export default function AssignTechnician() {
   // Hardcoded serviceCenterID - in production, get from auth context
   const SERVICE_CENTER_ID = 1;
 
-  // ✅ Filter claims với status "Được chấp nhận" (ready to assign)
   const pendingRequests = claims.filter((r) => r.status === "Được chấp nhận");
 
-  // Load data on mount
   useEffect(() => {
     loadData();
   }, []);
@@ -291,11 +287,12 @@ export default function AssignTechnician() {
                         "vi-VN"
                       )}
                     </TableCell>
+
+                    {/* 3. Áp dụng StatusBadge tại đây */}
                     <TableCell>
-                      <Badge className={getClaimStatusColor(request.status)}>
-                        {getClaimStatusLabel(request.status)}
-                      </Badge>
+                      <StatusBadge status={request.status} />
                     </TableCell>
+
                     <TableCell className="max-w-xs truncate text-muted-foreground">
                       {request.description || "-"}
                     </TableCell>

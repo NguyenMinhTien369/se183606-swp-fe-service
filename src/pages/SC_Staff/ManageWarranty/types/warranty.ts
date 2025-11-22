@@ -15,10 +15,10 @@ export interface VehicleInfo {
   productionYear: number;
   batteryCapacity: number;
   customerName: string;
-  // customerPhone: string;
-  // customerEmail: string;
-  // customerCmnd: string;
-  // customerAddress: string;
+  customerPhone: string;
+  customerEmail: string;
+  customerCmnd: string;
+  customerAddress: string;
   image?: string;
   internalNotes?: string | null;
   installedParts: InstalledPartInfo[];

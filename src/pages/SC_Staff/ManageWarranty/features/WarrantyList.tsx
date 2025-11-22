@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import type { WarrantyClaimResponse } from "../types/warranty";
 import { warrantyClaimAPI } from "@/utility/index";
 import WarrantyDetailsDialog from "./WarrantyDetailsDialog";
-// Thêm các icon này vào dòng import ở đầu file
+
+import StatusBadge from "@/components/StatusBadge";
 import {
   Clock, // Icon cho Chờ duyệt
   CheckCircle2, // Icon cho Đã duyệt (dùng CheckCircle2 đẹp hơn)
@@ -136,56 +137,6 @@ export default function WarrantyList({
     setClaimToDelete(null);
   };
 
-  const getStatusConfig = (status: string) => {
-    const configs: Record<
-      string,
-      {
-        label: string; // Tên hiển thị
-        className: string; // Class màu sắc (bg + text)
-        icon: any; // Component Icon
-      }
-    > = {
-      Nháp: {
-        label: "Bản nháp",
-        className: "bg-gray-100 text-gray-600 hover:bg-gray-200",
-        icon: FileText,
-      },
-      "Chờ duyệt": {
-        label: "Chờ duyệt",
-        className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", // Vàng cam
-        icon: Clock,
-      },
-      "Được chấp nhận": {
-        label: "Đã duyệt", // Đổi text hiển thị cho giống hình
-        className: "bg-green-100 text-green-700 hover:bg-green-200", // Xanh lá
-        icon: CheckCircle2,
-      },
-      "Đang giao phụ tùng": {
-        label: "Đang giao hàng", // Đổi text cho giống hình
-        className: "bg-purple-100 text-purple-700 hover:bg-purple-200", // Tím
-        icon: Truck,
-      },
-      "Đang xử lý": {
-        label: "Đang xử lý",
-        className: "bg-blue-100 text-blue-700 hover:bg-blue-200", // Xanh dương
-        icon: RefreshCw,
-      },
-      "Hoàn thành": {
-        label: "Hoàn thành",
-        className: "bg-green-100 text-green-700 hover:bg-green-200",
-        icon: CheckCircle2,
-      },
-      "Từ chối": {
-        label: "Từ chối",
-        className: "bg-red-100 text-red-700 hover:bg-red-200", // Đỏ
-        icon: XCircle,
-      },
-    };
-
-    // Mặc định nếu không tìm thấy status
-    return configs[status] || configs["Chờ duyệt"];
-  };
-
   const filteredClaims = claims.filter((claim) => {
     const matchesVin = searchVin
       ? claim.vin.toLowerCase().includes(searchVin.toLowerCase())
@@ -273,7 +224,6 @@ export default function WarrantyList({
                     </TableRow>
                   ) : (
                     filteredClaims.map((claim) => {
-                      const statusConfig = getStatusConfig(claim.status);
                       const editable = canEdit(claim.status);
 
                       return (
@@ -297,20 +247,7 @@ export default function WarrantyList({
                             )}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center">
-                              <span
-                                className={`
-            flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border border-transparent transition-colors
-            ${statusConfig.className}
-          `}
-                              >
-                                {/* Render Icon với kích thước nhỏ */}
-                                <statusConfig.icon className="w-3.5 h-3.5" />
-
-                                {/* Text trạng thái */}
-                                {statusConfig.label}
-                              </span>
-                            </div>
+                            <StatusBadge status={claim.status} />
                           </TableCell>
                           <TableCell>{claim.serviceCenterName}</TableCell>
 

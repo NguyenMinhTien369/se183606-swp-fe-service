@@ -17,16 +17,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { claimAssignmentAPI } from "@/utility/index";
 import type { AssignmentProgress } from "../types";
-import {
-  getAssignmentStatusLabel,
-  getAssignmentStatusColor,
-} from "../lib/utils-warranty";
+
+import StatusBadge from "@/components/StatusBadge";
 
 export default function TrackProgress() {
   const [assignments, setAssignments] = useState<AssignmentProgress[]>([]);
@@ -62,7 +59,6 @@ export default function TrackProgress() {
       );
       const assignmentsData = response.data.result || [];
 
-      // ✅ Sắp xếp theo ngày phân công mới nhất
       const sortedAssignments = assignmentsData.sort(
         (a: AssignmentProgress, b: AssignmentProgress) => {
           const dateA = new Date(a.assignedDate).getTime();
@@ -207,13 +203,11 @@ export default function TrackProgress() {
                           )
                         : "-"}
                     </TableCell>
+
                     <TableCell>
-                      <Badge
-                        className={getAssignmentStatusColor(assignment.status)}
-                      >
-                        {getAssignmentStatusLabel(assignment.status)}
-                      </Badge>
+                      <StatusBadge status={assignment.status} />
                     </TableCell>
+
                     <TableCell>
                       <div className="space-y-2 min-w-[200px]">
                         <div className="flex items-center justify-between">
