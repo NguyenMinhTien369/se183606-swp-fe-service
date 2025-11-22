@@ -6,18 +6,21 @@ import {
   FileText,
   RefreshCw,
   AlertCircle,
-  User,
-  Package,
+  UserCog,
   Wrench,
   ShieldCheck,
   ShieldAlert,
+  Ban,
+  PackageX,
+  PackageCheck,
+  BoxSelect,
+  CheckCheck,
 } from "lucide-react";
 
 interface StatusBadgeProps {
   status: string;
 }
 
-// Định nghĩa cấu hình cho từng trạng thái
 const statusConfig: Record<
   string,
   {
@@ -41,55 +44,70 @@ const statusConfig: Record<
     className: "bg-green-50 text-green-700 border-green-200",
     icon: CheckCircle2,
   },
-  "Đã phân công": {
-    label: "Đã phân công",
-    className: "bg-indigo-50 text-indigo-700 border-indigo-200", // Màu Chàm (Indigo)
-    icon: User,
-  },
-  "Đang giao phụ tùng": {
-    label: "Đang giao hàng",
-    className: "bg-purple-50 text-purple-700 border-purple-200",
-    icon: Truck,
-  },
-  "Nhận phụ tùng": {
-    label: "Đã nhận phụ tùng",
-    className: "bg-orange-50 text-orange-700 border-orange-200", // Màu Cam
-    icon: Package,
-  },
-  "Đang thay thế": {
-    label: "Đang thay thế",
-    className: "bg-sky-50 text-sky-700 border-sky-200", // Màu Xanh da trời
-    icon: Wrench,
-  },
-  "Đang xử lý": {
-    label: "Đang xử lý",
-    className: "bg-blue-50 text-blue-700 border-blue-200",
-    icon: RefreshCw,
-  },
-  "Hoàn thành": {
-    label: "Hoàn thành",
-    className: "bg-green-50 text-green-700 border-green-200",
-    icon: CheckCircle2,
-  },
   "Từ chối": {
-    label: "Từ chối",
+    label: "Bị từ chối",
     className: "bg-red-50 text-red-700 border-red-200",
     icon: XCircle,
   },
+  "Bị hủy": {
+    label: "Đã hủy",
+    className: "bg-slate-100 text-slate-600 border-slate-200",
+    icon: Ban,
+  },
+
+  "Đang giao phụ tùng": {
+    label: "Đang giao hàng",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+    icon: Truck,
+  },
+  "Đã nhận": {
+    label: "Đã nhận hàng",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
+    icon: PackageCheck,
+  },
+  "Thiếu hàng": {
+    label: "Thiếu hàng",
+    className: "bg-orange-50 text-orange-700 border-orange-200",
+    icon: PackageX,
+  },
+  "Nhận phụ tùng": {
+    label: "Đã lấy phụ tùng",
+    className: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    icon: BoxSelect,
+  },
+
+  "Đã phân công": {
+    label: "Đã phân công",
+    className: "bg-sky-50 text-sky-700 border-sky-200",
+    icon: UserCog,
+  },
+  "Đang xử lý": {
+    label: "Đang xử lý",
+    className: "bg-blue-50 text-blue-600 border-blue-200",
+    icon: RefreshCw,
+  },
+  "Đang thay thế": {
+    label: "Đang sửa chữa",
+    className: "bg-cyan-50 text-cyan-700 border-cyan-200",
+    icon: Wrench,
+  },
+  "Hoàn thành": {
+    label: "Hoàn thành",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    icon: CheckCheck,
+  },
+
   "Bảo hành": {
-    label: "Bảo hành",
-    className:
-      "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+    label: "Còn bảo hành",
+    className: "bg-green-100 text-green-800 border-green-200",
     icon: ShieldCheck,
   },
   "Hết bảo hành": {
     label: "Hết bảo hành",
-    className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+    className: "bg-gray-100 text-gray-500 border-gray-200",
     icon: ShieldAlert,
   },
 };
-
-// Cấu hình mặc định nếu status không khớp
 const defaultConfig = {
   label: "Không xác định",
   className: "bg-gray-100 text-gray-500 border-gray-200",
