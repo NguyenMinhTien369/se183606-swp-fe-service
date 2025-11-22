@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { UserPlus, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,21 +29,29 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import type { WarrantyClaimResponse, TechnicianUser } from "../types";
-import { claimAssignmentAPI, warrantyClaimAPI } from "@/utility/index";
-
 import StatusBadge from "@/components/StatusBadge";
 
+import { useGetClaimsForAssignment } from "@/hooks/ManageTechnicians/AssignTechnician/useGetClaimsForAssignment";
+import { useGetTechnicians } from "@/hooks/ManageTechnicians/AssignTechnician/useGetTechnicians";
+import { useAssignTech } from "@/hooks/ManageTechnicians/AssignTechnician/useAssignTech";
+
 export default function AssignTechnician() {
-  const [claims, setClaims] = useState<WarrantyClaimResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    claims,
+    isLoading: isClaimsLoading,
+    fetchClaims,
+  } = useGetClaimsForAssignment();
+  const { technicians, fetchTechnicians } = useGetTechnicians();
+
+  const { assignTechnician, isSubmitting } = useAssignTech();
+
+  // Local State cho UI
   const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
-  const [technicians, setTechnicians] = useState<TechnicianUser[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mainTechnician, setMainTechnician] = useState<string>("");
   const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [alertDialog, setAlertDialog] = useState<{
     open: boolean;
     title: string;
@@ -51,59 +59,32 @@ export default function AssignTechnician() {
     type: "success" | "error";
   }>({ open: false, title: "", description: "", type: "success" });
 
-  // Hardcoded serviceCenterID - in production, get from auth context
-  const SERVICE_CENTER_ID = 1;
-
-  const pendingRequests = claims.filter((r) => r.status === "Được chấp nhận");
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    await Promise.all([loadWarrantyClaims(), loadTechnicians()]);
-  };
-
-  const loadWarrantyClaims = async () => {
-    try {
-      setIsLoading(true);
-      const response = await warrantyClaimAPI.getClaimsByServiceCenter(
-        SERVICE_CENTER_ID
+  // Sắp xếp claims theo creationDate (Mới nhất lên đầu)
+  const sortedClaims = useMemo(() => {
+    return [...claims].sort((a, b) => {
+      return (
+        new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()
       );
-      const claimsData = response.data.result || [];
-      setClaims(claimsData);
-    } catch (error: any) {
-      console.error(" Error loading warranty claims:", error);
-      setAlertDialog({
-        open: true,
-        title: "Lỗi tải dữ liệu",
-        description:
-          error.response?.data?.message ||
-          "Không thể tải danh sách yêu cầu bảo hành",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    });
+  }, [claims]);
 
-  const loadTechnicians = async () => {
-    try {
-      const response = await claimAssignmentAPI.getTechnicians();
-      setTechnicians(response.data.result || []);
-    } catch (error) {
-      console.error(" Error loading technicians:", error);
-    }
-  };
+  // Load dữ liệu ban đầu
+  // ĐƠN GIẢN HÓA LOGIC useEffect: Không cần kiểm tra user?.serviceCenterID vì API /unassigned tự xử lý
+  useEffect(() => {
+    fetchClaims();
+    fetchTechnicians();
+  }, [fetchClaims, fetchTechnicians]); // Chỉ phụ thuộc vào fetch functions
 
+  // Logic xử lý Select All (Sử dụng sortedClaims)
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRequests(pendingRequests.map((r) => r.claimID));
+      setSelectedRequests(sortedClaims.map((r) => r.claimID));
     } else {
       setSelectedRequests([]);
     }
   };
 
+  // Logic xử lý Select từng dòng
   const handleSelectRequest = (requestId: number, checked: boolean) => {
     if (checked) {
       setSelectedRequests([...selectedRequests, requestId]);
@@ -130,12 +111,6 @@ export default function AssignTechnician() {
   };
 
   const handleConfirmAssign = async () => {
-    console.log("🔍 Validation check:");
-    console.log("  mainTechnician:", mainTechnician);
-    console.log("  Type:", typeof mainTechnician);
-    console.log("  Is empty?", !mainTechnician || mainTechnician === "");
-    console.log("  Selected requests:", selectedRequests);
-
     if (!mainTechnician || mainTechnician === "") {
       setAlertDialog({
         open: true,
@@ -146,21 +121,14 @@ export default function AssignTechnician() {
       return;
     }
 
-    setIsSubmitting(true);
+    const result = await assignTechnician({
+      claimIDs: selectedRequests,
+      mainTechnicianID: Number(mainTechnician),
+      expectedCompletionDate,
+      internalNotes,
+    });
 
-    try {
-      // Assign each selected claim to technician
-      const assignPromises = selectedRequests.map((claimID) =>
-        claimAssignmentAPI.assignTechnician({
-          claimID,
-          technicianIDs: [Number(mainTechnician)], // Backend expects array of technician IDs
-          expectedCompletionDate: expectedCompletionDate || undefined,
-          internalNotes: internalNotes || undefined,
-        })
-      );
-
-      await Promise.all(assignPromises);
-
+    if (result.success) {
       const tech = technicians.find((t) => t.userID === Number(mainTechnician));
 
       setAlertDialog({
@@ -176,31 +144,14 @@ export default function AssignTechnician() {
       setExpectedCompletionDate("");
       setInternalNotes("");
 
-      // Refresh data
-      await loadWarrantyClaims();
-    } catch (error: any) {
-      console.error("Error assigning technician:", error);
-      console.error("Error response data:", error.response?.data);
-      console.error("Error response status:", error.response?.status);
-      console.error("Request payload:", {
-        claimID: selectedRequests[0],
-        primaryTechnicianID: Number(mainTechnician),
-        expectedCompletionDate: expectedCompletionDate || undefined,
-        internalNotes: internalNotes || undefined,
-      });
+      await fetchClaims();
+    } else {
       setAlertDialog({
         open: true,
         title: "Lỗi phân công",
-        description:
-          error.response?.data?.message ||
-          error.response?.data?.error ||
-          JSON.stringify(error.response?.data) ||
-          "Không thể phân công kỹ thuật viên. Vui lòng thử lại.",
-
+        description: result.error || "Đã có lỗi xảy ra.",
         type: "error",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -212,7 +163,7 @@ export default function AssignTechnician() {
             Phân công kỹ thuật viên
           </h2>
           <p className="text-sm text-muted-foreground">
-            Gán kỹ thuật viên cho yêu cầu bảo hành đã được chấp nhận
+            Gán kỹ thuật viên cho yêu cầu bảo hành
           </p>
         </div>
         <div className="flex gap-2">
@@ -233,12 +184,13 @@ export default function AssignTechnician() {
               <TableRow className="bg-muted/50">
                 <TableHead className="w-12">
                   <Checkbox
+                    // Sử dụng sortedClaims
                     checked={
-                      selectedRequests.length === pendingRequests.length &&
-                      pendingRequests.length > 0
+                      selectedRequests.length === sortedClaims.length &&
+                      sortedClaims.length > 0
                     }
                     onCheckedChange={handleSelectAll}
-                    disabled={isLoading}
+                    disabled={isClaimsLoading}
                   />
                 </TableHead>
                 <TableHead>Mã yêu cầu</TableHead>
@@ -250,23 +202,23 @@ export default function AssignTechnician() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isClaimsLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
                     <p className="text-muted-foreground">Đang tải dữ liệu...</p>
                   </TableCell>
                 </TableRow>
-              ) : pendingRequests.length === 0 ? (
+              ) : sortedClaims.length === 0 ? ( // Sử dụng sortedClaims
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
                     <p className="text-muted-foreground">
-                      Không có yêu cầu nào cần phân công (Chỉ hiển thị yêu cầu
-                      đã được chấp nhận)
+                      Không có yêu cầu nào cần phân công
                     </p>
                   </TableCell>
                 </TableRow>
               ) : (
-                pendingRequests.map((request) => (
+                // Sử dụng sortedClaims để render đúng thứ tự
+                sortedClaims.map((request) => (
                   <TableRow key={request.claimID}>
                     <TableCell>
                       <Checkbox
@@ -288,7 +240,6 @@ export default function AssignTechnician() {
                       )}
                     </TableCell>
 
-                    {/* 3. Áp dụng StatusBadge tại đây */}
                     <TableCell>
                       <StatusBadge status={request.status} />
                     </TableCell>
@@ -335,11 +286,7 @@ export default function AssignTechnician() {
               </label>
               <Select
                 value={mainTechnician}
-                onValueChange={(value) => {
-                  console.log("👤 Selected technician ID:", value);
-                  console.log("📝 Type of value:", typeof value);
-                  setMainTechnician(value);
-                }}
+                onValueChange={(value) => setMainTechnician(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn kỹ thuật viên..." />
@@ -355,10 +302,6 @@ export default function AssignTechnician() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Current value: "{mainTechnician}" (Type: {typeof mainTechnician}
-                )
-              </p>
             </div>
 
             {/* Expected Completion Date */}
@@ -413,7 +356,7 @@ export default function AssignTechnician() {
         </DialogContent>
       </Dialog>
 
-      {/* Notification Dialog (replaces toast) */}
+      {/* Notification Dialog */}
       <Dialog
         open={alertDialog.open}
         onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}
