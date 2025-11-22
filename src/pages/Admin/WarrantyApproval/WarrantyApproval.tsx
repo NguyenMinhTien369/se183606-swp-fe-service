@@ -143,11 +143,17 @@ const WarrantyApproval = () => {
             }
             const rawList = response.data?.result || response.data || [];
             const mappedClaims: MappedWarrantyClaim[] = (rawList || []).map((claim: WarrantyClaimResponse) => mapClaimFromResponse(claim));
-            // Sắp xếp mới nhất lên đầu (creationDate giảm dần)
-            mappedClaims.sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+            mappedClaims.sort((a, b) => {
+                const dateA = new Date(a.createdDate).getTime();
+                const dateB = new Date(b.createdDate).getTime();
+                if (dateB !== dateA) {
+                    return dateB - dateA;
+                }
+                return b.id - a.id;
+            });
             setClaims(mappedClaims);
         } catch (error: unknown) {
-            const err: any = error; // intentional cast for accessing response
+            const err: any = error;
             console.error('Error fetching claims:', err);
             setClaims([]);
             if (err.response?.status === 403) {
@@ -162,7 +168,6 @@ const WarrantyApproval = () => {
 
     useEffect(() => {
         fetchClaims();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter]);
 
     const handleApproveClaim = async () => {

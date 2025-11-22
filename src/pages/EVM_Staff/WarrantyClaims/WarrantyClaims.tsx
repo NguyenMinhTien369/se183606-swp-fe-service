@@ -19,7 +19,7 @@ import { warrantyClaimAPI } from '@/utility';
 import type { IconType } from 'react-icons';
 import styles from './WarrantyClaims.module.css';
 
-// --- 1. ĐỊNH NGHĨA TYPES (Local để đảm bảo không lỗi import) ---
+// --- 1. ĐỊNH NGHĨA TYPES ---
 
 export type ClaimStatus =
     | 'PENDING'       // Chờ duyệt
@@ -92,7 +92,7 @@ interface MappedWarrantyClaim {
     attachments: (ClaimAttachmentResponse & { fileName: string })[];
 }
 
-// --- 2. HELPER FUNCTIONS (Đồng bộ Admin) ---
+// --- 2. HELPER FUNCTIONS ---
 
 // Map status từ BE (Tiếng Việt) -> FE ClaimStatus
 const mapStatusFromBE = (status: string): ClaimStatus => {
@@ -192,16 +192,21 @@ const WarrantyClaims = () => {
             const rawList = response.data?.result || response.data || [];
             const mappedClaims: MappedWarrantyClaim[] = (rawList || []).map((claim: WarrantyClaimResponse) => mapClaimFromResponse(claim));
 
-            // Sắp xếp mới nhất lên đầu
-            mappedClaims.sort((a, b) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+            mappedClaims.sort((a, b) => {
+                const dateA = new Date(a.createdDate).getTime();
+                const dateB = new Date(b.createdDate).getTime();
+                if (dateB !== dateA) {
+                    return dateB - dateA;
+                }
+                return b.id - a.id;
+            });
+
             setClaims(mappedClaims);
         } catch (error: any) {
             console.error('Error fetching claims:', error);
             setClaims([]);
             if (error.response?.status === 403) {
                 alert('Lỗi: Bạn không có quyền truy cập! Vui lòng đăng nhập với tài khoản Admin hoặc EVM_Staff.');
-            } else {
-                // alert(`Lỗi: ${error.response?.data?.message || error.message || 'Không thể tải dữ liệu'}`);
             }
         } finally {
             setLoading(false);
@@ -266,7 +271,6 @@ const WarrantyClaims = () => {
         }
     };
 
-    // Quan trọng: Tải lại chi tiết claim để lấy missingQuantity mới nhất trước khi mở modal giao hàng
     const openShipPartsModal = async (claim: MappedWarrantyClaim) => {
         setSelectedClaim(claim);
         setShowShipPartsModal(true);
@@ -626,7 +630,7 @@ const WarrantyClaims = () => {
                         {modalLoading ? (
                             <p className={styles.loading}>Đang tải chi tiết phụ tùng...</p>
                         ) : (() => {
-                            // Logic hiển thị phụ tùng cần giao (giống logic Admin ở lượt trước)
+                            // Logic hiển thị phụ tùng cần giao
                             const isSupplement = selectedClaim.status === 'MISSING_PARTS';
                             const allParts = selectedClaim.affectedParts || [];
                             const displayParts = isSupplement

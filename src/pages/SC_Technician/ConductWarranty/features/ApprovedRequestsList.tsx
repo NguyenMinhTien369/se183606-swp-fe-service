@@ -446,8 +446,6 @@ export function ApprovedRequestsList({
                     <strong>Kỹ thuật viên:</strong> {selectedRequestData.technicianName}
                   </p>
                 </div>
-
-                {/* ⬅️ SỬA: Hiển thị UI dựa trên state isDiscrepancy */}
                 {!isDiscrepancy ? (
                   // ==========================================
                   // GIAO DIỆN 1: XÁC NHẬN ĐỦ HÀNG
@@ -542,7 +540,7 @@ export function ApprovedRequestsList({
                   <div className="space-y-3">
                     <div className="bg-red-50 border border-red-200 rounded-lg p-2.5">
                       <p className="text-sm font-semibold text-red-800 mb-2">
-                        ⚠️ Chọn phụ tùng và nhập số lượng bị thiếu:
+                        ⚠️ Nhập số lượng bị thiếu:
                       </p>
 
                       {missingParts.map((part) => (
