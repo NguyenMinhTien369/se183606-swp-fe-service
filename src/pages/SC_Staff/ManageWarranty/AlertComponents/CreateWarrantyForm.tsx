@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-import type {
-  InstalledPartInfo,
-  ClaimPartRequest,
-  WarrantyClaimResponse,
-} from "../types/warranty";
+import type { InstalledPartInfo, ClaimPartRequest } from "../types/warranty";
 import { warrantyClaimAPI } from "@/utility/index";
 import {
   Dialog,

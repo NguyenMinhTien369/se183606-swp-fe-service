@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { Customer } from "./types/index";
-import { Search, X, Loader2, Car, User } from "lucide-react";
+import { Search, X, Loader2, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

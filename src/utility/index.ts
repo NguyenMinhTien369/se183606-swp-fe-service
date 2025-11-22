@@ -430,6 +430,13 @@ export const vehicleAPI = {
   updateVehicleNotes: (vin: string, notes: string) =>
     axiosInstance.put(`/vehicles/${vin}/notes`, { notes }),
   deleteVehicle: (vin: string) => axiosInstance.delete(`/vehicles/${vin}`),
+  // getUnassignedVehicleByVin: (vin: string) =>
+  //   axiosInstance.get(`/vehicles/unassigned/${vin}`),
+  getUnassignedVehicles: (vin: string) =>
+    axiosInstance.get(`/vehicles/unassigned/${vin}`),
+
+  searchUnassignedVehicles: (keyword: string) =>
+    axiosInstance.get("/vehicles/unassigned/search", { params: { keyword } }),
 };
 
 // ==================== PRODUCT MODEL API ====================
