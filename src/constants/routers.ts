@@ -67,11 +67,14 @@ export const RELATIVE_PATHS = {
   PARTS_MANAGEMENT: "parts-management",
 
   // Technician
-  //F3 - Create Warranty
+  // F3 - Create Warranty
   MANAGE_WARRANTY: "manage-warranty",
   CREATE_WARRANTY: "create-warranty",
   WARRANTY_LIST: "warranty-list",
   MANUFACTURER_RESPONSE_PANEL: "manufacturer-response-panel",
+
+  // --- THÊM DÒNG NÀY ---
+  WARRANTY_DETAIL: ":claimId", // Định nghĩa tham số ID trên URL
 
   //F4 - Conduct Warranty
   CONDUCT_WARRANTY: "conduct-warranty",

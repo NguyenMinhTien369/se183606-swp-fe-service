@@ -23,6 +23,12 @@ export interface VehicleInfo {
   internalNotes?: string | null;
   installedParts: InstalledPartInfo[];
 }
+export interface ClaimPartResponse {
+  partSerialNumber: string;
+  partTypeName: string;
+  partTypeDescription: string;
+  quantity: number;
+}
 
 export interface InstalledPartInfo {
   id: string;

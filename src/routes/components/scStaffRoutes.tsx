@@ -26,6 +26,7 @@ import MLCreateWarranty from "@/pages/SC_Staff/ManageWarranty/MLCreateWarranty";
 import Warranty from "@/pages/SC_Staff/ManageWarranty/features/Warranty";
 import WarrantyListWithAuth from "./WarrantyListWrapper";
 import ManufacturerResponsePanel from "@/pages/SC_Staff/ManageWarranty/features/ManufacturerResponsePanel";
+import WarrantyDetailPage from "@/pages/SC_Staff/ManageWarranty/features/WarrantyDetailPage";
 
 export const scStaffRoutes = {
   path: ROUTERS_PATH.SC_STAFF_BASE,
@@ -119,6 +120,10 @@ export const scStaffRoutes = {
         {
           path: RELATIVE_PATHS.MANUFACTURER_RESPONSE_PANEL,
           element: <ManufacturerResponsePanel />,
+        },
+        {
+          path: RELATIVE_PATHS.WARRANTY_DETAIL, // ":claimId"
+          element: <WarrantyDetailPage />,
         },
       ],
     },

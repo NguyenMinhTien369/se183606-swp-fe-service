@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
 import type { WarrantyClaimResponse } from "../types/warranty";
 import { warrantyClaimAPI } from "@/utility/index";
-import WarrantyDetailsDialog from "./WarrantyDetailsDialog";
+// Xóa import WarrantyDetailsDialog vì không dùng nữa
 
 import StatusBadge from "@/components/StatusBadge";
-import {
-  Clock, // Icon cho Chờ duyệt
-  CheckCircle2, // Icon cho Đã duyệt (dùng CheckCircle2 đẹp hơn)
-  XCircle, // Icon cho Từ chối
-  Truck, // Icon cho Đang giao hàng
-  FileText, // Icon cho Nháp
-  RefreshCw, // Icon cho Đang xử lý
-} from "lucide-react";
-
 import {
   Card,
   CardContent,
@@ -37,15 +28,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-import { Edit, Search, Trash2, Loader2 } from "lucide-react";
-import SuccessDelete from "../AlertComponents/SuccessDelete";
+import { Search, Loader2, ChevronRight } from "lucide-react";
+
+import { useNavigate } from "react-router";
+import ROUTERS_PATH from "@/constants/routers";
 
 interface WarrantyListProps {
   serviceCenterID: number;
@@ -56,15 +43,15 @@ export default function WarrantyList({
   serviceCenterID,
   onEdit,
 }: WarrantyListProps) {
+  const navigate = useNavigate();
+  const handleRowClick = (claim: WarrantyClaimResponse) => {
+    navigate(`${ROUTERS_PATH.MANAGE_WARRANTY}/${claim.claimID}`);
+  };
+
   const [claims, setClaims] = useState<WarrantyClaimResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchVin, setSearchVin] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedClaim, setSelectedClaim] =
-    useState<WarrantyClaimResponse | null>(null);
-  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [claimToDelete, setClaimToDelete] = useState<number | null>(null);
 
   // Load claims on mount and when serviceCenterID changes
   useEffect(() => {
@@ -87,54 +74,12 @@ export default function WarrantyList({
       );
 
       setClaims(sortedClaims);
-      console.log("Loaded warranty claims (sorted by newest):", sortedClaims);
+      console.log("Loaded warranty claims:", sortedClaims);
     } catch (error) {
       console.error("Error loading claims:", error);
-      console.log("Không thể tải danh sách yêu cầu bảo hành");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleViewDetails = (claim: WarrantyClaimResponse) => {
-    setSelectedClaim(claim);
-    setShowDetailsDialog(true);
-  };
-
-  const handleCloseDetails = () => {
-    setShowDetailsDialog(false);
-    setSelectedClaim(null);
-  };
-
-  const handleEdit = (claim: WarrantyClaimResponse) => {
-    if (onEdit) {
-      onEdit(claim);
-    }
-  };
-
-  const handleDeleteClick = (claimID: number) => {
-    setClaimToDelete(claimID);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!claimToDelete) return;
-
-    try {
-      await warrantyClaimAPI.deleteClaim(claimToDelete);
-      loadClaims(); // Reload list
-    } catch (error) {
-      console.error("Error deleting claim:", error);
-      console.log("Không thể xóa yêu cầu bảo hành");
-    } finally {
-      setDeleteDialogOpen(false);
-      setClaimToDelete(null);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setClaimToDelete(null);
   };
 
   const filteredClaims = claims.filter((claim) => {
@@ -208,7 +153,6 @@ export default function WarrantyList({
                     <TableHead>Ngày tạo</TableHead>
                     <TableHead>Trạng thái</TableHead>
                     <TableHead>Service Center</TableHead>
-                    <TableHead className="text-center">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -229,16 +173,17 @@ export default function WarrantyList({
                       return (
                         <TableRow
                           key={claim.claimID}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => handleViewDetails(claim)}
+                          // --- 4. CẬP NHẬT SỰ KIỆN CLICK ---
+                          onClick={() => handleRowClick(claim)}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors group"
                         >
-                          <TableCell className="font-mono">
+                          <TableCell className="font-mono font-medium text-primary">
                             #{claim.claimID}
                           </TableCell>
                           <TableCell className="font-mono">
                             {claim.vin}
                           </TableCell>
-                          <TableCell className="max-w-xs truncate">
+                          <TableCell className="max-w-xs truncate text-muted-foreground">
                             {claim.description}
                           </TableCell>
                           <TableCell>
@@ -254,52 +199,14 @@ export default function WarrantyList({
                           {/* Action buttons */}
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-2">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      disabled={!editable}
-                                      onClick={() => handleEdit(claim)}
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  {!editable && (
-                                    <TooltipContent>
-                                      <p>
-                                        Không thể chỉnh sửa – yêu cầu đã được xử
-                                        lý
-                                      </p>
-                                    </TooltipContent>
-                                  )}
-                                </Tooltip>
-                              </TooltipProvider>
-
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      disabled={!editable}
-                                      onClick={() =>
-                                        handleDeleteClick(claim.claimID)
-                                      }
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  {!editable && (
-                                    <TooltipContent>
-                                      <p>
-                                        Không thể xóa – yêu cầu đã được xử lý
-                                      </p>
-                                    </TooltipContent>
-                                  )}
-                                </Tooltip>
-                              </TooltipProvider>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="hidden group-hover:flex text-muted-foreground"
+                                onClick={() => handleRowClick(claim)}
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -312,20 +219,6 @@ export default function WarrantyList({
           </div>
         </CardContent>
       </Card>
-
-      {/* Warranty Details Dialog */}
-      <WarrantyDetailsDialog
-        claim={selectedClaim}
-        open={showDetailsDialog}
-        onClose={handleCloseDetails}
-      />
-
-      <SuccessDelete
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onCancel={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-      />
     </>
   );
 }
