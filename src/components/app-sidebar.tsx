@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Package,
   CheckCircle,
+  UserPlus,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
@@ -105,12 +106,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           to: ROUTERS_PATH.MANAGE_CUSTOMER,
         },
         {
+          title: "Đăng Ký Khách Hàng",
+          icon: <UserPlus className="size-4" />,
+          to: ROUTERS_PATH.REGISTER_CUSTOMER,
+        },
+        {
           title: "Quản Lí Nội Bộ",
           icon: <Building2 className="size-4" />,
           to: ROUTERS_PATH.INTERNAL_MANAGEMENT,
         },
         {
-          title: "Tạo Bảo Hành",
+          title: "Tạo Đơn Bảo Hành",
           icon: <ClipboardPlus className="size-4" />,
           to: ROUTERS_PATH.MANAGE_WARRANTY,
         },
@@ -179,7 +185,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     to={item.to}
                     style={{ textDecoration: "none", color: "black" }}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${isActive ? "bg-sidebar-primary" : "hover:bg-muted"
+                      `flex items-center gap-2 font-medium rounded-md px-3 py-2 transition-colors ${
+                        isActive ? "bg-sidebar-primary" : "hover:bg-muted"
                       }`
                     }
                   >

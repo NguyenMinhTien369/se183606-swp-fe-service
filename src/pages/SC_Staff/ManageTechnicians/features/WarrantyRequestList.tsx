@@ -30,12 +30,13 @@ import { useGetClaimsByServiceCenter } from "@/hooks/ManageTechnicians/useGetCla
 import { useSearchClaims } from "@/hooks/ManageTechnicians/useSearchClaims";
 
 import type { WarrantyClaimResponse } from "../types";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 
 import StatusBadge from "@/components/StatusBadge";
 
 export default function WarrantyRequestList() {
-  // Hardcoded serviceCenterID - in production, get from auth context
-  const SERVICE_CENTER_ID = 1;
+  const { user } = useAuth();
+  const SERVICE_CENTER_ID = user?.serviceCenterID;
 
   const {
     claims,
@@ -89,11 +90,18 @@ export default function WarrantyRequestList() {
     if (e.key === "Enter") handleSearch();
   };
 
-  const filteredRequests = filteredClaims.sort((a, b) => {
-    const dateA = new Date(a.creationDate).getTime();
-    const dateB = new Date(b.creationDate).getTime();
-    return dateB - dateA;
-  });
+  const filteredRequests = filteredClaims
+    .filter((req) => {
+      // Nếu chọn "all" thì giữ lại tất cả
+      if (statusFilter === "all") return true;
+      // Nếu không, chỉ giữ lại các request có status trùng với statusFilter
+      return req.status === statusFilter;
+    })
+    .sort((a, b) => {
+      const dateA = new Date(a.creationDate).getTime();
+      const dateB = new Date(b.creationDate).getTime();
+      return dateB - dateA;
+    });
 
   return (
     <div className="p-6 space-y-6">

@@ -15,7 +15,7 @@ export default function Warranty() {
   const { user } = useAuth();
   const location = useLocation();
 
-  const SERVICE_CENTER_ID = user?.serviceCenterID || 1;
+  const SERVICE_CENTER_ID = user?.serviceCenterID;
 
   const {
     vehicleInfo: currentVehicleInfo,
@@ -137,7 +137,7 @@ export default function Warranty() {
             open={showCreateForm}
             vin={currentVehicleInfo.vin}
             installedParts={currentVehicleInfo.installedParts}
-            serviceCenterID={SERVICE_CENTER_ID}
+            serviceCenterID={SERVICE_CENTER_ID ?? 0}
             onSuccess={handleCreateSuccess}
             onCancel={handleCancelCreate}
             editMode={!!editingClaim}

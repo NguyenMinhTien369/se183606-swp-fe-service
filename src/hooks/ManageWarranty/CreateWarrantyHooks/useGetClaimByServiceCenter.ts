@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { warrantyClaimAPI } from "@/utility/index";
 import type { WarrantyClaimResponse } from "@/pages/SC_Staff/ManageWarranty/types/warranty";
 
-export const useGetClaimByServiceCenter = (serviceCenterID: number) => {
+export const useGetClaimByServiceCenter = (serviceCenterID?: number) => {
   const [history, setHistory] = useState<WarrantyClaimResponse[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
@@ -11,6 +11,11 @@ export const useGetClaimByServiceCenter = (serviceCenterID: number) => {
       if (!vin) return;
 
       setIsLoadingHistory(true);
+      if (serviceCenterID === undefined) {
+        setHistory([]);
+        setIsLoadingHistory(false);
+        return;
+      }
       try {
         const claimsResponse = await warrantyClaimAPI.getClaimsByServiceCenter(
           serviceCenterID

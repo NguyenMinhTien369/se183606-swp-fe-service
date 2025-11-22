@@ -6,11 +6,10 @@ import { getNavLinkClass } from "@/layouts/style";
 
 import { ClipboardList, UserCog, Activity } from "lucide-react";
 
-
 export default function MLInternalManagement() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Header name="Hệ Thống Quản Lý Bảo Hành" />
+      <Header name="Quản Lí Nội Bộ" />
 
       <div className="flex-1 p-4 sm:p-6">
         <div className="w-full max-w-4xl mx-auto mb-8">

@@ -14,7 +14,7 @@ export interface ServiceHistoryResponse {
   technicianName?: string;
 }
 
-export function useGetServiceHistoryByServiceCenter(serviceCenterID: number) {
+export function useGetServiceHistoryByServiceCenter(serviceCenterID?: number) {
   const [histories, setHistories] = useState<ServiceHistoryResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +23,10 @@ export function useGetServiceHistoryByServiceCenter(serviceCenterID: number) {
     setLoading(true);
     setError(null);
     try {
+      if (!serviceCenterID) {
+        setHistories([]);
+        return;
+      }
       const response = await serviceHistoryAPI.getByServiceCenter(
         serviceCenterID
       );
