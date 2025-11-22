@@ -1,11 +1,15 @@
+/* src/pages/Admin/UserManagement/UserManagement.module.css */
+
+/* ========== CONTAINER CHÍNH ========== */
 .container {
     padding: 24px;
-    max-width: 1600px;
-    margin: 0 auto;
+    background-color: #f8fafc;
+    /* Nền xám sáng nhẹ */
     min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Header */
+/* ========== HEADER ========== */
 .header {
     display: flex;
     justify-content: space-between;
@@ -14,102 +18,145 @@
 }
 
 .title {
-    font-size: 2rem;
+    font-size: 28px;
     font-weight: 700;
-    color: #080a0a;
+    color: #1e293b;
     margin: 0;
 }
 
 .subtitle {
-    color: #6b7280;
-    margin: 4px 0 0 0;
+    color: #64748b;
+    margin-top: 4px;
     font-size: 14px;
 }
 
+/* Nút Tạo mới (Gradient xanh ngọc) */
 .createButton {
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    background: #14b8a6;
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
     color: white;
     border: none;
     border-radius: 8px;
     font-weight: 600;
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .createButton:hover {
-    background: #0d9488;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
 }
 
-.createButton:active {
-    transform: scale(0.98);
+/* ========== TABS NAVIGATION (Chuẩn mẫu Inventory) ========== */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid #e2e8f0;
+    /* Đường kẻ nền mờ */
 }
 
-/* Controls */
+.tab {
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: #64748b;
+    /* Màu chữ mặc định */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Khoảng cách icon và chữ */
+    border-bottom: 3px solid transparent;
+    /* Giữ chỗ cho border active */
+    transition: all 0.3s ease;
+    font-size: 15px;
+}
+
+.tab:hover {
+    color: #14b8a6;
+}
+
+/* Trạng thái Active */
+.tabActive {
+    color: #14b8a6;
+    border-bottom-color: #14b8a6;
+    /* Gạch chân màu xanh ngọc */
+}
+
+.tab svg {
+    font-size: 18px;
+}
+
+/* ========== THANH CÔNG CỤ (Search & Filter) ========== */
 .controls {
+    display: flex;
+    gap: 16px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .searchBar {
+    flex: 1;
+    min-width: 300px;
     position: relative;
-    margin-bottom: 16px;
 }
 
 .searchIcon {
     position: absolute;
-    left: 14px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #6b7280;
+    color: #94a3b8;
 }
 
 .searchBar input {
     width: 100%;
-    padding: 10px 14px 10px 44px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
+    padding: 10px 16px 10px 40px;
+    /* Padding trái lớn để tránh icon */
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
     font-size: 14px;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    outline: none;
+    box-sizing: border-box;
 }
 
 .searchBar input:focus {
-    outline: none;
     border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
 }
 
-.searchBar input::placeholder {
-    color: #9ca3af;
-}
-
-/* Filters */
 .filters {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     overflow-x: auto;
 }
 
 .filterButton {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     padding: 8px 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     background: white;
-    border-radius: 6px;
+    border-radius: 20px;
     font-weight: 500;
-    font-size: 14px;
-    color: #6b7280;
+    font-size: 13px;
+    color: #64748b;
     cursor: pointer;
-    transition: all 0.2s;
     white-space: nowrap;
+    transition: all 0.2s;
 }
 
 .filterButton:hover {
@@ -118,76 +165,71 @@
 }
 
 .filterButton.active {
-    background: #14b8a6;
+    background: #f0fdfa;
+    color: #0f766e;
     border-color: #14b8a6;
-    color: white;
 }
 
 .filterCount {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 6px;
-    border-radius: 11px;
-    background: rgba(0, 0, 0, 0.1);
-    font-size: 12px;
-    font-weight: 600;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
 }
 
 .filterButton.active .filterCount {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(20, 184, 166, 0.2);
+    color: #0f766e;
 }
 
-/* Table Card */
+/* ========== BẢNG DỮ LIỆU (Table) ========== */
 .tableCard {
     background: white;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     overflow: hidden;
+    /* Bo góc cho bảng */
 }
 
-/* Table Container & Styles */
 .tableContainer {
-    width: 100%;
     overflow-x: auto;
 }
 
 .userTable {
     width: 100%;
     border-collapse: collapse;
-}
-
-.userTable thead {
-    background: #f9fafb;
+    text-align: left;
 }
 
 .userTable th {
-    padding: 12px 16px;
-    text-align: left;
+    background: #f8fafc;
+    padding: 16px;
     font-weight: 600;
-    color: #374151;
+    color: #475569;
     font-size: 13px;
     text-transform: uppercase;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 .userTable td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    color: #374151;
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
     font-size: 14px;
+    vertical-align: middle;
 }
 
 .userTable tbody tr:hover {
-    background: #f9fafb;
+    background-color: #f8fafc;
 }
 
+/* Avatar & User Info Cell */
 .userCell {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .userAvatar {
@@ -195,68 +237,7 @@
     height: 36px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #14b8a6;
-}
-
-.emptyState {
-    text-align: center;
-    padding: 40px !important;
-    color: #9ca3af;
-    font-style: italic;
-}
-
-/* Action Buttons */
-.actionButtons {
-    display: flex;
-    gap: 8px;
-}
-
-.btnEdit,
-.btnDelete {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity 0.2s;
-}
-
-.btnEdit {
-    background: #dbeafe;
-    color: #1e40af;
-}
-
-.btnEdit:hover {
-    opacity: 0.8;
-}
-
-.btnBan {
-    background-color: #fee2e2;
-    color: rgb(223, 10, 10);
-    border: none;
-    padding: 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 5px;
-    transition: background-color 0.1s;
-}
-
-.btnDelete {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.btnDelete:hover:not(:disabled) {
-    opacity: 0.8;
-}
-
-.btnDelete:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+    border: 2px solid #e2e8f0;
 }
 
 /* Role Badges */
@@ -264,7 +245,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
+    padding: 4px 10px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
@@ -286,178 +267,63 @@
 }
 
 .roleTechnician {
-    background: #e0e7ff;
-    color: #3730a3;
+    background: #f3e8ff;
+    color: #6b21a8;
 }
 
-/* Modal Overlay */
-.modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+/* Action Buttons */
+.actionButtons {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 20px;
+    gap: 8px;
 }
 
-/* Modal */
-.modal {
-    background: white;
-    border-radius: 8px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modalHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.modalHeader h2 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.closeButton {
+.btnEdit,
+.btnDelete {
     width: 32px;
     height: 32px;
-    border: none;
-    background: #f3f4f6;
-    border-radius: 50%;
-    font-size: 20px;
-    color: #6b7280;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.closeButton:hover {
-    background: #e5e7eb;
-}
-
-.modalBody {
-    padding: 20px;
-}
-
-.formGroup {
-    margin-bottom: 16px;
-}
-
-.formGroup label {
-    display: block;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 6px;
-    font-size: 14px;
-}
-
-.formGroup input,
-.formGroup select,
-.formGroup textarea {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 14px;
-    transition: border-color 0.2s;
-    box-sizing: border-box;
-}
-
-.formGroup input:focus,
-.formGroup select:focus,
-.formGroup textarea:focus {
-    outline: none;
-    border-color: #14b8a6;
-}
-
-.formGroup input:disabled {
-    background: #f3f4f6;
-    color: #9ca3af;
-    cursor: not-allowed;
-}
-
-.inputError {
-    border-color: #ef4444 !important;
-}
-
-.errorText {
-    display: block;
-    color: #ef4444;
-    font-size: 12px;
-    margin-top: 4px;
-}
-
-.modalFooter {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    padding: 0;
-    margin-top: 20px;
-}
-
-.btnPrimary,
-.btnSecondary {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    font-size: 14px;
-}
-
-.btnSecondary {
-    background: #f3f4f6;
-    color: #374151;
-}
-
-.btnSecondary:hover:not(:disabled) {
-    background: #e5e7eb;
-}
-
-.btnPrimary {
-    background: #14b8a6;
-    color: white;
-}
-
-.btnPrimary:hover:not(:disabled) {
-    background: #0d9488;
-}
-
-.btnPrimary:disabled,
-.btnSecondary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* Loading */
-.loadingContainer {
-    display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 400px;
-    gap: 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btnEdit {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.btnEdit:hover {
+    background: #dbeafe;
+}
+
+.btnDelete {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.btnDelete:hover {
+    background: #fee2e2;
+}
+
+/* Loading & Empty States */
+.loadingContainer,
+.emptyState {
+    text-align: center;
+    padding: 48px;
+    color: #64748b;
 }
 
 .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid #e5e7eb;
+    border: 3px solid #e2e8f0;
     border-top-color: #14b8a6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
 }
 
 @keyframes spin {
@@ -466,31 +332,137 @@
     }
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+/* ========== MODAL STYLES ========== */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
     }
 
-    .createButton {
-        width: 100%;
-        justify-content: center;
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
+}
 
-    .userTable th,
-    .userTable td {
-        padding: 10px 12px;
-        font-size: 13px;
-    }
+.modalHeader {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-    .modalFooter {
-        flex-direction: column;
-    }
+.modalHeader h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+}
 
-    .btnPrimary,
-    .btnSecondary {
-        width: 100%;
-    }
+.closeButton {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.closeButton:hover {
+    color: #ef4444;
+}
+
+.modalBody {
+    padding: 24px;
+}
+
+.formGroup {
+    margin-bottom: 16px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 14px;
+    color: #334155;
+}
+
+.formGroup input,
+.formGroup select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+    outline: none;
+    border-color: #14b8a6;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+}
+
+.modalFooter {
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.btnPrimary,
+.btnSecondary {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btnSecondary {
+    background: white;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+}
+
+.btnSecondary:hover {
+    background: #f1f5f9;
+}
+
+.btnPrimary {
+    background: #14b8a6;
+    color: white;
+}
+
+.btnPrimary:hover {
+    background: #0d9488;
 }

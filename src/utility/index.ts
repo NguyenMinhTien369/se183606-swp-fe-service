@@ -219,6 +219,15 @@ export const userAPI = {
     axiosInstance.post("/users/reset-password", payload),
 };
 
+// ==================== Auditlog API ====================
+export const adminAPI = {
+  // Gọi API lấy nhật ký hệ thống (Pageable)
+  getAuditLogs: (page: number = 0, size: number = 20) =>
+    axiosInstance.get("/admin/audit-logs", {
+      params: { page, size },
+    }),
+};
+
 // ==================== WARRANTY CLAIM API ====================
 // Backend: WarrantyClaimController.java
 // Path: /api/warranty-claims/*

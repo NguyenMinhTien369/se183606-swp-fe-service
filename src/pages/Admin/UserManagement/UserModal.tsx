@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaEye, FaEyeSlash } from 'react-icons/fa';
 import type { User, UserFormData, ServiceCenter, ModalMode } from './types';
 import { validatePassword, validatePhone, getRoleId } from './helpers';
 import styles from './UserManagement.module.css';
@@ -34,6 +34,7 @@ const UserModal: React.FC<UserModalProps> = ({
 
     const [errors, setErrors] = useState<Partial<Record<keyof UserFormData, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Populate form when editing
     useEffect(() => {
@@ -61,6 +62,7 @@ const UserModal: React.FC<UserModalProps> = ({
             });
         }
         setErrors({});
+        setShowPassword(false);
     }, [mode, user, isOpen]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -182,14 +184,35 @@ const UserModal: React.FC<UserModalProps> = ({
 
                     <div className={styles.formGroup}>
                         <label>Password {mode === 'create' && '*'}</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            placeholder={mode === 'edit' ? 'Leave blank to keep current password' : ''}
-                            className={errors.password ? styles.inputError : ''}
-                        />
+                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                placeholder={mode === 'edit' ? 'Nhập để đổi mật khẩu mới' : ''}
+                                className={errors.password ? styles.inputError : ''}
+                                style={{ paddingRight: '40px', width: '100%' }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#6b7280',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    padding: 0
+                                }}
+                                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                            >
+                                {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                            </button>
+                        </div>
                         {errors.password && <span className={styles.errorText}>{errors.password}</span>}
                     </div>
 
