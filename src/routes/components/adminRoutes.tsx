@@ -11,6 +11,7 @@ import {
     UserManagement,
     ProductManagement,
     WarrantyApproval,
+    InventoryManagement,
 } from "@/pages/Admin";
 
 export const adminRoutes = {
@@ -40,6 +41,10 @@ export const adminRoutes = {
         {
             path: RELATIVE_PATHS.WARRANTY_APPROVAL,
             element: <WarrantyApproval />,
+        },
+        {
+            path: RELATIVE_PATHS.INVENTORY,
+            element: <InventoryManagement />,
         },
         { path: "*", element: <NotFound /> },
     ],

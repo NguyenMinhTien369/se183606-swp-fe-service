@@ -62,6 +62,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: <CheckCircle className="size-4" />,
           to: ROUTERS_PATH.ADMIN_WARRANTY_APPROVAL,
         },
+        {
+          title: "Quản Lý Kho",
+          icon: <Box className="size-4" />,
+          to: ROUTERS_PATH.ADMIN_INVENTORY,
+        },
       ];
     }
 

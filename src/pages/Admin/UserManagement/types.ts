@@ -22,6 +22,7 @@ export interface User {
     serviceCenter?: ServiceCenter;
     createdDate: string;
     status?: 'ACTIVE' | 'INACTIVE' | string;
+    password?: string;
 }
 
 export interface UserFormData {
@@ -39,6 +40,16 @@ export interface RoleFilter {
     key: string;
     label: string;
     count: number;
+}
+
+export interface AuditLog {
+    id: number;
+    action: string;
+    targetEntity: string;
+    targetId: string;
+    details: string;
+    username: string;
+    timestamp: string;
 }
 
 export type ModalMode = 'create' | 'edit';
