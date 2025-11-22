@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { X, CheckCircle, Loader2, Search } from "lucide-react";
@@ -78,7 +78,7 @@ export default function VehicleRegistrationForm() {
     validationSchema: customerValidationSchema,
     validateOnChange: true,
     validateOnBlur: true,
-    onSubmit: () => { },
+    onSubmit: () => {},
   });
 
   // XỬ LÝ KHI SUCCESS THAY ĐỔI
@@ -150,13 +150,12 @@ export default function VehicleRegistrationForm() {
 
     setShowSuggestions(false);
 
-    // GỌI HÀM MỚI để tải chi tiết xe (tự động cập nhật vehicleDetails)
     await getVehicleDetails(vin);
   };
 
   const handleSubmit = async () => {
     // CHỈ VALIDATE THÔNG TIN KHÁCH HÀNG
-    const customerErrors = await customerFormik.validateForm();
+    await customerFormik.validateForm();
 
     customerFormik.setTouched({
       fullName: true,
@@ -233,7 +232,7 @@ export default function VehicleRegistrationForm() {
                   {...customerFormik.getFieldProps("fullName")}
                   className={
                     customerFormik.touched.fullName &&
-                      customerFormik.errors.fullName
+                    customerFormik.errors.fullName
                       ? "border-red-500"
                       : ""
                   }
@@ -324,7 +323,7 @@ export default function VehicleRegistrationForm() {
                   {...customerFormik.getFieldProps("address")}
                   className={
                     customerFormik.touched.address &&
-                      customerFormik.errors.address
+                    customerFormik.errors.address
                       ? "border-red-500"
                       : ""
                   }
