@@ -23,10 +23,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useGetServiceHistoryByServiceCenter } from "@/hooks/ManageTechnicians/ArchiveReports/useGetServiceHistoryByServiceCenter";
 import type { ServiceHistoryResponse } from "@/hooks/ManageTechnicians/ArchiveReports/useGetServiceHistoryByServiceCenter";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 
 export default function ArchiveReports() {
-  // Hardcoded serviceCenterID - in production, get from auth context
-  const SERVICE_CENTER_ID = 1;
+  const { user } = useAuth();
+  const SERVICE_CENTER_ID = user?.serviceCenterID;
 
   const { histories, loading, error, reload } =
     useGetServiceHistoryByServiceCenter(SERVICE_CENTER_ID);

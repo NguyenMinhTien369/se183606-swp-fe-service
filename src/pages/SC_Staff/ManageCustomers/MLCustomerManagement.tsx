@@ -2,10 +2,13 @@ import ROUTERS_PATH, { RELATIVE_PATHS } from "@/constants/routers";
 import { NavLink, Outlet } from "react-router";
 import { CircleArrowLeft } from "lucide-react";
 import { getNavLinkClass } from "@/layouts/style";
+import Header from "@/layouts/Header";
+import Footer from "@/layouts/Footer";
 
 export default function MLCustomerManagement() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <Header name="Quản Lý Khách Hàng" />
       <div className="flex-1 p-4 sm:p-6">
         <div className="w-full max-w-4xl mx-auto mb-8">
           <div className="relative bg-gray-200/80 backdrop-blur-sm p-1.5 rounded-full flex justify-center gap-2 shadow-inner">
@@ -46,6 +49,8 @@ export default function MLCustomerManagement() {
           <Outlet />
         </main>
       </div>
+
+      <Footer />
     </div>
   );
 }

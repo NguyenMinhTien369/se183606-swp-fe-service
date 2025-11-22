@@ -19,7 +19,7 @@ import PartsManagement from "@/pages/SC_Staff/ManageCustomers/features/PartsMana
 import MLInternalManagement from "@/pages/SC_Staff/ManageTechnicians/MLInternalManagement";
 import TrackProgress from "@/pages/SC_Staff/ManageTechnicians/features/TrackProgress";
 import AssignTechnician from "@/pages/SC_Staff/ManageTechnicians/features/AssignTechnician";
-import ArchiveReports from "@/pages/SC_Staff/ManageTechnicians/features/ArchiveReports";
+import ArchiveReports from "@/pages/SC_Staff/HistoryReports/ArchiveReports";
 import WarrantyRequestList from "@/pages/SC_Staff/ManageTechnicians/features/WarrantyRequestList";
 import CreateCustomerForm from "@/pages/SC_Staff/ManageCustomers/components/CreateCustomerForm";
 import MLCreateWarranty from "@/pages/SC_Staff/ManageWarranty/MLCreateWarranty";

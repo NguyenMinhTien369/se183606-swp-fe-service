@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { Customer } from "./types/index";
-import { Search, X, Loader2, Car } from "lucide-react";
+import { Search, X, Loader2, Car, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,14 +72,9 @@ export default function ManageCustomer() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Car className="h-8 w-8" />
+            <User className="h-8 w-8" />
             <div>
-              <h1 className="text-lg font-semibold">
-                Hệ thống quản lý bảo hành xe
-              </h1>
-              <p className="text-muted-foreground text-sm">
-                Ford Warranty Management System
-              </p>
+              <h1 className="text-lg font-semibold">Quản Lý Khách Hàng</h1>
             </div>
           </div>
         </div>

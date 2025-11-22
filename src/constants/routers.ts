@@ -41,7 +41,7 @@ const ROUTERS_PATH = {
 
   //F2 - Internal Management
   INTERNAL_MANAGEMENT: "/sc-staff/internal-management",
-
+  WARRANTY_LIST: "/sc-staff/manage-warranty/warranty-list",
   // SC Technician Routes
   TECHNICIAN_BASE: "/technician",
   SC_TECHNICIAN_DASHBOARD: "/technician/dashboard",
