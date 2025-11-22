@@ -14,16 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import StatusBadge from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  FileCheck,
-  RefreshCw,
-  Loader2,
-} from "lucide-react";
+import { Clock, RefreshCw, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/pages/Login/feature/AuthContext";
 import { useGetClaimsByServiceCenter } from "@/hooks/ManageWarranty/useGetClaimsByServiceCenter";
@@ -44,45 +37,6 @@ export default function ManufacturerResponsePanel() {
   }, [claims]);
 
   const isLoading = authLoading || isClaimsLoading;
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Được chấp nhận":
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case "Từ chối":
-        return <XCircle className="h-5 w-5 text-red-600" />;
-      case "Hoàn thành":
-        return <FileCheck className="h-5 w-5 text-blue-600" />;
-      default:
-        return <Clock className="h-5 w-5 text-yellow-600" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string }> = {
-      "Được chấp nhận": {
-        label: "Đã chấp nhận",
-        className: "bg-green-100 text-green-800 hover:bg-green-100",
-      },
-      "Từ chối": {
-        label: "Đã từ chối",
-        className: "bg-red-100 text-red-800 hover:bg-red-100",
-      },
-      "Hoàn thành": {
-        label: "Đã hoàn thành",
-        className: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-      },
-    };
-    const { label, className } = config[status] || {
-      label: status,
-      className: "bg-gray-100 text-gray-800",
-    };
-    return (
-      <Badge variant="secondary" className={`text-sm font-medium ${className}`}>
-        {label}
-      </Badge>
-    );
-  };
 
   return (
     <Card className="w-full shadow-sm">
@@ -157,10 +111,7 @@ export default function ManufacturerResponsePanel() {
                       </p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(claim.status)}
-                        {getStatusBadge(claim.status)}
-                      </div>
+                      <StatusBadge status={claim.status} />
                     </TableCell>
                     <TableCell>
                       {claim.result ? (

@@ -23,7 +23,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,10 +30,8 @@ import { useGetClaimsByServiceCenter } from "@/hooks/ManageTechnicians/useGetCla
 import { useSearchClaims } from "@/hooks/ManageTechnicians/useSearchClaims";
 
 import type { WarrantyClaimResponse } from "../types";
-import {
-  getClaimStatusLabel,
-  getClaimStatusColor,
-} from "../lib/utils-warranty";
+
+import StatusBadge from "@/components/StatusBadge";
 
 export default function WarrantyRequestList() {
   // Hardcoded serviceCenterID - in production, get from auth context
@@ -82,8 +79,8 @@ export default function WarrantyRequestList() {
 
   // a filter và hiển thị lại tất cả claims
   const handleClearFilter = () => {
-    clearSearchTerm(); // Clear search term và error
-    setInitialClaims(claims); // Reset về tất cả data
+    clearSearchTerm();
+    setInitialClaims(claims);
 
     setStatusFilter("all");
   };
@@ -95,7 +92,7 @@ export default function WarrantyRequestList() {
   const filteredRequests = filteredClaims.sort((a, b) => {
     const dateA = new Date(a.creationDate).getTime();
     const dateB = new Date(b.creationDate).getTime();
-    return dateB - dateA; // Mới nhất trước
+    return dateB - dateA;
   });
 
   return (
@@ -143,14 +140,12 @@ export default function WarrantyRequestList() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                <SelectItem value="Nháp">📝 Nháp</SelectItem>
-                <SelectItem value="Chờ duyệt">🟡 Chờ duyệt</SelectItem>
-                <SelectItem value="Được chấp nhận">
-                  🟢 Được chấp nhận
-                </SelectItem>
-                <SelectItem value="Đang xử lý">🔵 Đang xử lý</SelectItem>
-                <SelectItem value="Hoàn thành">✅ Hoàn thành</SelectItem>
-                <SelectItem value="Từ chối">🔴 Từ chối</SelectItem>
+                <SelectItem value="Nháp">Nháp</SelectItem>
+                <SelectItem value="Chờ duyệt">Chờ duyệt</SelectItem>
+                <SelectItem value="Được chấp nhận">Được chấp nhận</SelectItem>
+                <SelectItem value="Đang xử lý">Đang xử lý</SelectItem>
+                <SelectItem value="Hoàn thành">Hoàn thành</SelectItem>
+                <SelectItem value="Từ chối">Từ chối</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={handleClearFilter}>
@@ -202,11 +197,11 @@ export default function WarrantyRequestList() {
                         "vi-VN"
                       )}
                     </TableCell>
+
                     <TableCell>
-                      <Badge className={getClaimStatusColor(request.status)}>
-                        {getClaimStatusLabel(request.status)}
-                      </Badge>
+                      <StatusBadge status={request.status} />
                     </TableCell>
+
                     <TableCell className="max-w-xs truncate">
                       {request.result || "-"}
                     </TableCell>
@@ -333,9 +328,6 @@ export default function WarrantyRequestList() {
                           className="flex items-center justify-between p-3 border rounded-lg"
                         >
                           <div className="flex-1 truncate">
-                            <div className="text-sm font-medium truncate">
-                              {file.fileName}
-                            </div>
                             <div className="text-xs text-muted-foreground">
                               {file.fileType}
                             </div>
@@ -368,13 +360,7 @@ export default function WarrantyRequestList() {
                         Trạng thái hiện tại
                       </label>
                       <div className="mt-1">
-                        <Badge
-                          className={getClaimStatusColor(
-                            selectedRequest.status
-                          )}
-                        >
-                          {getClaimStatusLabel(selectedRequest.status)}
-                        </Badge>
+                        <StatusBadge status={selectedRequest.status} />
                       </div>
                     </div>
                     {selectedRequest.result && (

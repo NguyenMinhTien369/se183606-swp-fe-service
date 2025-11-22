@@ -1,5 +1,3 @@
-"use client";
-
 import type { WarrantyClaimResponse } from "../types/warranty";
 import {
   Dialog,
@@ -8,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Calendar,
@@ -21,6 +18,8 @@ import {
   Phone,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import StatusBadge from "@/components/StatusBadge";
 
 interface WarrantyDetailsDialogProps {
   claim: WarrantyClaimResponse | null;
@@ -35,34 +34,13 @@ export default function WarrantyDetailsDialog({
 }: WarrantyDetailsDialogProps) {
   if (!claim) return null;
 
-  // --- Cấu hình trạng thái ---
-  const getStatusConfig = (status: string) => {
-    const configs: Record<
-      string,
-      {
-        label: string;
-        variant: "default" | "secondary" | "destructive" | "outline";
-      }
-    > = {
-      Nháp: { label: "📝 Nháp", variant: "outline" },
-      "Chờ duyệt": { label: "🟡 Chờ duyệt", variant: "outline" },
-      "Được chấp nhận": { label: "🟢 Được chấp nhận", variant: "default" },
-      "Đang xử lý": { label: "🔵 Đang xử lý", variant: "secondary" },
-      "Hoàn thành": { label: "✅ Hoàn thành", variant: "default" },
-      "Từ chối": { label: "🔴 Từ chối", variant: "destructive" },
-    };
-    return configs[status] || configs["Chờ duyệt"];
-  };
-
-  const statusConfig = getStatusConfig(claim.status);
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Claim #{claim.claimID}</DialogTitle>
-            <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+            <StatusBadge status={claim.status} />
           </div>
           <DialogDescription>Chi tiết yêu cầu bảo hành</DialogDescription>
         </DialogHeader>
