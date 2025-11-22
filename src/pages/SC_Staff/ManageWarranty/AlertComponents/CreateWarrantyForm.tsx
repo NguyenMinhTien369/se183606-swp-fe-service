@@ -270,7 +270,7 @@ export default function CreateWarrantyForm({
     <>
       <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
         <DialogContent
-          className="max-w-5xl max-h-[95vh] overflow-y-auto"
+          className="max-w-6xl max-h-[95vh] sm:max-w-6xl"
           onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
