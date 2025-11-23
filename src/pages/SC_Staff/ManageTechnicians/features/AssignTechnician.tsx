@@ -16,14 +16,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -31,24 +23,30 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/StatusBadge";
 
+// Import Hooks
 import { useGetClaimsForAssignment } from "@/hooks/ManageTechnicians/AssignTechnician/useGetClaimsForAssignment";
 import { useGetTechnicians } from "@/hooks/ManageTechnicians/AssignTechnician/useGetTechnicians";
 import { useAssignTech } from "@/hooks/ManageTechnicians/AssignTechnician/useAssignTech";
 
 export default function AssignTechnician() {
+  // Hooks lấy dữ liệu
   const {
     claims,
     isLoading: isClaimsLoading,
     fetchClaims,
   } = useGetClaimsForAssignment();
-  const { technicians, fetchTechnicians } = useGetTechnicians();
 
+  const { technicians, fetchTechnicians } = useGetTechnicians();
   const { assignTechnician, isSubmitting } = useAssignTech();
 
-  // Local State cho UI
-  const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
+  // --- STATE ---
+  const [selectedRequests, setSelectedRequests] = useState<number[]>([]); // Lưu mảng Claim ID
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mainTechnician, setMainTechnician] = useState<string>("");
+
+  // State lưu danh sách ID kỹ thuật viên được chọn (Mảng string hoặc number)
+  // Ở đây dùng string để dễ xử lý với checkbox value, khi gửi sẽ convert sang number
+  const [assignedTechIds, setAssignedTechIds] = useState<string[]>([]);
+
   const [expectedCompletionDate, setExpectedCompletionDate] = useState("");
   const [internalNotes, setInternalNotes] = useState("");
 
@@ -59,7 +57,7 @@ export default function AssignTechnician() {
     type: "success" | "error";
   }>({ open: false, title: "", description: "", type: "success" });
 
-  // Sắp xếp claims theo creationDate (Mới nhất lên đầu)
+  // Sắp xếp claims mới nhất lên đầu
   const sortedClaims = useMemo(() => {
     return [...claims].sort((a, b) => {
       return (
@@ -68,14 +66,13 @@ export default function AssignTechnician() {
     });
   }, [claims]);
 
-  // Load dữ liệu ban đầu
-  // ĐƠN GIẢN HÓA LOGIC useEffect: Không cần kiểm tra user?.serviceCenterID vì API /unassigned tự xử lý
+  // Load dữ liệu khi vào trang
   useEffect(() => {
     fetchClaims();
     fetchTechnicians();
-  }, [fetchClaims, fetchTechnicians]); // Chỉ phụ thuộc vào fetch functions
+  }, [fetchClaims, fetchTechnicians]);
 
-  // Logic xử lý Select All (Sử dụng sortedClaims)
+  // --- HANDLERS: CHỌN CLAIM ---
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedRequests(sortedClaims.map((r) => r.claimID));
@@ -84,7 +81,6 @@ export default function AssignTechnician() {
     }
   };
 
-  // Logic xử lý Select từng dòng
   const handleSelectRequest = (requestId: number, checked: boolean) => {
     if (checked) {
       setSelectedRequests([...selectedRequests, requestId]);
@@ -104,47 +100,54 @@ export default function AssignTechnician() {
       return;
     }
     // Reset form
-    setMainTechnician("");
+    setAssignedTechIds([]);
     setExpectedCompletionDate("");
     setInternalNotes("");
     setIsModalOpen(true);
   };
 
+  // --- HANDLERS: CHỌN TECHNICIAN (CHECKBOX) ---
+  const handleToggleTechnician = (techId: string, checked: boolean) => {
+    if (checked) {
+      setAssignedTechIds((prev) => [...prev, techId]);
+    } else {
+      setAssignedTechIds((prev) => prev.filter((id) => id !== techId));
+    }
+  };
+
+  // --- SUBMIT ---
   const handleConfirmAssign = async () => {
-    if (!mainTechnician || mainTechnician === "") {
+    // Validate: Phải chọn ít nhất 1 kỹ thuật viên
+    if (assignedTechIds.length === 0) {
       setAlertDialog({
         open: true,
-        title: "Thiếu kỹ thuật viên chính",
-        description: "Vui lòng chọn kỹ thuật viên chính trước khi xác nhận.",
+        title: "Chưa chọn kỹ thuật viên",
+        description: "Vui lòng chọn ít nhất một kỹ thuật viên.",
         type: "error",
       });
       return;
     }
 
+    // Gửi dữ liệu qua Hook
     const result = await assignTechnician({
       claimIDs: selectedRequests,
-      mainTechnicianID: Number(mainTechnician),
-      expectedCompletionDate,
-      internalNotes,
+      technicianIDs: assignedTechIds.map((id) => parseInt(id)), // Convert String -> Number[]
+      expectedCompletionDate: expectedCompletionDate || undefined, // Backend optional
+      internalNotes: internalNotes || undefined, // Backend optional
     });
 
     if (result.success) {
-      const tech = technicians.find((t) => t.userID === Number(mainTechnician));
-
       setAlertDialog({
         open: true,
         title: "Phân công thành công",
-        description: `Đã phân công ${tech?.fullName} xử lý ${selectedRequests.length} yêu cầu.`,
+        description: `Đã phân công ${assignedTechIds.length} kỹ thuật viên cho ${selectedRequests.length} yêu cầu.`,
         type: "success",
       });
 
       setIsModalOpen(false);
       setSelectedRequests([]);
-      setMainTechnician("");
-      setExpectedCompletionDate("");
-      setInternalNotes("");
-
-      await fetchClaims();
+      setAssignedTechIds([]);
+      await fetchClaims(); // Reload lại danh sách
     } else {
       setAlertDialog({
         open: true,
@@ -157,13 +160,14 @@ export default function AssignTechnician() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">
             Phân công kỹ thuật viên
           </h2>
           <p className="text-sm text-muted-foreground">
-            Gán kỹ thuật viên cho yêu cầu bảo hành
+            Quản lý và phân công công việc sửa chữa
           </p>
         </div>
         <div className="flex gap-2">
@@ -177,6 +181,7 @@ export default function AssignTechnician() {
         </div>
       </div>
 
+      {/* Table */}
       <Card className="border rounded-xl shadow-sm">
         <ScrollArea className="h-[600px]">
           <Table>
@@ -184,7 +189,6 @@ export default function AssignTechnician() {
               <TableRow className="bg-muted/50">
                 <TableHead className="w-12">
                   <Checkbox
-                    // Sử dụng sortedClaims
                     checked={
                       selectedRequests.length === sortedClaims.length &&
                       sortedClaims.length > 0
@@ -195,29 +199,29 @@ export default function AssignTechnician() {
                 </TableHead>
                 <TableHead>Mã yêu cầu</TableHead>
                 <TableHead>VIN</TableHead>
-                <TableHead>Trung tâm</TableHead>
+                <TableHead>Khách hàng</TableHead>
                 <TableHead>Ngày tạo</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead>Mô tả</TableHead>
+                <TableHead>Mô tả lỗi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isClaimsLoading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8">
-                    <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+                    Đang tải dữ liệu...
                   </TableCell>
                 </TableRow>
-              ) : sortedClaims.length === 0 ? ( // Sử dụng sortedClaims
+              ) : sortedClaims.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    <p className="text-muted-foreground">
-                      Không có yêu cầu nào cần phân công
-                    </p>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    Không có yêu cầu nào cần phân công
                   </TableCell>
                 </TableRow>
               ) : (
-                // Sử dụng sortedClaims để render đúng thứ tự
                 sortedClaims.map((request) => (
                   <TableRow key={request.claimID}>
                     <TableCell>
@@ -233,19 +237,18 @@ export default function AssignTechnician() {
                     </TableCell>
                     <TableCell>#{request.claimID}</TableCell>
                     <TableCell>{request.vin}</TableCell>
-                    <TableCell>{request.serviceCenterName || "-"}</TableCell>
+                    {/* Hiển thị tên khách hàng từ type WarrantyClaimResponse */}
+                    <TableCell>{request.customerName}</TableCell>
                     <TableCell>
                       {new Date(request.creationDate).toLocaleDateString(
                         "vi-VN"
                       )}
                     </TableCell>
-
                     <TableCell>
                       <StatusBadge status={request.status} />
                     </TableCell>
-
                     <TableCell className="max-w-xs truncate text-muted-foreground">
-                      {request.description || "-"}
+                      {request.description || "Không có mô tả"}
                     </TableCell>
                   </TableRow>
                 ))
@@ -255,99 +258,115 @@ export default function AssignTechnician() {
         </ScrollArea>
       </Card>
 
-      {/* Assign Technician Modal */}
+      {/* MODAL */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl rounded-2xl shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">
-              Phân công kỹ thuật viên
-            </DialogTitle>
+            <DialogTitle>Phân công kỹ thuật viên</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Selected Requests */}
+            {/* Danh sách yêu cầu đã chọn */}
             <div>
               <label className="mb-2 block text-sm font-medium">
-                Yêu cầu được chọn
+                Yêu cầu đang chọn ({selectedRequests.length})
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
                 {selectedRequests.map((id) => (
-                  <Badge key={id} variant="secondary" className="rounded-md">
+                  <Badge key={id} variant="secondary">
                     #{id}
                   </Badge>
                 ))}
               </div>
             </div>
 
-            {/* Main Technician */}
+            {/* Chọn Technician (Multi-select) */}
             <div>
-              <label className="mb-2 block text-sm font-medium">
-                Kỹ thuật viên chính *
-              </label>
-              <Select
-                value={mainTechnician}
-                onValueChange={(value) => setMainTechnician(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn kỹ thuật viên..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {technicians.map((tech) => (
-                    <SelectItem
-                      key={tech.userID}
-                      value={tech.userID.toString()}
-                    >
-                      {tech.fullName} — {tech.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Expected Completion Date */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Ngày dự kiến hoàn thành
-              </label>
-              <Input
-                type="date"
-                value={expectedCompletionDate}
-                onChange={(e) => setExpectedCompletionDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
-              />
-            </div>
-
-            {/* Assignment Date (Read-only) */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Ngày phân công
-              </label>
-              <div className="p-3 bg-muted rounded-lg text-sm">
-                {new Date().toLocaleDateString("vi-VN")}
+              <div className="flex justify-between mb-2">
+                <label className="text-sm font-medium">
+                  Chọn kỹ thuật viên *
+                </label>
+                <span className="text-xs text-muted-foreground">
+                  Đã chọn: {assignedTechIds.length}
+                </span>
               </div>
+              <Card className="border p-1 rounded-md h-48">
+                <ScrollArea className="h-full">
+                  <div className="space-y-1 p-2">
+                    {technicians.map((tech) => (
+                      <div
+                        key={tech.userID}
+                        className="flex items-center space-x-3 p-2 hover:bg-muted rounded-md cursor-pointer"
+                        onClick={() => {
+                          // Cho phép click vào dòng để chọn
+                          const isChecked = assignedTechIds.includes(
+                            tech.userID.toString()
+                          );
+                          handleToggleTechnician(
+                            tech.userID.toString(),
+                            !isChecked
+                          );
+                        }}
+                      >
+                        <Checkbox
+                          id={`tech-${tech.userID}`}
+                          checked={assignedTechIds.includes(
+                            tech.userID.toString()
+                          )}
+                          onCheckedChange={(checked) =>
+                            handleToggleTechnician(
+                              tech.userID.toString(),
+                              checked as boolean
+                            )
+                          }
+                          // Ngăn sự kiện click dòng lan vào checkbox gây double toggle
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="grid gap-0.5">
+                          {/* Hiển thị fullName và role từ TechnicianUser */}
+                          <label className="text-sm font-medium cursor-pointer">
+                            {tech.fullName}
+                          </label>
+                          <span className="text-xs text-muted-foreground">
+                            {tech.role?.roleName} - {tech.email}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </Card>
             </div>
 
-            {/* Internal Notes */}
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Ghi chú nội bộ
-              </label>
-              <Textarea
-                placeholder="Nhập ghi chú cho kỹ thuật viên..."
-                value={internalNotes}
-                onChange={(e) => setInternalNotes(e.target.value)}
-                rows={4}
-              />
+            {/* Ngày hoàn thành & Ghi chú */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Ngày dự kiến
+                </label>
+                <Input
+                  type="date"
+                  min={new Date().toISOString().split("T")[0]}
+                  value={expectedCompletionDate}
+                  onChange={(e) => setExpectedCompletionDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Ghi chú
+                </label>
+                <Input
+                  placeholder="Ghi chú nội bộ..."
+                  value={internalNotes}
+                  onChange={(e) => setInternalNotes(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsModalOpen(false)}
-              disabled={isSubmitting}
-            >
-              Hủy bỏ
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Hủy
             </Button>
             <Button onClick={handleConfirmAssign} disabled={isSubmitting}>
               {isSubmitting ? "Đang xử lý..." : "Xác nhận"}
@@ -356,32 +375,30 @@ export default function AssignTechnician() {
         </DialogContent>
       </Dialog>
 
-      {/* Notification Dialog */}
+      {/* Thông báo kết quả */}
       <Dialog
         open={alertDialog.open}
         onOpenChange={(open) => setAlertDialog({ ...alertDialog, open })}
       >
-        <DialogContent className="sm:max-w-md rounded-xl text-center space-y-4">
-          <div className="flex flex-col items-center justify-center space-y-3">
+        <DialogContent className="sm:max-w-md text-center">
+          <div className="flex justify-center mb-4">
             {alertDialog.type === "success" ? (
               <CheckCircle2 className="w-12 h-12 text-green-500" />
             ) : (
               <AlertCircle className="w-12 h-12 text-red-500" />
             )}
-            <DialogHeader>
-              <DialogTitle className="text-lg font-semibold">
-                {alertDialog.title}
-              </DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">
-              {alertDialog.description}
-            </p>
           </div>
-          <DialogFooter>
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              {alertDialog.title}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground">{alertDialog.description}</p>
+          <DialogFooter className="sm:justify-center mt-4">
             <Button
               onClick={() => setAlertDialog({ ...alertDialog, open: false })}
             >
-              OK
+              Đóng
             </Button>
           </DialogFooter>
         </DialogContent>
