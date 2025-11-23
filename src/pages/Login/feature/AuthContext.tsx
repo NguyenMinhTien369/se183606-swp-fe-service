@@ -82,29 +82,23 @@ credentials: là 1 tham số kiểu LoginCredentials chứa thông tin đăng nh
 */
   const login = async (credentials: LoginCredentials): Promise<LoginResult> => {
     try {
-      console.log("Đang gửi request login...", credentials);
       const response = await authAPI.login(credentials);
-      console.log("Login response:", response.data);
-
-      // Backend trả về: { code: 0, result: { token, authenticated } }  !!!
       const result = response.data?.result;
       const token = result?.token;
 
       if (!token) {
-        console.error("❌ Không có token trong response:", response.data);
+        console.error("Không có token trong response:", response.data);
         throw new Error("No access token received");
       }
 
-      console.log("Token nhận được, length:", token.length);
       localStorage.setItem("accessToken", token);
 
       // Decode JWT để lấy thông tin user từ token
       const decodedToken = decodeJWT(token);
-      console.log("Decoded token:", decodedToken);
 
       // Tạo object user từ thông tin trong token
       const userData: User = {
-        userId: decodedToken?.userID || decodedToken?.userId, // Backend dùng "userID" (viết hoa)
+        userId: decodedToken?.userID || decodedToken?.userId,
         username: decodedToken?.sub,
         email: decodedToken?.email,
         fullName: decodedToken?.fullName,
