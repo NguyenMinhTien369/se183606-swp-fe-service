@@ -121,6 +121,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           to: ROUTERS_PATH.INTERNAL_MANAGEMENT,
         },
         {
+          title: "Quản Lý Đơn Bảo Hành",
+          icon: <Building2 className="size-4" />,
+          to: ROUTERS_PATH.CENTER_WARRANTY,
+        },
+        {
           title: "Lịch Sử Bảo Hành",
           icon: <ClipboardPlus className="size-4" />,
           to: ROUTERS_PATH.SERVICE_HISTORY_ALL,
