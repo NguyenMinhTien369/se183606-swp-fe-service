@@ -2,11 +2,9 @@ import { useState, useEffect, useCallback } from "react"; // Thêm useCallback �
 import { useParams, useNavigate } from "react-router";
 import type { WarrantyClaimResponse } from "../types/warranty";
 import { warrantyClaimAPI } from "@/utility/index";
-// Lưu ý: Đảm bảo đường dẫn import hook đúng với nơi bạn lưu file
 import { useDeleteWarranty } from "@/hooks/ManageWarranty/CRUDWaDe/useDeleteWarranty";
 
-// --- 1. IMPORT FORM CHỈNH SỬA ---
-import CreateWarrantyForm from "@/pages/SC_Staff/ManageWarranty/AlertComponents/CreateWarrantyForm";
+import CreateWarrantyForm from "@/pages/SC_Technician/ManageWarranty/AlertComponents/CreateWarrantyForm";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

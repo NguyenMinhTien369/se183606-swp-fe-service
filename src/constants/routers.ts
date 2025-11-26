@@ -36,16 +36,16 @@ const ROUTERS_PATH = {
   PARTS_MANAGEMENT: "/sc-staff/manage-customer/parts-management",
   CUSTOMER_SEARCH: "/sc-staff/manage-customer/search",
   SERVICE_HISTORY_ALL: "/sc-staff/service-history-all",
-  MANAGE_WARRANTY: "/sc-staff/manage-warranty",
-  CREATE_WARRANTY: "/sc-staff/create-warranty",
 
   //F2 - Internal Management
   INTERNAL_MANAGEMENT: "/sc-staff/internal-management",
-  WARRANTY_LIST: "/sc-staff/manage-warranty/warranty-list",
   // SC Technician Routes
   TECHNICIAN_BASE: "/technician",
   SC_TECHNICIAN_DASHBOARD: "/technician/dashboard",
   CONDUCT_WARRANTY: "/technician/conduct-warranty",
+  MANAGE_WARRANTY: "/technician/manage-warranty",
+  CREATE_WARRANTY: "/technician/create-warranty",
+  WARRANTY_LIST: "/technician/manage-warranty/warranty-list",
 } as const;
 
 export const RELATIVE_PATHS = {

@@ -17,9 +17,9 @@ import { Upload, FileText, X, Save, Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Đảm bảo import đúng đường dẫn component Alert của bạn
-import SuccessCreated from "@/pages/SC_Staff/ManageWarranty/AlertComponents/SuccessCreated";
-import SuccessDraft from "@/pages/SC_Staff/ManageWarranty/AlertComponents/SuccessDraft";
-import type { ClaimPartResponse } from "../../ManageTechnicians/types";
+import SuccessCreated from "@/pages/SC_Technician/ManageWarranty/AlertComponents/SuccessCreated";
+import SuccessDraft from "@/pages/SC_Technician/ManageWarranty/AlertComponents/SuccessDraft";
+import type { ClaimPartResponse } from "../types/warranty";
 
 interface CreateWarrantyFormProps {
   open: boolean;
