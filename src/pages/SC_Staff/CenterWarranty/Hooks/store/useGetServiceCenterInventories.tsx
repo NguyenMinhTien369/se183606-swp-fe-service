@@ -17,7 +17,8 @@ export default function useGetServiceCenterInventories(
       const response = await inventoryAPI.getServiceCenterInventories(
         serviceCenterID
       );
-      const inventoryData = response.data || [];
+
+      const inventoryData = response.data.result || [];
       setInventory(inventoryData);
       console.log("Loaded inventory:", inventoryData);
     } catch (err: any) {

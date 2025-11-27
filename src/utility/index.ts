@@ -332,10 +332,8 @@ export const warrantyClaimAPI = {
   // Body tương ứng với ReportMissingPartsRequest bên Java
   //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
 
-  reportMissingParts: (
-    id: number,
-    data: ReportMissingPartsRequestDTO
-  ) => axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
+  reportMissingParts: (id: number, data: ReportMissingPartsRequestDTO) =>
+    axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
 
   // API: @GetMapping("/service-center/{serviceCenterID}/non-draft")
   getNonDraftClaims: (serviceCenterID: number) =>
