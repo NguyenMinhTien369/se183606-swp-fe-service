@@ -1,4 +1,3 @@
-// TypeScript types for Warranty Approval
 export interface Customer {
     id?: number;
     fullName: string;
@@ -52,13 +51,16 @@ export interface WarrantyClaim {
 
 export type ClaimStatus =
     | 'PENDING'       // Chờ duyệt
-    | 'APPROVED'      // Được chấp nhận
+    | 'APPROVED'      // Được chấp nhận (Legacy)
     | 'REJECTED'      // Từ chối
     | 'SHIPPING'      // Đang giao phụ tùng
     | 'MISSING_PARTS' // Thiếu hàng
     | 'RECEIVED'      // Đã nhận
     | 'IN_PROGRESS'   // Đang xử lý
-    | 'COMPLETED';    // Hoàn thành
+    | 'COMPLETED'     // Hoàn thành
+    | 'WAITING_MANUFACTURER' // Chờ hãng duyệt (New)
+    | 'MANUFACTURER_APPROVED' // Hãng đã duyệt (New)
+    | 'WAITING_SUPPLEMENT';   // Chờ bổ sung phụ tùng (New)
 
 export interface ApprovalRequest {
     approvalNotes: string;
@@ -66,46 +68,37 @@ export interface ApprovalRequest {
 
 export interface WarrantyClaimResponse {
     claimID: number;
-
-    // Thông tin xe (đã làm phẳng)
     vin: string;
     licensePlate: string;
     modelName: string;
     color: string;
     batteryCapacity: number;
     productionYear: number;
-
-    // Thông tin khách hàng (đã làm phẳng)
     customerName: string;
     customerPhone: string;
     customerEmail: string;
     customerCmnd: string;
     customerAddress: string;
-
-    // Thông tin TTBH (đã làm phẳng)
     serviceCenterName: string;
     serviceCenterAddress: string;
     serviceCenterPhone: string;
-
-    // Thông tin đơn bảo hành
-    creationDate: string; // "YYYY-MM-DD"
-    status: string;       // ⬅️ QUAN TRỌNG: Đây là status Tiếng Việt từ backend
+    creationDate: string;
+    status: string;
     description: string;
-    result: string | null; // Dùng để lưu lý do từ chối
-
+    result: string | null;
     affectedParts: ClaimPartResponse[];
     attachments: ClaimAttachmentResponse[];
 }
 
 export interface ClaimPartResponse {
-    claimPartID: number; // ⬅️ ID của dòng ClaimParts, không phải partID
+    claimPartID: number;
     partSerialNumber: string;
     partTypeName: string;
     partTypeDescription: string;
-    description: string; // Ghi chú của KTV cho phụ tùng này
+    description: string;
     createdDate: string;
-    quantity?: number; // Số lượng yêu cầu (nếu backend trả về)
-    missingQuantity?: number; // Số lượng còn thiếu cần giao bổ sung (map quantityReportedMissing)
+    quantity?: number;
+    missingQuantity?: number;
 }
 
 export interface ClaimAttachmentResponse {
@@ -113,5 +106,4 @@ export interface ClaimAttachmentResponse {
     fileUrl: string;
     fileType: string;
     uploadDate: string;
-    // fileName không có, chúng ta sẽ tự suy ra từ fileUrl
 }

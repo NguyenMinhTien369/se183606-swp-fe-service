@@ -15,6 +15,8 @@ import {
   PackageCheck,
   BoxSelect,
   CheckCheck,
+  CalendarClock,
+  Warehouse,
 } from "lucide-react";
 
 interface StatusBadgeProps {
@@ -138,6 +140,8 @@ const defaultConfig = {
   className: "bg-gray-100 text-gray-500 border-gray-200",
   icon: AlertCircle,
 };
+
+
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
   const config = statusConfig[status] || defaultConfig;

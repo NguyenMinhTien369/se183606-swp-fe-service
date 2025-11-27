@@ -124,6 +124,10 @@ interface InstalledPartRequest {
   installationDate: string; // LocalDate - backend dùng 'installationDate'
 }
 
+interface SupplementRequest {
+  note: string; // Ghi chú lý do thiếu/delay
+}
+
 // VehicleSearchRequest.java - Backend dùng 'serialNumber' thay vì 'licensePlate'
 interface VehicleSearchRequest {
   vin?: string;
@@ -244,70 +248,45 @@ export const adminAPI = {
 // import axiosInstance from "@/path/to/axios";
 
 export const warrantyClaimAPI = {
-  // --- 1. GET DATA (Lấy dữ liệu) ---
-
-  // Lấy thông tin xe theo VIN
-  // API: @GetMapping("/vehicle-info")
+  // 1. Lấy thông tin
   getVehicleInfoByVin: (vin: string) =>
     axiosInstance.get("/warranty-claims/vehicle-info", { params: { vin } }),
-
-  // Lấy TẤT CẢ claims (ADMIN only)
-  // API: @GetMapping
   getAllClaims: () => axiosInstance.get("/warranty-claims"),
-
-  // Lấy claims theo trạng thái (ADMIN, EVM_STAFF)
-  // API: @GetMapping("/status/{status}")
   getClaimsByStatus: (status: string) =>
     axiosInstance.get(`/warranty-claims/status/${status}`),
-
-  // Lấy danh sách claim theo Service Center (SC_STAFF)
-  // API: @GetMapping("/service-center/{serviceCenterID}")
   getClaimsByServiceCenter: (serviceCenterID: number) =>
     axiosInstance.get(`/warranty-claims/service-center/${serviceCenterID}`),
-
-  // Lấy chi tiết 1 claim
-  // API: @GetMapping("/{claimID}")
   getClaimById: (id: number) => axiosInstance.get(`/warranty-claims/${id}`),
-
-  // Lấy danh sách claim chưa được phân công (cho màn hình Assign Technician)
-  // API: @GetMapping("/unassigned")
   getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
 
-  // --- 2. CREATE / UPDATE / DELETE (Tạo, Sửa, Xóa) ---
-
-  // Tạo mới (Multipart file)
-  // API: @PostMapping
+  // 2. CRUD cơ bản
   createClaim: (formData: FormData) =>
     axiosInstance.post("/warranty-claims", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-
-  // Cập nhật (Multipart file)
-  // API: @PutMapping("/{claimID}")
   updateClaim: (id: number, formData: FormData) =>
     axiosInstance.put(`/warranty-claims/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-
-  // Xóa claim
-  // API: @DeleteMapping("/{claimID}")
   deleteClaim: (id: number) => axiosInstance.delete(`/warranty-claims/${id}`),
-
-  // --- 3. PROCESS FLOW (Quy trình xử lý) ---
-
-  // Gửi yêu cầu lên hãng (SC Staff -> Manufacturer)
-  // API: @PostMapping("/{claimID}/submit")
   submitClaim: (id: number) =>
     axiosInstance.post(`/warranty-claims/${id}/submit`),
 
-  // Đồng bộ trạng thái từ hãng về (EVM Staff/Admin)
-  // API: @PostMapping("/{claimID}/sync-status")
+  // 3. PROCESS FLOW - SC STAFF
+
+  // SC Staff gửi lên hãng (Scenario 02 - Step 1)
+  // Status -> "Chờ hãng duyệt"
+  submitToManufacturer: (claimId: number) => {
+    return axiosInstance.post(`/warranty-claims/${claimId}/submit`);
+  },
+
+
+  // 4. PROCESS FLOW - EVM STAFF (Hãng)
+
+  // Đồng bộ trạng thái chung (Dùng cho Approve ban đầu -> "Hãng đã duyệt")
   syncStatusFromManufacturer: (id: number, status: string, note?: string) => {
-    const params = note !== undefined ? { status, note } : { status };
-    // Vì backend dùng @RequestParam nên data nằm ở params, body để null
-    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
-      params,
-    });
+    const params = note ? { status, note } : { status };
+    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, { params });
   },
 
   // SC Staff Duyệt hoặc Gửi Hãng !!!
@@ -328,6 +307,10 @@ export const warrantyClaimAPI = {
   //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
   shipParts: (id: number) =>
     axiosInstance.post(`/warranty-claims/${id}/ship-parts`),
+
+  // Status -> "Chờ bổ sung phụ tùng" + Trigger Email
+  requirePartsSupplement: (id: number, data: SupplementRequest) =>
+    axiosInstance.post(`/warranty-claims/${id}/require-supplement`, data),
 
   // SC xác nhận nhập kho phụ tùng (Stock In)
   // API: @PostMapping("/{claimID}/stock-in")
