@@ -10,9 +10,10 @@ import TechnicianDashboard from "@/pages/SC_Technician/TechnicianDashboard/Techn
 import ConductWarranty from "@/pages/SC_Technician/ConductWarranty/ConductWarranty";
 import MLCreateWarranty from "@/pages/SC_Technician/ManageWarranty/MLCreateWarranty";
 import Warranty from "@/pages/SC_Technician/ManageWarranty/features/Warranty";
-import WarrantyListWithAuth from "./WarrantyListWrapper";
+
 import ManufacturerResponsePanel from "@/pages/SC_Technician/ManageWarranty/features/ManufacturerResponsePanel";
 import WarrantyDetailPage from "@/pages/SC_Technician/ManageWarranty/features/WarrantyDetailPage";
+import WarrantyList from "@/pages/SC_Technician/ManageWarranty/features/WarrantyList";
 
 export const technicianRoutes = {
   path: ROUTERS_PATH.TECHNICIAN_BASE,
@@ -48,7 +49,7 @@ export const technicianRoutes = {
         },
         {
           path: RELATIVE_PATHS.WARRANTY_LIST,
-          element: <WarrantyListWithAuth />,
+          element: <WarrantyList />,
         },
         {
           path: RELATIVE_PATHS.MANUFACTURER_RESPONSE_PANEL,

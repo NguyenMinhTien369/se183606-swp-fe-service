@@ -22,6 +22,12 @@ import AssignTechnician from "@/pages/SC_Staff/ManageTechnicians/features/Assign
 import ArchiveReports from "@/pages/SC_Staff/HistoryReports/ArchiveReports";
 import WarrantyRequestList from "@/pages/SC_Staff/ManageTechnicians/features/WarrantyRequestList";
 import CreateCustomerForm from "@/pages/SC_Staff/ManageCustomers/components/CreateCustomerForm";
+import MLCenterWarranty from "@/pages/SC_Staff/CenterWarranty/MLCenterWarranty";
+import WarrantyDetail from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/WarrantyDetail";
+import Inventory from "@/pages/SC_Staff/CenterWarranty/features/CenterStorage/Inventory";
+import GoodsIssue from "@/pages/SC_Staff/CenterWarranty/features/CenterStorage/GoodsIssue";
+
+import CenterWarrantyList from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/CenterWarrantyList";
 
 export const scStaffRoutes = {
   path: ROUTERS_PATH.SC_STAFF_BASE,
@@ -94,6 +100,28 @@ export const scStaffRoutes = {
           path: RELATIVE_PATHS.PROGRESS,
           element: <TrackProgress />,
         },
+      ],
+    },
+    {
+      path: RELATIVE_PATHS.CENTER_WARRANTY,
+      element: <MLCenterWarranty />,
+      children: [
+        {
+          index: true,
+          element: (
+            <Navigate to={RELATIVE_PATHS.CENTER_LIST_WARRANTY} replace />
+          ),
+        },
+        {
+          path: RELATIVE_PATHS.CENTER_LIST_WARRANTY,
+          element: <CenterWarrantyList />,
+        },
+        {
+          path: RELATIVE_PATHS.CENTER_WARRANTY_DETAIL,
+          element: <WarrantyDetail />,
+        },
+        { path: RELATIVE_PATHS.INVENTORY_MANAGEMENT, element: <Inventory /> },
+        { path: RELATIVE_PATHS.GOODS_ISSUE, element: <GoodsIssue /> },
       ],
     },
     { path: "*", element: <NotFound /> },

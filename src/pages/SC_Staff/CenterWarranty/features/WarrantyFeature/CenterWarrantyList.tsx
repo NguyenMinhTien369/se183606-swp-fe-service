@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { WarrantyClaimResponse } from "../types/warranty";
+import type { WarrantyClaimResponse } from "@/pages/SC_Staff/CenterWarranty/types/CenterWarranty";
 import { useNavigate } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
 
@@ -30,20 +30,19 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ChevronRight } from "lucide-react";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
 
-export default function WarrantyList() {
+export default function CenterWarrantyList() {
   const { user } = useAuth();
   const serviceCenterID = user?.serviceCenterID || 1;
   const navigate = useNavigate();
-  const handleRowClick = (claim: WarrantyClaimResponse) => {
-    navigate(`${ROUTERS_PATH.MANAGE_WARRANTY}/${claim.claimID}`);
-  };
 
+  const handleRowClick = (claim: WarrantyClaimResponse) => {
+    navigate(`${ROUTERS_PATH.CENTER_WARRANTY_DETAIL}/${claim.claimID}`);
+  };
   const [searchVin, setSearchVin] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { claims, loading } = useWarrantyClaims(serviceCenterID);
 
-  // Logic lọc dữ liệu client-side
   const filteredClaims = claims.filter((claim) => {
     const matchesVin = searchVin
       ? claim.vin.toLowerCase().includes(searchVin.toLowerCase())
