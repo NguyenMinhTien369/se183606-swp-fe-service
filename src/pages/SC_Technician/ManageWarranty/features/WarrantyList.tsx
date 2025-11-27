@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import ROUTERS_PATH from "@/constants/routers";
 
 // Hooks
-import { useWarrantyClaims } from "@/pages/SC_Staff/CenterWarranty/Hooks/useWarrantyClaims";
+import { useGetClaimsByServiceCenter } from "@/hooks/ManageWarranty/useGetClaimsByServiceCenter";
 
 // Components
 import StatusBadge from "@/components/StatusBadge";
@@ -41,7 +41,8 @@ export default function WarrantyList() {
   const [searchVin, setSearchVin] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { claims, loading } = useWarrantyClaims(serviceCenterID);
+  const { claims, isLoading: loading } =
+    useGetClaimsByServiceCenter(serviceCenterID);
 
   // Logic lọc dữ liệu client-side
   const filteredClaims = claims.filter((claim) => {
