@@ -63,24 +63,19 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
-            console.log('🔍 Fetching dashboard data...');
 
             // Fetch all data in parallel
             const [usersRes, claimsRes, productsRes, vehiclesRes] = await Promise.all([
-                userAPI.getUsers().catch(err => {
-                    console.error('Error fetching users:', err);
+                userAPI.getUsers().catch(() => {
                     return { data: { result: [] } };
                 }),
-                warrantyClaimAPI.getAllClaims().catch(err => {
-                    console.error('Error fetching claims:', err);
+                warrantyClaimAPI.getAllClaims().catch(() => {
                     return { data: { result: [] } };
                 }),
-                productModelAPI.getAllProductModels().catch(err => {
-                    console.error('Error fetching products:', err);
+                productModelAPI.getAllProductModels().catch(() => {
                     return { data: { result: [] } };
                 }),
-                vehicleAPI.getAllVehicles().catch(err => {
-                    console.error('Error fetching vehicles:', err);
+                vehicleAPI.getAllVehicles().catch(() => {
                     return { data: { result: [] } };
                 })
             ]);

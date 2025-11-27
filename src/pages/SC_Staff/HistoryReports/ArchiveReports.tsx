@@ -27,7 +27,7 @@ export default function ArchiveReports() {
   const { user } = useAuth();
   const SERVICE_CENTER_ID = user?.serviceCenterID;
 
-  const { histories, loading, error, reload } =
+  const { histories, loading, error } =
     useGetServiceHistoryByServiceCenter(SERVICE_CENTER_ID);
 
   const [searchVin, setSearchVin] = useState("");

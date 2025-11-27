@@ -124,7 +124,7 @@ export interface ServiceCenterResponse {
 export interface AssignTechnicianRequest {
   claimID: number;
   technicianIDs: number[]; // Backend expects List<Integer> - min 1, max 4 technicians
-  expectedCompletionDate?: string; // LocalDate format: YYYY-MM-DD
+  expectedCompletionDate?: string;
   internalNotes?: string;
 }
 
