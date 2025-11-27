@@ -3,11 +3,11 @@
   ScRejectRequest,
 } from "@/pages/SC_Staff/CenterWarranty/types/CenterWarranty";
 import axiosInstance from "./axios";
-import type { ConfirmPartsRequestDTO } from "@/pages/SC_Technician/ConductWarranty/types/warranty";
 import type {
-  PartInventoryRequestCenter,
-  PartInventoryResponseCenter,
-} from "@/pages/SC_Staff/CenterWarranty/types/PartDistribution";
+  ConfirmPartsRequestDTO,
+  ReportMissingPartsRequestDTO,
+} from "@/pages/SC_Technician/ConductWarranty/types/warranty";
+import type { PartInventoryRequestCenter } from "@/pages/SC_Staff/CenterWarranty/types/PartDistribution";
 
 // Lưu ý: Các API dưới đây đã được chuẩn hóa theo backend hiện tại trong EVWarrantyHub.
 // Những endpoint chưa có ở backend đã được gỡ bỏ hoặc thay đổi cho phù hợp.
@@ -333,10 +333,8 @@ export const warrantyClaimAPI = {
   // Body tương ứng với ReportMissingPartsRequest bên Java
   //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
 
-  reportMissingParts: (
-    id: number,
-    data: ReportMissingPartsRequestDTO
-  ) => axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
+  reportMissingParts: (id: number, data: ReportMissingPartsRequestDTO) =>
+    axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
 
   // API: @GetMapping("/service-center/{serviceCenterID}/non-draft")
   getNonDraftClaims: (serviceCenterID: number) =>
