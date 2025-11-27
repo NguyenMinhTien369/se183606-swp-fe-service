@@ -15,8 +15,6 @@ import {
   PackageCheck,
   BoxSelect,
   CheckCheck,
-  CalendarClock,
-  Warehouse,
 } from "lucide-react";
 
 interface StatusBadgeProps {
