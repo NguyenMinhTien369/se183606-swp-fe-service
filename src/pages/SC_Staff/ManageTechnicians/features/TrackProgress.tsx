@@ -24,6 +24,7 @@ import { claimAssignmentAPI } from "@/utility/index";
 import type { AssignmentProgress } from "../types";
 
 import StatusBadge from "@/components/StatusBadge";
+import { useAuth } from "@/pages/Login/feature/AuthContext";
 
 export default function TrackProgress() {
   const [assignments, setAssignments] = useState<AssignmentProgress[]>([]);
@@ -43,15 +44,16 @@ export default function TrackProgress() {
   });
   const [newNote, setNewNote] = useState("");
 
-  // Hardcoded serviceCenterID - in production, get from auth context
-  const SERVICE_CENTER_ID = 1;
+  const { user } = useAuth();
+  const SERVICE_CENTER_ID = user?.serviceCenterID;
 
   // Load assignments on mount
   useEffect(() => {
     loadAssignments();
-  }, []);
+  }, [SERVICE_CENTER_ID]);
 
   const loadAssignments = async () => {
+    if (!SERVICE_CENTER_ID) return;
     setIsLoading(true);
     try {
       const response = await claimAssignmentAPI.getAssignmentsProgress(

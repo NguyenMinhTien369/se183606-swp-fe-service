@@ -2,7 +2,7 @@ import { useState } from "react";
 
 // Hooks
 import { useAuth } from "@/pages/Login/feature/AuthContext";
-import useGetDistributionsByServiceCenter from "../../Hooks/store/useGetDistributionsByServiceCenter";
+import useGetDistributionsByServiceCenter from "../../Hooks/Store/useGetDistributionsByServiceCenter";
 
 // Components
 import {

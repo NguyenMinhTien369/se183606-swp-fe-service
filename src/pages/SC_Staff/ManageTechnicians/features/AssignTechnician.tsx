@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import StatusBadge from "@/components/StatusBadge";
 
-// Import Hooks
+// Import Hooks "Chờ hãng duyệt", "Hãng đã duyệt", "Phụ tùng đã về trung tâm", "Đang giao phụ tùng"
 import { useGetClaimsForAssignment } from "@/hooks/ManageTechnicians/AssignTechnician/useGetClaimsForAssignment";
 import { useGetTechnicians } from "@/hooks/ManageTechnicians/AssignTechnician/useGetTechnicians";
 import { useAssignTech } from "@/hooks/ManageTechnicians/AssignTechnician/useAssignTech";
