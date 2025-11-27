@@ -24,9 +24,9 @@ import { Button } from "@/components/ui/button";
 
 // Icons
 import { Loader2, Search, Pencil, Trash2 } from "lucide-react";
-import useGetServiceCenterInventories from "../../Hooks/store/useGetServiceCenterInventories";
+import useGetServiceCenterInventories from "../../Hooks/Store/useGetServiceCenterInventories";
 
-export default function CenterWarrantyList() {
+export default function Inventory() {
   const { user } = useAuth();
   const serviceCenterID = user?.serviceCenterID || 1;
   const { inventory, loading, error, fetchInventory } =
@@ -48,7 +48,10 @@ export default function CenterWarrantyList() {
     // TODO: Implement delete logic
   };
 
-  const filteredInventory = inventory.filter((item) => {
+  // Đảm bảo inventory là array trước khi filter
+  const inventoryArray = Array.isArray(inventory) ? inventory : [];
+
+  const filteredInventory = inventoryArray.filter((item) => {
     if (!searchTerm) return true;
 
     const searchLower = searchTerm.toLowerCase();
@@ -197,7 +200,7 @@ export default function CenterWarrantyList() {
         {!loading && filteredInventory.length > 0 && (
           <div className="mt-4 text-sm text-muted-foreground">
             Hiển thị {filteredInventory.length} phụ tùng
-            {searchTerm && ` (đã lọc từ ${inventory.length} phụ tùng)`}
+            {searchTerm && ` (đã lọc từ ${inventoryArray.length} phụ tùng)`}
           </div>
         )}
       </CardContent>
