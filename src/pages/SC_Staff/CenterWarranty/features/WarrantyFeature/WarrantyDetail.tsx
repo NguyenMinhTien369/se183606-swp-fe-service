@@ -33,6 +33,8 @@ import StatusBadge from "@/components/StatusBadge";
 import RejectClaimDialog from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/components/RejectClaimDialog";
 import ConfirmActionDialog from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/components/ConfirmActionDialog";
 import SendToFactoryDialog from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/components/SendToFactoryDialog";
+import useConfirmStockIn from "@/pages/SC_Staff/CenterWarranty/Hooks/useConfirmStockIn";
+import useIssueParts from "@/pages/SC_Staff/CenterWarranty/Hooks/useIssueParts";
 
 export default function WarrantyDetail() {
   const { claimId } = useParams();
@@ -85,6 +87,37 @@ export default function WarrantyDetail() {
       setRejectReason("");
     },
   });
+  //Hook 3: Cho nút Nhận hàng và nhập kho
+  const { handleConfirmStockIn, isProcessing: isProcessingStockIn } =
+    useConfirmStockIn({
+      onSuccess: () => {
+        fetchClaimDetail();
+      },
+    });
+  const handleReceiveAndStockIn = async () => {
+    if (!claimId) return;
+    try {
+      await handleConfirmStockIn(Number(claimId));
+    } catch (error: any) {
+      console.log(error.message || "Có lỗi xảy ra");
+    }
+  };
+
+  //Hook 4: Cho nút Cấp phụ tùng khi trạng thái là "Phụ tùng đã về trung tâm"
+  const { handleIssueParts, isProcessing: isProcessingIssueParts } =
+    useIssueParts({
+      onSuccess: () => {
+        fetchClaimDetail();
+      },
+    });
+  const handleIssuePartsForCenter = async () => {
+    if (!claimId) return;
+    try {
+      await handleIssueParts(Number(claimId));
+    } catch (error: any) {
+      console.log(error.message || "Có lỗi xảy ra");
+    }
+  };
 
   // --- 3. CÁC HÀM XỬ LÝ CHỨC NĂNG ---
 
@@ -180,8 +213,9 @@ export default function WarrantyDetail() {
         </div>
 
         {/* --- KHU VỰC CÁC NÚT CHỨC NĂNG --- */}
+        {/* --- 3 nút chính --- */}
         <div className="flex items-center gap-2">
-          {(claim.status === "Chờ duyệt" || claim.status === "Nháp") && (
+          {claim.status === "Chờ duyệt" && (
             <>
               {/* Nút 1: Cấp phụ tùng -> Mở Dialog */}
               <Button
@@ -226,6 +260,52 @@ export default function WarrantyDetail() {
               >
                 <XCircle className="h-4 w-4" />
                 <span className="hidden sm:inline">Từ chối</span>
+              </Button>
+            </>
+          )}
+        </div>
+        {/* --- Nút nhận hàng và nhập kho --- */}
+        <div className="flex items-center gap-2">
+          {claim.status === "Đang giao phụ tùng" && (
+            <>
+              <Button
+                variant="outline"
+                className="text-blue-600 border-blue-200 hover:bg-blue-50 gap-2"
+                onClick={handleReceiveAndStockIn}
+                disabled={isProcessingStockIn}
+              >
+                {isProcessingStockIn ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PackageCheck className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">
+                  {isProcessingStockIn
+                    ? "Đang xử lý..."
+                    : "Nhận hàng và nhập kho"}
+                </span>
+              </Button>
+            </>
+          )}
+        </div>
+        {/* --- Nút Cấp phụ tùng đưa trạng thái về  "Đã cấp phụ tùng"--- */}
+        <div className="flex items-center gap-2">
+          {claim.status === "Phụ tùng đã về trung tâm" && (
+            <>
+              <Button
+                variant="outline"
+                className="text-blue-600 border-blue-200 hover:bg-blue-50 gap-2"
+                onClick={handleIssuePartsForCenter}
+                disabled={isProcessingIssueParts}
+              >
+                {isProcessingIssueParts ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <PackageCheck className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">
+                  {isProcessingIssueParts ? "Đang xử lý..." : "Cấp phụ tùng"}
+                </span>
               </Button>
             </>
           )}
