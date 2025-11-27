@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { warrantyClaimAPI } from "@/utility/index";
-import type { VehicleInfo } from "@/pages/SC_Staff/ManageWarranty/types/warranty";
+import type { VehicleInfo } from "@/pages/SC_Staff/CenterWarranty/types/CenterWarranty";
 
 export const useVehicleInfoByVin = () => {
   const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo | null>(null);

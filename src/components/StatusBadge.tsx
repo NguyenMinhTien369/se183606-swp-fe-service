@@ -46,6 +46,12 @@ const statusConfig: Record<
     className: "bg-slate-100 text-slate-600 border-slate-200",
     icon: Ban,
   },
+  "Đã hủy": {
+    label: "Đã hủy",
+    className: "bg-slate-100 text-slate-600 border-slate-200",
+    icon: Ban,
+  },
+
   //02
   "Đã cấp phụ tùng": {
     label: "Đã cấp phụ tùng",
@@ -60,6 +66,11 @@ const statusConfig: Record<
   },
   "Từ chối": {
     label: "Từ chối",
+    className: "bg-red-50 text-red-700 border-red-200",
+    icon: XCircle,
+  },
+  "Bị từ chối": {
+    label: "Bị từ chối",
     className: "bg-red-50 text-red-700 border-red-200",
     icon: XCircle,
   },
@@ -93,6 +104,11 @@ const statusConfig: Record<
     className: "bg-teal-50 text-teal-700 border-teal-200",
     icon: CheckCircle2,
   },
+  "Nhận phụ tùng": {
+    label: "Nhận phụ tùng",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
+    icon: CheckCircle2,
+  },
 
   "Thiếu hàng": {
     label: "Thiếu hàng",
@@ -108,6 +124,11 @@ const statusConfig: Record<
   },
   "Đang xử lý": {
     label: "Đang xử lý",
+    className: "bg-blue-50 text-blue-600 border-blue-200",
+    icon: RefreshCw,
+  },
+  "Đang kiểm tra": {
+    label: "Đang kiểm tra",
     className: "bg-blue-50 text-blue-600 border-blue-200",
     icon: RefreshCw,
   },
@@ -138,8 +159,6 @@ const defaultConfig = {
   className: "bg-gray-100 text-gray-500 border-gray-200",
   icon: AlertCircle,
 };
-
-
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
   const config = statusConfig[status] || defaultConfig;
