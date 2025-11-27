@@ -52,7 +52,7 @@ export default function InventoryManagement() {
         try {
             const response = showLowStockOnly
                 ? await inventoryAPI.getLowStockParts(LOW_STOCK_THRESHOLD)
-                : await inventoryAPI.getAllInventories();
+                : await inventoryAPI.getFactoryInventory();
             setItems(response.data.result || []);
         } catch (error) {
             console.error("Error fetching inventory:", error);
