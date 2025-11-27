@@ -3,11 +3,10 @@
   ScRejectRequest,
 } from "@/pages/SC_Staff/CenterWarranty/types/CenterWarranty";
 import axiosInstance from "./axios";
+import type { ConfirmPartsRequestDTO, ReportMissingPartsRequestDTO } from "@/pages/SC_Technician/ConductWarranty/types/warranty";
 import type {
-  ConfirmPartsRequestDTO,
-  ReportMissingPartsRequestDTO,
-} from "@/pages/SC_Technician/ConductWarranty/types/warranty";
-import type { PartInventoryRequestCenter } from "@/pages/SC_Staff/CenterWarranty/types/PartDistribution";
+  PartInventoryRequestCenter,
+} from "@/pages/SC_Staff/CenterWarranty/types/PartDistribution";
 
 // Lưu ý: Các API dưới đây đã được chuẩn hóa theo backend hiện tại trong EVWarrantyHub.
 // Những endpoint chưa có ở backend đã được gỡ bỏ hoặc thay đổi cho phù hợp.
@@ -584,6 +583,8 @@ export const inventoryAPI = {
   // @GetMapping("/location")
   getInventoryByLocation: (location: string) =>
     axiosInstance.get("/inventory/location", { params: { location } }),
+
+  getFactoryInventory: () => axiosInstance.get("/inventory/factory"),
 
   //--------------------API bên kho trung tâm------------------------
 

@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
 import styles from './WarrantyClaims.module.css';
+import type { WarrantyClaimResponse } from './types';
 
 // --- 1. ĐỊNH NGHĨA TYPES & ENUM ---
 
@@ -122,8 +123,12 @@ const WarrantyClaims = () => {
                 }))
             }));
 
-            mappedList.sort((a: any, b: any) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
-            setClaims(mappedList);
+            const sortedClaims = mappedList.sort(
+                (a: WarrantyClaimResponse, b: WarrantyClaimResponse) =>
+                    b.claimID - a.claimID
+            );
+
+            setClaims(sortedClaims);
         } catch (error) {
             console.error("Fetch error:", error);
         } finally {

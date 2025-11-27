@@ -7,6 +7,7 @@ import {
 import { warrantyClaimAPI } from '@/utility';
 // SỬA LỖI IMPORT CSS CHO ĐÚNG VỚI FILE CỦA ADMIN
 import styles from './WarrantyApproval.module.css';
+import type { WarrantyClaimResponse } from './types';
 
 // --- 1. ĐỊNH NGHĨA TYPES & ENUM ---
 
@@ -136,10 +137,12 @@ const WarrantyApproval = () => {
                 }))
             }));
 
-            // Sort: Mới nhất lên đầu
-            mappedList.sort((a: any, b: any) => new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime());
+            const sortedClaims = mappedList.sort(
+                (a: WarrantyClaimResponse, b: WarrantyClaimResponse) =>
+                    b.claimID - a.claimID
+            );
 
-            setClaims(mappedList);
+            setClaims(sortedClaims);
         } catch (error) {
             console.error("Fetch error:", error);
         } finally {

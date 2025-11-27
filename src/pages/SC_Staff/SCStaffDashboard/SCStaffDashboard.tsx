@@ -87,13 +87,6 @@ export default function SCStaffDashboard() {
             const products = productsRes.data.result || [];
             const vehicles = vehiclesRes.data.result || [];
 
-            console.log('📊 [SC_Staff] Dashboard data loaded:');
-            console.log('  Service Center ID:', serviceCenterID);
-            console.log('  Users:', users.length);
-            console.log('  Claims:', claims.length);
-            console.log('  Products:', products.length);
-            console.log('  Vehicles:', vehicles.length);
-
             // Map status từ tiếng Việt sang tiếng Anh nếu cần
             const mapStatus = (status: string): string => {
                 const statusMap: Record<string, string> = {

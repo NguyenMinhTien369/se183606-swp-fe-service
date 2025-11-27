@@ -46,13 +46,15 @@ export default function InventoryManagement() {
         }
     }, [activeTab, showLowStockOnly]);
 
-    // API: Lấy tồn kho
+    // API: Lấy tồn kho (ĐÃ CẬP NHẬT)
     const fetchInventory = async () => {
         setLoading(true);
         try {
+            // Thay đổi ở đây: Sử dụng getFactoryInventory thay vì getAllInventories
             const response = showLowStockOnly
                 ? await inventoryAPI.getLowStockParts(LOW_STOCK_THRESHOLD)
-                : await inventoryAPI.getAllInventories();
+                : await inventoryAPI.getFactoryInventory();
+
             setItems(response.data.result || []);
         } catch (error) {
             console.error("Error fetching inventory:", error);
@@ -104,11 +106,13 @@ export default function InventoryManagement() {
         e.preventDefault();
         try {
             if (modalMode === 'create') {
+                // Tạo mới (nhập kho hãng)
                 await inventoryAPI.createOrUpdateInventory(formData);
-                alert("✅ Tạo kho phụ tùng thành công!");
+                alert("Tạo kho phụ tùng thành công!");
             } else if (modalMode === 'update') {
+                // Cập nhật
                 await inventoryAPI.updateInventory(formData.partSerialNumber, formData);
-                alert("✅ Cập nhật thông tin thành công!");
+                alert("Cập nhật thông tin thành công!");
             }
 
             setIsModalOpen(false);
@@ -121,6 +125,7 @@ export default function InventoryManagement() {
     const handleDelete = async (serial: string) => {
         if (!confirm(`Bạn có chắc muốn xóa kho của mã ${serial}?`)) return;
         try {
+            // Xóa (EVM Staff không cần truyền serviceCenterID để xóa khỏi kho hãng)
             await inventoryAPI.deleteInventory(serial);
             alert("✅ Đã xóa thành công!");
             fetchInventory();
@@ -143,7 +148,7 @@ export default function InventoryManagement() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <h1 className={styles.title}><FaWarehouse /> Quản Lý Kho Phụ Tùng</h1>
+                <h1 className={styles.title}><FaWarehouse /> Quản Lý Kho Phụ Tùng (Hãng)</h1>
                 {activeTab === 'inventory' && (
                     <button className={styles.createBtn} onClick={handleOpenCreate}>
                         <FaPlus /> Thêm Mới
