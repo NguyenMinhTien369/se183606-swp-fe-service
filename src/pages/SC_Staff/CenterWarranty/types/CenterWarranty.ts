@@ -87,6 +87,7 @@ export interface ClaimPartResponse {
   partTypeDescription: string;
   description: string;
   createdDate: string;
+  quantity: number;
 }
 
 export interface ClaimAttachmentResponse {

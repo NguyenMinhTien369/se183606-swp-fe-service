@@ -112,7 +112,15 @@ export default function CenterWarrantyList() {
                           {claim.serviceCenterName}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {claim.quantity}
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-bold ${
+                              claim.quantity > 0
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {claim.quantity}
+                          </span>
                         </TableCell>
                         <TableCell>
                           {new Date(claim.distributionDate).toLocaleDateString(

@@ -348,6 +348,8 @@ export default function WarrantyDetail() {
                       <div className="font-semibold">{part.partTypeName}</div>
                       <div className="text-xs text-muted-foreground font-mono mt-0.5">
                         SN: {part.partSerialNumber}
+                        <span className="mx-1">|</span> Số lượng :{" "}
+                        {part.quantity}
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground">

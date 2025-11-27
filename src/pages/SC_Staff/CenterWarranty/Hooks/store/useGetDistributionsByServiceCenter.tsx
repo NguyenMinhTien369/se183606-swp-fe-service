@@ -1,6 +1,6 @@
 import { partDistributionAPI } from "@/utility";
 import type { PartDistributionResponseCenter } from "../../types/PartDistribution";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function useGetDistributionsByServiceCenter(
   serviceCenterID: number
@@ -21,6 +21,7 @@ export default function useGetDistributionsByServiceCenter(
           serviceCenterID
         );
       const distributionsData = response.data.result || [];
+
       setDistributions(distributionsData);
       console.log("Loaded distributions:", distributionsData);
     } catch (err: any) {
@@ -30,6 +31,10 @@ export default function useGetDistributionsByServiceCenter(
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchDistributions();
+  }, [serviceCenterID]);
 
   return { distributions, loading, error, fetchDistributions };
 }

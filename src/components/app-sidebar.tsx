@@ -14,6 +14,7 @@ import ROUTERS_PATH from "@/constants/routers";
 import { useAuth } from "@/pages/Login/feature/AuthContext";
 import { ROLES } from "@/utils/constants";
 import { Box } from "lucide-react";
+import { CalendarSearch } from "lucide-react";
 
 import {
   Sidebar,
@@ -122,7 +123,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         },
         {
           title: "Quản Lý Đơn Bảo Hành",
-          icon: <Building2 className="size-4" />,
+          icon: <CalendarSearch className="size-4" />,
           to: ROUTERS_PATH.CENTER_WARRANTY,
         },
         {
