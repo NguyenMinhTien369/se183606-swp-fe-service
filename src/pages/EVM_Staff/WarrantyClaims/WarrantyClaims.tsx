@@ -6,7 +6,6 @@ import {
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
 import styles from './WarrantyClaims.module.css';
-import type { WarrantyClaimResponse } from './types';
 
 // --- 1. ĐỊNH NGHĨA TYPES & ENUM ---
 
@@ -123,10 +122,15 @@ const WarrantyClaims = () => {
                 }))
             }));
 
-            const sortedClaims = mappedList.sort(
-                (a: WarrantyClaimResponse, b: WarrantyClaimResponse) =>
-                    b.claimID - a.claimID
-            );
+            const sortedClaims = mappedList.sort((a: MappedWarrantyClaim, b: MappedWarrantyClaim) => {
+                const isAPending = a.statusEnum === 'PENDING';
+                const isBPending = b.statusEnum === 'PENDING';
+
+                if (isAPending && !isBPending) return -1; // a là Pending -> a lên trước
+                if (!isAPending && isBPending) return 1;  // b là Pending -> b lên trước
+
+                return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
+            });
 
             setClaims(sortedClaims);
         } catch (error) {
