@@ -22,11 +22,12 @@ import AssignTechnician from "@/pages/SC_Staff/ManageTechnicians/features/Assign
 import ArchiveReports from "@/pages/SC_Staff/HistoryReports/ArchiveReports";
 import WarrantyRequestList from "@/pages/SC_Staff/ManageTechnicians/features/WarrantyRequestList";
 import CreateCustomerForm from "@/pages/SC_Staff/ManageCustomers/components/CreateCustomerForm";
-import MLCreateWarranty from "@/pages/SC_Staff/ManageWarranty/MLCreateWarranty";
-import Warranty from "@/pages/SC_Staff/ManageWarranty/features/Warranty";
-import WarrantyListWithAuth from "./WarrantyListWrapper";
-import ManufacturerResponsePanel from "@/pages/SC_Staff/ManageWarranty/features/ManufacturerResponsePanel";
-import WarrantyDetailPage from "@/pages/SC_Staff/ManageWarranty/features/WarrantyDetailPage";
+import MLCenterWarranty from "@/pages/SC_Staff/CenterWarranty/MLCenterWarranty";
+import WarrantyDetail from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/WarrantyDetail";
+import Inventory from "@/pages/SC_Staff/CenterWarranty/features/CenterStorage/Inventory";
+import GoodsIssue from "@/pages/SC_Staff/CenterWarranty/features/CenterStorage/GoodsIssue";
+
+import CenterWarrantyList from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/CenterWarrantyList";
 
 export const scStaffRoutes = {
   path: ROUTERS_PATH.SC_STAFF_BASE,
@@ -102,29 +103,25 @@ export const scStaffRoutes = {
       ],
     },
     {
-      path: RELATIVE_PATHS.MANAGE_WARRANTY,
-      element: <MLCreateWarranty />,
+      path: RELATIVE_PATHS.CENTER_WARRANTY,
+      element: <MLCenterWarranty />,
       children: [
         {
           index: true,
-          element: <Navigate to={RELATIVE_PATHS.CREATE_WARRANTY} replace />,
+          element: (
+            <Navigate to={RELATIVE_PATHS.CENTER_LIST_WARRANTY} replace />
+          ),
         },
         {
-          path: RELATIVE_PATHS.CREATE_WARRANTY,
-          element: <Warranty />,
+          path: RELATIVE_PATHS.CENTER_LIST_WARRANTY,
+          element: <CenterWarrantyList />,
         },
         {
-          path: RELATIVE_PATHS.WARRANTY_LIST,
-          element: <WarrantyListWithAuth />,
+          path: RELATIVE_PATHS.CENTER_WARRANTY_DETAIL,
+          element: <WarrantyDetail />,
         },
-        {
-          path: RELATIVE_PATHS.MANUFACTURER_RESPONSE_PANEL,
-          element: <ManufacturerResponsePanel />,
-        },
-        {
-          path: RELATIVE_PATHS.WARRANTY_DETAIL, // ":claimId"
-          element: <WarrantyDetailPage />,
-        },
+        { path: RELATIVE_PATHS.INVENTORY_MANAGEMENT, element: <Inventory /> },
+        { path: RELATIVE_PATHS.GOODS_ISSUE, element: <GoodsIssue /> },
       ],
     },
     { path: "*", element: <NotFound /> },

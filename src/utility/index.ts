@@ -1,4 +1,8 @@
-﻿import axiosInstance from "./axios";
+﻿import type {
+  ScApprovalRequest,
+  ScRejectRequest,
+} from "@/pages/SC_Staff/CenterWarranty/types/CenterWarranty";
+import axiosInstance from "./axios";
 import type {
   ConfirmPartsRequestDTO,
   ReportMissingPartsRequestDTO,
@@ -236,54 +240,121 @@ export const adminAPI = {
 // ==================== WARRANTY CLAIM API ====================
 // Backend: WarrantyClaimController.java
 // Path: /api/warranty-claims/*
+// Đảm bảo bạn đã import axiosInstance ở đầu file
+// import axiosInstance from "@/path/to/axios";
+
 export const warrantyClaimAPI = {
-  // Lấy thông tin xe theo VIN (được backend cung cấp dưới warranty-claims)
+  // --- 1. GET DATA (Lấy dữ liệu) ---
+
+  // Lấy thông tin xe theo VIN
+  // API: @GetMapping("/vehicle-info")
   getVehicleInfoByVin: (vin: string) =>
     axiosInstance.get("/warranty-claims/vehicle-info", { params: { vin } }),
 
   // Lấy TẤT CẢ claims (ADMIN only)
+  // API: @GetMapping
   getAllClaims: () => axiosInstance.get("/warranty-claims"),
 
   // Lấy claims theo trạng thái (ADMIN, EVM_STAFF)
+  // API: @GetMapping("/status/{status}")
   getClaimsByStatus: (status: string) =>
     axiosInstance.get(`/warranty-claims/status/${status}`),
 
   // Lấy danh sách claim theo Service Center (SC_STAFF)
+  // API: @GetMapping("/service-center/{serviceCenterID}")
   getClaimsByServiceCenter: (serviceCenterID: number) =>
     axiosInstance.get(`/warranty-claims/service-center/${serviceCenterID}`),
 
-  // Backend yêu cầu multipart/form-data cho tạo/cập nhật claim
+  // Lấy chi tiết 1 claim
+  // API: @GetMapping("/{claimID}")
+  getClaimById: (id: number) => axiosInstance.get(`/warranty-claims/${id}`),
+
+  // Lấy danh sách claim chưa được phân công (cho màn hình Assign Technician)
+  // API: @GetMapping("/unassigned")
+  getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
+
+  // --- 2. CREATE / UPDATE / DELETE (Tạo, Sửa, Xóa) ---
+
+  // Tạo mới (Multipart file)
+  // API: @PostMapping
   createClaim: (formData: FormData) =>
     axiosInstance.post("/warranty-claims", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
-  getClaimById: (id: number) => axiosInstance.get(`/warranty-claims/${id}`),
+
+  // Cập nhật (Multipart file)
+  // API: @PutMapping("/{claimID}")
   updateClaim: (id: number, formData: FormData) =>
     axiosInstance.put(`/warranty-claims/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
 
+  // Xóa claim
+  // API: @DeleteMapping("/{claimID}")
+  deleteClaim: (id: number) => axiosInstance.delete(`/warranty-claims/${id}`),
+
+  // --- 3. PROCESS FLOW (Quy trình xử lý) ---
+
+  // Gửi yêu cầu lên hãng (SC Staff -> Manufacturer)
+  // API: @PostMapping("/{claimID}/submit")
   submitClaim: (id: number) =>
     axiosInstance.post(`/warranty-claims/${id}/submit`),
-  deleteClaim: (id: number) => axiosInstance.delete(`/warranty-claims/${id}`),
-  //API  của table  phân công kỹ thuật viên
-  getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
 
+  // Đồng bộ trạng thái từ hãng về (EVM Staff/Admin)
+  // API: @PostMapping("/{claimID}/sync-status")
   syncStatusFromManufacturer: (id: number, status: string, note?: string) => {
     const params = note !== undefined ? { status, note } : { status };
+    // Vì backend dùng @RequestParam nên data nằm ở params, body để null
     return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
       params,
     });
   },
 
-  // Giao phụ tùng cho đơn bảo hành đã được chấp nhận
+  // SC Staff Duyệt hoặc Gửi Hãng !!!
+  // API: @PostMapping("/{claimID}/sc-process")
+  processClaimByScStaff: (claimId: number, data: ScApprovalRequest) => {
+    return axiosInstance.post(`/warranty-claims/${claimId}/sc-process`, data);
+  },
+  rejectClaimByScStaff(claimId: number, reason: ScRejectRequest) {
+    return axiosInstance.post(`/warranty-claims/${claimId}/sc-reject`, reason);
+  },
+
+  //Từ chối Yêu cầu Bảo hành
+
+  // --- 4. PARTS MANAGEMENT (Quản lý quy trình phụ tùng) ---
+
+  // Hãng xác nhận giao phụ tùng (EVM Staff/Admin)
+  // API: @PostMapping("/{claimID}/ship-parts")
+  //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
   shipParts: (id: number) =>
     axiosInstance.post(`/warranty-claims/${id}/ship-parts`),
 
-  // Báo thiếu phụ tùng
-  reportMissingParts: (id: number, data: ReportMissingPartsRequestDTO) =>
-    axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
-}; // ==================== CLAIM ASSIGNMENT API ====================
+  // SC xác nhận nhập kho phụ tùng (Stock In)
+  // API: @PostMapping("/{claimID}/stock-in")
+  //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
+
+  confirmStockIn: (id: number) =>
+    axiosInstance.post(`/warranty-claims/${id}/stock-in`),
+
+  // SC xuất kho giao phụ tùng cho Kỹ thuật viên (Issue Parts)
+  // API: @PostMapping("/{claimID}/issue-parts")
+  //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
+
+  issueParts: (id: number) =>
+    axiosInstance.post(`/warranty-claims/${id}/issue-parts`),
+
+  // Báo cáo thiếu/hỏng phụ tùng (Exception Flow)
+  // API: @PostMapping("/{claimID}/report-missing")
+  // Body tương ứng với ReportMissingPartsRequest bên Java
+  //Kiểm Tra lại phần này, có thể sửa lại tên hàm cho phù hợp, có thể thiếu biến
+
+  reportMissingParts: (
+    id: number,
+    data: { missingParts: string; reason: string }
+  ) => axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
+};
+
+// ==================== CLAIM ASSIGNMENT API ====================
 // Backend: ClaimAssignmentController.java
 // Path: /api/claim-assignments/*
 export const claimAssignmentAPI = {

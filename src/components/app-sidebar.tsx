@@ -121,9 +121,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           to: ROUTERS_PATH.INTERNAL_MANAGEMENT,
         },
         {
-          title: "Tạo Đơn Bảo Hành",
-          icon: <ClipboardPlus className="size-4" />,
-          to: ROUTERS_PATH.MANAGE_WARRANTY,
+          title: "Quản Lý Đơn Bảo Hành",
+          icon: <Building2 className="size-4" />,
+          to: ROUTERS_PATH.CENTER_WARRANTY,
         },
         {
           title: "Lịch Sử Bảo Hành",
@@ -140,6 +140,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: "Dashboard",
           icon: <LayoutDashboard className="size-4" />,
           to: ROUTERS_PATH.SC_TECHNICIAN_DASHBOARD,
+        },
+        {
+          title: "Tạo Đơn Bảo Hành",
+          icon: <ClipboardPlus className="size-4" />,
+          to: ROUTERS_PATH.MANAGE_WARRANTY,
         },
         {
           title: "Thực Hiện Bảo Hành",

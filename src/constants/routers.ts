@@ -36,16 +36,23 @@ const ROUTERS_PATH = {
   PARTS_MANAGEMENT: "/sc-staff/manage-customer/parts-management",
   CUSTOMER_SEARCH: "/sc-staff/manage-customer/search",
   SERVICE_HISTORY_ALL: "/sc-staff/service-history-all",
-  MANAGE_WARRANTY: "/sc-staff/manage-warranty",
-  CREATE_WARRANTY: "/sc-staff/create-warranty",
+
+  //F5
+  CENTER_WARRANTY: "/sc-staff/center-warranty",
+  CENTER_LIST_WARRANTY: "/sc-staff/center-warranty/center-list-warranty",
+  CENTER_WARRANTY_DETAIL: "/sc-staff/center-warranty/center-warranty-detail",
+  INVENTORY_MANAGEMENT: "/sc-staff/center-warranty/inventory-management",
+  GOODS_ISSUE: "/sc-staff/center-warranty/goods-issue",
 
   //F2 - Internal Management
   INTERNAL_MANAGEMENT: "/sc-staff/internal-management",
-  WARRANTY_LIST: "/sc-staff/manage-warranty/warranty-list",
   // SC Technician Routes
   TECHNICIAN_BASE: "/technician",
   SC_TECHNICIAN_DASHBOARD: "/technician/dashboard",
   CONDUCT_WARRANTY: "/technician/conduct-warranty",
+  MANAGE_WARRANTY: "/technician/manage-warranty",
+  CREATE_WARRANTY: "/technician/create-warranty",
+  WARRANTY_LIST: "/technician/manage-warranty/warranty-list",
 } as const;
 
 export const RELATIVE_PATHS = {
@@ -78,6 +85,13 @@ export const RELATIVE_PATHS = {
 
   //F4 - Conduct Warranty
   CONDUCT_WARRANTY: "conduct-warranty",
+
+  //F5
+  CENTER_WARRANTY: "center-warranty",
+  CENTER_LIST_WARRANTY: "center-list-warranty",
+  CENTER_WARRANTY_DETAIL: "center-warranty-detail/:claimId",
+  INVENTORY_MANAGEMENT: "inventory-management",
+  GOODS_ISSUE: "goods-issue",
 
   // Admin
   USERS: "users",
