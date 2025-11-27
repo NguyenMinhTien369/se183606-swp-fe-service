@@ -556,13 +556,40 @@ const WarrantyApproval = () => {
             {showRejectModal && selectedClaim && (
                 <div className={styles.modalOverlay} onClick={() => setShowRejectModal(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <div className={styles.modalHeader}><h2>Từ chối yêu cầu</h2></div>
-                        <div className={styles.modalBody}>
-                            <textarea className={styles.textarea} rows={3} placeholder="Lý do từ chối (bắt buộc)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+                        {/* Header */}
+                        <div className={styles.modalHeader}>
+                            <h2>Từ chối yêu cầu</h2>
                         </div>
+
+                        {/* Body */}
+                        <div className={styles.modalBody}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.inputLabel}>
+                                    Lý do từ chối <span className={styles.requiredStar}>*</span>
+                                </label>
+                                <textarea
+                                    className={styles.textarea}
+                                    rows={5}
+                                    placeholder="Nhập chi tiết lý do từ chối để khách hàng nắm thông tin..."
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer */}
                         <div className={styles.modalFooter}>
-                            <button onClick={() => setShowRejectModal(false)} className={styles.cancelButton}>Hủy</button>
-                            <button onClick={handleRejectClaim} className={styles.rejectButtonMain} disabled={modalLoading || !rejectReason.trim()}>Từ chối</button>
+                            <button onClick={() => setShowRejectModal(false)} className={styles.cancelButton}>
+                                Hủy bỏ
+                            </button>
+                            <button
+                                onClick={handleRejectClaim}
+                                className={styles.rejectButtonMain}
+                                disabled={modalLoading || !rejectReason.trim()}
+                            >
+                                {modalLoading ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+                            </button>
                         </div>
                     </div>
                 </div>

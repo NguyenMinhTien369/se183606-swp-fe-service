@@ -1,4 +1,4 @@
-import { Car, User, Loader2, AlertCircle } from "lucide-react";
+import { Car, User, Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useGetCustomerById } from "@/hooks/ManageCustomersHooks/useGetCustomerById";
 
 export default function VehicleInformation() {
-  const { customerId, customer, vehicle, loading, error } =
+  const { customerId, customer, vehicle, loading } =
     useGetCustomerById();
 
   if (loading) {
@@ -160,8 +160,8 @@ export default function VehicleInformation() {
                     value={
                       vehicle.registrationDate
                         ? new Date(vehicle.registrationDate).toLocaleDateString(
-                            "vi-VN"
-                          )
+                          "vi-VN"
+                        )
                         : "Chưa đăng ký"
                     }
                     disabled
