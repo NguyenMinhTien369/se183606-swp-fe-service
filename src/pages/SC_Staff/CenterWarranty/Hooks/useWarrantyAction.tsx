@@ -12,8 +12,12 @@ interface WarrantyActionResult {
     claimId: number,
     appointmentDate?: string,
     note?: string
-  ) => Promise<void>; // Hàm cấp phụ tùng
-  sendToFactory: (claimId: number, note?: string) => Promise<void>; // Hàm gửi hãng
+  ) => Promise<void>;
+  sendToFactory: (
+    claimId: number,
+    appointmentDate: string,
+    note?: string
+  ) => Promise<void>;
 }
 
 export function useWarrantyAction({
@@ -33,7 +37,7 @@ export function useWarrantyAction({
         requestData
       );
 
-      console.log("✅ Xử lý thành công:", response.data);
+      console.log("Xử lý thành công:", response.data);
 
       // Gọi callback để reload dữ liệu
       if (onSuccess) {
@@ -42,30 +46,22 @@ export function useWarrantyAction({
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Lỗi xử lý yêu cầu:", error);
+      console.error("Lỗi xử lý yêu cầu:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         "Không thể xử lý yêu cầu";
-      throw new Error(errorMessage);
+      console.log(errorMessage);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // ===== BƯỚC 4: HÀM CẤP PHỤ TÙNG (PUBLIC) =====
-  /**
-   * Cấp phụ tùng từ kho của Service Center
-   * @param claimId - ID của warranty claim
-   * @param appointmentDate - Ngày hẹn (nếu hết hàng), format: YYYY-MM-DD
-   * @param note - Ghi chú thêm
-   */
   const issueParts = async (
     claimId: number,
     appointmentDate?: string,
     note?: string
   ) => {
-    // Dữ liệu gửi lên API
     const requestData: ScApprovalRequest = {
       hasStock: true, // Có hàng trong kho
       appointmentDate: appointmentDate, // Ngày hẹn (optional)
@@ -75,23 +71,16 @@ export function useWarrantyAction({
     await processClaimAction(claimId, requestData);
   };
 
-  // ===== BƯỚC 5: HÀM GỬI HÃNG (PUBLIC) =====
-  /**
-   * Gửi yêu cầu lên hãng (khi không có hàng trong kho)
-   * @param claimId - ID của warranty claim
-   * @param note - Ghi chú thêm
-   */
-  const sendToFactory = async (claimId: number, note?: string) => {
-    // Dữ liệu gửi lên API
+  const sendToFactory = async (claimId: number, appointmentDate: string) => {
     const requestData: ScApprovalRequest = {
       hasStock: false, // KHÔNG có hàng trong kho
-      note: note || "Chuyển lên hãng do thiếu phụ tùng tại trung tâm",
+      appointmentDate: appointmentDate, // Ngày hẹn
+      note: "Gửi yêu cầu bảo hành đến hãng do không có phụ tùng trong kho",
     };
 
     await processClaimAction(claimId, requestData);
   };
 
-  // ===== BƯỚC 6: TRẢ VỀ CÁC HÀM VÀ STATE =====
   return {
     isProcessing,
     issueParts,

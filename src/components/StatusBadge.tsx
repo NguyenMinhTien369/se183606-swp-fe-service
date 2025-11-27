@@ -34,47 +34,72 @@ const statusConfig: Record<
     className: "bg-gray-100 text-gray-600 border-gray-200",
     icon: FileText,
   },
+  //Claim Statuses
+  //01
   "Chờ duyệt": {
     label: "Chờ duyệt",
     className: "bg-yellow-50 text-yellow-700 border-yellow-200",
     icon: Clock,
   },
-  "Được chấp nhận": {
-    label: "Đã duyệt",
-    className: "bg-green-50 text-green-700 border-green-200",
-    icon: CheckCircle2,
-  },
-  "Từ chối": {
-    label: "Bị từ chối",
-    className: "bg-red-50 text-red-700 border-red-200",
-    icon: XCircle,
-  },
   "Bị hủy": {
-    label: "Đã hủy",
+    label: "Bị hủy",
     className: "bg-slate-100 text-slate-600 border-slate-200",
     icon: Ban,
   },
+  //02
+  "Đã cấp phụ tùng": {
+    label: "Đã cấp phụ tùng",
+    className: "bg-indigo-50 text-indigo-700 border-indigo-200", // Màu chàm: Đã xử lý kho
+    icon: BoxSelect, // Icon chọn hộp hàng
+  },
 
+  "Chờ hãng duyệt": {
+    label: "Chờ hãng duyệt",
+    className: "bg-purple-50 text-purple-700 border-purple-200", // Màu tím: Liên quan đến Hãng (bên thứ 3)
+    icon: Clock,
+  },
+  "Từ chối": {
+    label: "Từ chối",
+    className: "bg-red-50 text-red-700 border-red-200",
+    icon: XCircle,
+  },
+  //03
+  "Chờ bổ sung phụ tùng": {
+    label: "Chờ bổ sung phụ tùng",
+    className: "bg-orange-50 text-orange-700 border-orange-200", // Màu cam: Cảnh báo/Chờ đợi gây chậm trễ
+    icon: AlertCircle, // Icon cảnh báo
+  },
   "Đang giao phụ tùng": {
-    label: "Đang giao hàng",
+    label: "Đang giao phụ tùng",
     className: "bg-blue-50 text-blue-700 border-blue-200",
     icon: Truck,
   },
-  "Đã nhận": {
-    label: "Đã nhận hàng",
-    className: "bg-teal-50 text-teal-700 border-teal-200",
+  //04
+  "Hãng đã duyệt": {
+    label: "Hãng đã duyệt",
+    className: "bg-green-50 text-green-700 border-green-200",
+    icon: ShieldCheck, // Icon khiên: Thể hiện sự phê duyệt có thẩm quyền từ Hãng
+  },
+
+  //05
+  "Phụ tùng đã về trung tâm": {
+    label: "Phụ tùng đã về trung tâm",
+    className: "bg-violet-50 text-violet-700 border-violet-200", // Màu tím nhạt: Hàng đã về kho
     icon: PackageCheck,
   },
+
+  "Đã nhận phụ tùng": {
+    label: "Đã nhận phụ tùng",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
+    icon: CheckCircle2,
+  },
+
   "Thiếu hàng": {
     label: "Thiếu hàng",
-    className: "bg-orange-50 text-orange-700 border-orange-200",
+    className: "bg-rose-50 text-rose-700 border-rose-200", // Màu hồng đỏ: Cảnh báo quan trọng
     icon: PackageX,
   },
-  "Nhận phụ tùng": {
-    label: "Đã lấy phụ tùng",
-    className: "bg-indigo-50 text-indigo-700 border-indigo-200",
-    icon: BoxSelect,
-  },
+  //---------------------------------------------------------------
 
   "Đã phân công": {
     label: "Đã phân công",
@@ -87,14 +112,14 @@ const statusConfig: Record<
     icon: RefreshCw,
   },
   "Đang thay thế": {
-    label: "Đang sửa chữa",
+    label: "Đang thay thế",
     className: "bg-cyan-50 text-cyan-700 border-cyan-200",
     icon: Wrench,
   },
   "Hoàn thành": {
     label: "Hoàn thành",
     className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    icon: CheckCheck,
+    icon: CheckCheck, // 2 dấu tích: Hoàn tất toàn bộ quy trình
   },
 
   "Bảo hành": {

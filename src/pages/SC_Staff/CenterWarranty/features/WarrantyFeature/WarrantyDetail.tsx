@@ -12,15 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Calendar,
   FileText,
@@ -32,12 +24,15 @@ import {
   Phone,
   ArrowLeft,
   Loader2,
-  PackageCheck, // Icon mới cho Cấp phụ tùng
-  Send, // Icon mới cho Gửi hãng
-  XCircle, // Icon mới cho Từ chối
+  PackageCheck,
+  Send,
+  XCircle,
 } from "lucide-react";
 
 import StatusBadge from "@/components/StatusBadge";
+import RejectClaimDialog from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/components/RejectClaimDialog";
+import ConfirmActionDialog from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/components/ConfirmActionDialog";
+import SendToFactoryDialog from "@/pages/SC_Staff/CenterWarranty/features/WarrantyFeature/components/SendToFactoryDialog";
 
 export default function WarrantyDetail() {
   const { claimId } = useParams();
@@ -47,11 +42,13 @@ export default function WarrantyDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // State cho Dialog từ chối
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  // --- 1. FETCH DATA (Giữ nguyên) ---
+  const [showIssueDialog, setShowIssueDialog] = useState(false);
+  const [showSendFactoryDialog, setShowSendFactoryDialog] = useState(false);
+
+  // --- 1. FETCH DATA ---
   const fetchClaimDetail = useCallback(async () => {
     if (!claimId) return;
     try {
@@ -70,13 +67,13 @@ export default function WarrantyDetail() {
     fetchClaimDetail();
   }, [fetchClaimDetail]);
 
-  // --- 2. KHỞI TẠO CUSTOM HOOKS ---
-
   // Hook 1: Xử lý Cấp phụ tùng & Gửi hãng
   const { isProcessing, issueParts, sendToFactory } = useWarrantyAction({
     onSuccess: () => {
       fetchClaimDetail();
-      alert("✅ Thành công! Đã xử lý yêu cầu bảo hành");
+      // Đóng dialog sau khi thành công
+      setShowIssueDialog(false);
+      setShowSendFactoryDialog(false);
     },
   });
 
@@ -86,68 +83,60 @@ export default function WarrantyDetail() {
       fetchClaimDetail();
       setShowRejectDialog(false);
       setRejectReason("");
-      alert("✅ Đã từ chối yêu cầu bảo hành");
     },
   });
 
   // --- 3. CÁC HÀM XỬ LÝ CHỨC NĂNG ---
 
-  // Hàm xử lý: Cấp phụ tùng
-  const handleIssueParts = async () => {
+  // A. Hàm click nút "Cấp phụ tùng" -> Mở Dialog
+  const handleIssuePartsClick = () => {
+    setShowIssueDialog(true);
+  };
+
+  // B. Hàm xác nhận CẤP PHỤ TÙNG
+  const handleConfirmIssueParts = async () => {
     if (!claimId) return;
-
-    const confirmed = window.confirm(
-      "Xác nhận cấp phụ tùng cho yêu cầu bảo hành này?"
-    );
-    if (!confirmed) return;
-
     try {
       await issueParts(
         Number(claimId),
-        undefined, // appointmentDate (optional)
-        "Cấp phụ tùng từ kho trung tâm" // note
+        undefined,
+        "Cấp phụ tùng từ kho trung tâm"
       );
     } catch (error: any) {
-      alert("❌ Lỗi: " + (error.message || "Không thể cấp phụ tùng"));
+      console.log(error.message || "Có lỗi xảy ra");
     }
   };
 
-  // Hàm xử lý: Gửi hãng
-  const handleSendToFactory = async () => {
+  const handleSendToFactoryClick = () => {
+    setShowSendFactoryDialog(true);
+  };
+
+  // D. Hàm xác nhận GỬI HÃNG (Được gọi từ Dialog sau khi chọn ngày)
+  const handleConfirmSendFactory = async (appointmentDate: string) => {
     if (!claimId) return;
-
-    const confirmed = window.confirm(
-      "Xác nhận gửi yêu cầu này lên hãng sản xuất?\n(Thực hiện khi không có phụ tùng trong kho)"
-    );
-    if (!confirmed) return;
-
     try {
-      await sendToFactory(
-        Number(claimId),
-        "Chuyển lên hãng do thiếu phụ tùng tại trung tâm" // note
-      );
+      // Gọi hook sendToFactory với ngày đã chọn
+      await sendToFactory(Number(claimId), appointmentDate);
     } catch (error: any) {
-      alert("❌ Lỗi: " + (error.message || "Không thể gửi lên hãng"));
+      console.log(error.message || "Không thể gửi lên hãng");
     }
   };
 
-  // Hàm xử lý: Mở dialog từ chối
+  // D. Hàm click nút "Từ chối"
   const handleRejectClick = () => {
     setShowRejectDialog(true);
   };
 
-  // Hàm xử lý: Xác nhận từ chối
+  // E. Hàm xác nhận từ chối
   const handleConfirmReject = async () => {
     if (!claimId) return;
-
     try {
       await rejectClaim(Number(claimId), rejectReason);
     } catch (error: any) {
-      alert("❌ Lỗi: " + (error.message || "Không thể từ chối yêu cầu"));
+      console.log(error.message || "Không thể từ chối");
     }
   };
 
-  // --- 4. UI LOADING & ERROR ---
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
@@ -169,7 +158,6 @@ export default function WarrantyDetail() {
     );
   }
 
-  // --- 5. RENDER GIAO DIỆN CHÍNH ---
   return (
     <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
       {/* HEADER & ACTIONS */}
@@ -191,15 +179,15 @@ export default function WarrantyDetail() {
           </div>
         </div>
 
-        {/* --- KHU VỰC CÁC NÚT CHỨC NĂNG MỚI --- */}
+        {/* --- KHU VỰC CÁC NÚT CHỨC NĂNG --- */}
         <div className="flex items-center gap-2">
-          {(claim.status === "Nháp" || claim.status === "Chờ duyệt") && (
+          {(claim.status === "Chờ duyệt" || claim.status === "Nháp") && (
             <>
-              {/* Nút 1: Cấp phụ tùng */}
+              {/* Nút 1: Cấp phụ tùng -> Mở Dialog */}
               <Button
                 variant="outline"
                 className="text-blue-600 border-blue-200 hover:bg-blue-50 gap-2"
-                onClick={handleIssueParts}
+                onClick={handleIssuePartsClick}
                 disabled={isProcessing || isRejecting}
               >
                 {isProcessing ? (
@@ -212,11 +200,11 @@ export default function WarrantyDetail() {
                 </span>
               </Button>
 
-              {/* Nút 2: Gửi hãng */}
+              {/* Nút 2: Gửi hãng -> Dùng window.confirm */}
               <Button
                 variant="outline"
                 className="text-orange-600 border-orange-200 hover:bg-orange-50 gap-2"
-                onClick={handleSendToFactory}
+                onClick={handleSendToFactoryClick}
                 disabled={isProcessing || isRejecting}
               >
                 {isProcessing ? (
@@ -229,7 +217,7 @@ export default function WarrantyDetail() {
                 </span>
               </Button>
 
-              {/* Nút 3: Từ chối */}
+              {/* Nút 3: Từ chối -> Mở Dialog từ chối */}
               <Button
                 variant="outline"
                 className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-2"
@@ -303,7 +291,7 @@ export default function WarrantyDetail() {
             </CardContent>
           </Card>
 
-          {/* 3. Kết quả xử lý (Nếu có) */}
+          {/* 3. Kết quả xử lý */}
           {claim.result && (
             <Card>
               <CardHeader className="pb-3">
@@ -465,68 +453,46 @@ export default function WarrantyDetail() {
         </div>
       </div>
 
-      {/* --- DIALOG TỪ CHỐI --- */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-destructive" />
-              Từ chối yêu cầu bảo hành
-            </DialogTitle>
-            <DialogDescription>
-              Vui lòng nhập lý do từ chối yêu cầu bảo hành #{claimId}
-            </DialogDescription>
-          </DialogHeader>
+      {/* --- CÁC DIALOG XÁC NHẬN VÀ TỪ CHỐI --- */}
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Lý do từ chối <span className="text-destructive">*</span>
-              </label>
-              <Textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Nhập lý do từ chối cụ thể...\nVí dụ: Phụ tùng không còn trong thời hạn bảo hành, Sự cố do người dùng gây ra..."
-                rows={5}
-                className="resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                Lý do này sẽ được gửi đến khách hàng và lưu vào hệ thống
-              </p>
-            </div>
-          </div>
+      {/* 1. Dialog Từ chối */}
+      <RejectClaimDialog
+        open={showRejectDialog}
+        onOpenChange={setShowRejectDialog}
+        claimId={Number(claimId) || 0}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+        onConfirm={handleConfirmReject}
+        isRejecting={isRejecting}
+      />
+      <SendToFactoryDialog
+        open={showSendFactoryDialog}
+        onOpenChange={setShowSendFactoryDialog}
+        onConfirm={handleConfirmSendFactory}
+        isLoading={isProcessing}
+      />
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowRejectDialog(false);
-                setRejectReason("");
-              }}
-              disabled={isRejecting}
-            >
-              Hủy
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleConfirmReject}
-              disabled={isRejecting || !rejectReason.trim()}
-            >
-              {isRejecting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang xử lý...
-                </>
-              ) : (
-                <>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Xác nhận từ chối
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* 2. Dialog Xác nhận (CHỈ DÀNH CHO CẤP PHỤ TÙNG) */}
+      <ConfirmActionDialog
+        open={showIssueDialog}
+        onOpenChange={setShowIssueDialog}
+        onConfirm={handleConfirmIssueParts}
+        isLoading={isProcessing}
+        // Hardcode các props chỉ cho cấp phụ tùng
+        title="Xác nhận cấp phụ tùng"
+        description={
+          <span>
+            Bạn có chắc chắn muốn xác nhận <b>cấp phụ tùng</b> cho yêu cầu bảo
+            hành này?
+            <br />
+            <span className="text-sm text-muted-foreground block mt-1">
+              (Hệ thống sẽ trừ tồn kho linh kiện tương ứng)
+            </span>
+          </span>
+        }
+        confirmText="Đồng ý"
+        variant="info" // Màu xanh
+      />
     </div>
   );
 }

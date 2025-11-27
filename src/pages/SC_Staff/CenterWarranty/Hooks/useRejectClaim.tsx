@@ -36,7 +36,7 @@ export function useRejectClaim({
         requestData
       );
 
-      console.log("✅ Từ chối thành công:", response.data);
+      console.log("Từ chối thành công:", response.data);
 
       // Gọi callback để reload dữ liệu
       if (onSuccess) {
@@ -45,7 +45,7 @@ export function useRejectClaim({
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Lỗi từ chối yêu cầu:", error);
+      console.error("Lỗi từ chối yêu cầu:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
