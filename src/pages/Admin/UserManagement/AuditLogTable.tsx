@@ -1,3 +1,5 @@
+// src/pages/Admin/UserManagement/AuditLogTable.tsx
+
 import React from 'react';
 import { FaHistory, FaUser } from 'react-icons/fa';
 import styles from './UserManagement.module.css';
@@ -6,9 +8,27 @@ import type { AuditLog } from './types';
 interface AuditLogTableProps {
     logs: AuditLog[];
     loading: boolean;
+    // Thêm Props cho Pagination
+    currentPage: number;
+    totalPages: number;
+    totalElements: number;
+    pageSize: number;
+    onPageChange: (newPage: number) => void;
 }
 
-const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, loading }) => {
+const AuditLogTable: React.FC<AuditLogTableProps> = ({
+    logs,
+    loading,
+    currentPage,
+    totalPages,
+    totalElements,
+    pageSize,
+    onPageChange
+}) => {
+    // Tính toán phạm vi hiển thị
+    const startIndex = totalElements === 0 ? 0 : currentPage * pageSize + 1;
+    const endIndex = Math.min((currentPage + 1) * pageSize, totalElements);
+
     return (
         <div className={styles.tableContainer}>
             <table className={styles.userTable}>
@@ -32,7 +52,7 @@ const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, loading }) => {
                                 </div>
                             </td>
                         </tr>
-                    ) : logs.length === 0 ? (
+                    ) : logs.length === 0 && !loading ? ( // Thêm điều kiện !loading để tránh nhầm lẫn
                         <tr>
                             <td colSpan={6} className={styles.emptyState}>
                                 Chưa có nhật ký hoạt động nào
@@ -101,6 +121,50 @@ const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, loading }) => {
                     )}
                 </tbody>
             </table>
+
+            {/* --- FOOTER PHÂN TRANG --- */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 24px',
+                borderTop: '1px solid #e2e8f0'
+            }}>
+                <span style={{ fontSize: '14px', color: '#64748b' }}>
+                    {`Hiển thị ${startIndex} - ${endIndex} trong tổng số ${totalElements} mục`}
+                </span>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => onPageChange(currentPage - 1)}
+                        disabled={currentPage === 0 || loading || totalPages === 0}
+                        className={styles.btnSecondary}
+                        style={{ padding: '8px 12px', background: 'white', border: '1px solid #cbd5e1' }}
+                    >
+                        Trước
+                    </button>
+                    <span style={{
+                        padding: '8px 12px',
+                        backgroundColor: '#14b8a6',
+                        color: 'white',
+                        borderRadius: '6px',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}>
+                        {totalPages === 0 ? '0/0' : `${currentPage + 1} / ${totalPages}`}
+                    </span>
+                    <button
+                        onClick={() => onPageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages - 1 || loading || totalPages === 0}
+                        className={styles.btnSecondary}
+                        style={{ padding: '8px 12px', background: 'white', border: '1px solid #cbd5e1' }}
+                    >
+                        Sau
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

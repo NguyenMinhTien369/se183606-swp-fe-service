@@ -354,14 +354,16 @@ const WarrantyClaims = () => {
                                                         >
                                                             <FaTruck />
                                                         </button>
-                                                        <button
-                                                            onClick={() => { setSelectedClaim(claim); setShowDelayModal(true) }}
-                                                            className={styles.shipButton}
-                                                            style={{ backgroundColor: '#f97316' }}
-                                                            title="Báo thiếu hàng"
-                                                        >
-                                                            <FaExclamationCircle />
-                                                        </button>
+                                                        {claim.statusEnum === 'APPROVED' && (
+                                                            <button
+                                                                onClick={() => { setSelectedClaim(claim); setShowDelayModal(true) }}
+                                                                className={styles.shipButton}
+                                                                style={{ backgroundColor: '#f97316' }}
+                                                                title="Báo thiếu hàng"
+                                                            >
+                                                                <FaExclamationCircle />
+                                                            </button>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>

@@ -5,13 +5,14 @@ import {
     FaWarehouse, FaFileAlt, FaSync
 } from 'react-icons/fa';
 import { warrantyClaimAPI } from '@/utility';
+// SỬA LỖI IMPORT CSS CHO ĐÚNG VỚI FILE CỦA ADMIN
 import styles from './WarrantyApproval.module.css';
 
 // --- 1. ĐỊNH NGHĨA TYPES & ENUM ---
 
 export type ClaimStatusEnum =
     | 'SC_REVIEW'     // Chờ duyệt (Tại SC)
-    | 'PENDING'       // Chờ hãng duyệt
+    | 'PENDING'       // Chờ hãng duyệt (Admin cần duyệt)
     | 'APPROVED'      // Hãng đã duyệt
     | 'REJECTED'      // Từ chối
     | 'SHIPPING'      // Đang giao hàng
@@ -37,13 +38,13 @@ interface MappedWarrantyClaim {
     attachments: any[];
 }
 
-// --- 2. LOGIC MAPPING TRẠNG THÁI (QUAN TRỌNG NHẤT) ---
+// --- 2. LOGIC MAPPING TRẠNG THÁI ---
 
 // Map từ Tiếng Việt (BE trả về) sang Enum (FE dùng logic)
 const mapStatusToEnum = (statusVN: string): ClaimStatusEnum => {
     const s = statusVN ? statusVN.trim() : '';
 
-    // Mapping dựa trên các từ khóa backend trả về
+    // Mapping logic chuẩn với Backend hiện tại
     if (s === 'Chờ hãng duyệt') return 'PENDING';
     if (s === 'Hãng đã duyệt' || s === 'Được chấp nhận') return 'APPROVED';
     if (s === 'Từ chối') return 'REJECTED';
@@ -53,7 +54,7 @@ const mapStatusToEnum = (statusVN: string): ClaimStatusEnum => {
     if (s === 'Hoàn thành') return 'COMPLETED';
     if (s === 'Đang xử lý') return 'IN_PROGRESS';
 
-    // Mặc định các trạng thái khác (Nháp, Chờ duyệt tại SC...) coi như SC đang giữ
+    // Mặc định các trạng thái khác coi như SC đang giữ
     return 'SC_REVIEW';
 };
 
@@ -109,7 +110,7 @@ const WarrantyApproval = () => {
 
             const rawList = response.data?.result || response.data || [];
 
-            // Map data cẩn thận
+            // Map data
             const mappedList = rawList.map((c: any) => ({
                 id: c.claimID,
                 claimNumber: `CLM-${c.claimID}`,
@@ -124,8 +125,8 @@ const WarrantyApproval = () => {
                     licensePlate: c.licensePlate
                 },
                 issueDescription: c.description || '',
-                statusEnum: mapStatusToEnum(c.status), // Logic enum
-                statusVietnamese: c.status,            // Display text
+                statusEnum: mapStatusToEnum(c.status),
+                statusVietnamese: c.status,
                 createdDate: c.creationDate,
                 result: c.result,
                 affectedParts: c.affectedParts || [],
@@ -150,7 +151,7 @@ const WarrantyApproval = () => {
         fetchClaims();
     }, [statusFilter]);
 
-    // === HANDLERS (XỬ LÝ NÚT BẤM) ===
+    // === HANDLERS (SỬA ĐỂ TRÁNH LỖI 1135 & 400) ===
 
     // 1. DUYỆT ĐƠN (Approve)
     const handleApproveClaim = async () => {
@@ -161,13 +162,19 @@ const WarrantyApproval = () => {
         }
         try {
             setModalLoading(true);
-            // Gửi 'APPROVED' (Tiếng Anh) lên API để tránh lỗi 400
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'APPROVED');
+
+            // QUAN TRỌNG: Gửi chuỗi Tiếng Việt "Hãng đã duyệt" để khớp với Backend cũ
+            await warrantyClaimAPI.syncStatusFromManufacturer(
+                selectedClaim.id,
+                'Hãng đã duyệt', // Backend cũ cần chuỗi này
+                'Admin đã phê duyệt yêu cầu.' // Kèm note để tránh lỗi 400
+            );
+
             alert('✅ Đã duyệt đơn thành công!');
             setShowApproveModal(false);
             fetchClaims();
         } catch (error: any) {
-            const msg = error.response?.data?.message || error.message || 'Lỗi không xác định';
+            const msg = error.response?.data?.message || error.message;
             alert(`❌ Lỗi khi duyệt: ${msg}`);
         } finally {
             setModalLoading(false);
@@ -182,8 +189,12 @@ const WarrantyApproval = () => {
         }
         try {
             setModalLoading(true);
-            // Gửi 'REJECTED' (Tiếng Anh)
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'REJECTED', rejectReason);
+            // QUAN TRỌNG: Gửi chuỗi Tiếng Việt "Từ chối"
+            await warrantyClaimAPI.syncStatusFromManufacturer(
+                selectedClaim.id,
+                'Từ chối',
+                rejectReason
+            );
             alert('✅ Đã từ chối đơn!');
             setShowRejectModal(false);
             setRejectReason('');
@@ -201,6 +212,7 @@ const WarrantyApproval = () => {
         if (!selectedClaim) return;
         try {
             setModalLoading(true);
+            // API này Backend tự xử lý logic chuyển trạng thái
             await warrantyClaimAPI.shipParts(selectedClaim.id);
             alert('✅ Đã tạo lệnh giao hàng!');
             setShowShipPartsModal(false);
@@ -222,8 +234,14 @@ const WarrantyApproval = () => {
         try {
             setModalLoading(true);
             const note = `Hẹn ngày: ${new Date(delayDate).toLocaleDateString('vi-VN')}. Lý do: ${delayReason}`;
-            // Gửi 'MISSING_PARTS' (Tiếng Anh)
-            await warrantyClaimAPI.syncStatusFromManufacturer(selectedClaim.id, 'MISSING_PARTS', note);
+
+            // QUAN TRỌNG: Gửi chuỗi Tiếng Việt "Chờ bổ sung phụ tùng"
+            await warrantyClaimAPI.syncStatusFromManufacturer(
+                selectedClaim.id,
+                'Chờ bổ sung phụ tùng',
+                note
+            );
+
             alert('✅ Đã cập nhật trạng thái chờ bổ sung!');
             setShowDelayModal(false);
             setDelayDate(''); setDelayReason('');
@@ -259,7 +277,7 @@ const WarrantyApproval = () => {
         );
     };
 
-    // Helper đếm số lượng cho Stats
+    // Đếm số lượng cho Stats
     const getStatCount = (status: ClaimStatusEnum) => claims.filter((c) => c.statusEnum === status).length;
 
     const filteredClaims = claims.filter(c =>
@@ -375,8 +393,9 @@ const WarrantyApproval = () => {
                                                     <FaEye />
                                                 </button>
 
-                                                {/* --- LOGIC HIỆN NÚT --- */}
+                                                {/* --- LOGIC HIỆN NÚT (TRÁNH LỖI 1135) --- */}
 
+                                                {/* CHỈ HIỆN KHI ĐANG CHỜ HÃNG DUYỆT */}
                                                 {claim.statusEnum === 'PENDING' && (
                                                     <>
                                                         <button
@@ -394,22 +413,28 @@ const WarrantyApproval = () => {
                                                     </>
                                                 )}
 
+                                                {/* CHỈ HIỆN KHI ĐÃ DUYỆT HOẶC ĐANG DELAY */}
                                                 {(claim.statusEnum === 'APPROVED' || claim.statusEnum === 'MISSING_PARTS') && (
                                                     <>
+                                                        {/* Nút Giao hàng vẫn giữ lại để có thể chuyển về trạng thái SHIPPING */}
                                                         <button
                                                             onClick={() => { setSelectedClaim(claim); setShowShipPartsModal(true) }}
                                                             className={styles.shipButton} title="Giao hàng"
                                                         >
                                                             <FaTruck />
                                                         </button>
-                                                        <button
-                                                            onClick={() => { setSelectedClaim(claim); setShowDelayModal(true) }}
-                                                            className={styles.shipButton}
-                                                            style={{ backgroundColor: '#f97316' }}
-                                                            title="Báo thiếu hàng"
-                                                        >
-                                                            <FaExclamationCircle />
-                                                        </button>
+
+                                                        {/* Ẩn nút Báo thiếu hàng nếu đã là MISSING_PARTS */}
+                                                        {claim.statusEnum === 'APPROVED' && (
+                                                            <button
+                                                                onClick={() => { setSelectedClaim(claim); setShowDelayModal(true) }}
+                                                                className={styles.shipButton}
+                                                                style={{ backgroundColor: '#f97316' }}
+                                                                title="Báo thiếu hàng"
+                                                            >
+                                                                <FaExclamationCircle />
+                                                            </button>
+                                                        )}
                                                     </>
                                                 )}
                                             </div>
@@ -424,7 +449,7 @@ const WarrantyApproval = () => {
 
             {/* --- MODALS --- */}
 
-            {/* 1. DETAIL MODAL (Hiển thị ảnh thumbnail) */}
+            {/* 1. DETAIL MODAL (HIỂN THỊ ẢNH) */}
             {showDetailModal && selectedClaim && (
                 <div className={styles.modalOverlay} onClick={() => setShowDetailModal(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -461,6 +486,7 @@ const WarrantyApproval = () => {
                                     </div>
                                 )}
 
+                                {/* HIỂN THỊ HÌNH ẢNH & TÀI LIỆU */}
                                 {selectedClaim.attachments.length > 0 && (
                                     <div className={styles.detailItem} style={{ gridColumn: '1/-1', marginTop: '10px' }}>
                                         <label className="mb-2 block font-semibold">Hình ảnh & Tài liệu đính kèm:</label>
@@ -550,19 +576,32 @@ const WarrantyApproval = () => {
                 </div>
             )}
 
-            {/* 5. DELAY MODAL */}
+            {/* 5. DELAY MODAL (MODAL TO & ĐẸP) */}
             {showDelayModal && selectedClaim && (
                 <div className={styles.modalOverlay} onClick={() => setShowDelayModal(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <div className={styles.modalHeader}><h2 className="text-orange-600">Báo thiếu hàng (Delay)</h2></div>
                         <div className={styles.modalBody}>
                             <div className={styles.formGroup} style={{ marginBottom: '16px' }}>
-                                <label>Ngày hẹn có hàng:</label>
-                                <input type="date" className={styles.searchInput} value={delayDate} onChange={e => setDelayDate(e.target.value)} min={new Date().toISOString().split('T')[0]} />
+                                <label>Ngày hẹn khách hàng:</label>
+                                <input
+                                    type="date"
+                                    className={styles.searchInput}
+                                    value={delayDate}
+                                    onChange={e => setDelayDate(e.target.value)}
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
                             </div>
                             <div className={styles.formGroup}>
                                 <label>Lý do/Ghi chú:</label>
-                                <textarea className={styles.textarea} rows={5} value={delayReason} onChange={e => setDelayReason(e.target.value)} style={{ width: '100%' }} placeholder="Nhập lý do delay..." />
+                                <textarea
+                                    className={styles.textarea}
+                                    rows={5}
+                                    value={delayReason}
+                                    onChange={e => setDelayReason(e.target.value)}
+                                    style={{ width: '100%' }}
+                                    placeholder="Nhập lý do delay..."
+                                />
                             </div>
                         </div>
                         <div className={styles.modalFooter}>

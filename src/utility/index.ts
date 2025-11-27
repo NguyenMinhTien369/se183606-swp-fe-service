@@ -236,7 +236,7 @@ export const userAPI = {
 // ==================== Auditlog API ====================
 export const adminAPI = {
   // Gọi API lấy nhật ký hệ thống (Pageable)
-  getAuditLogs: (page: number = 0, size: number = 20) =>
+  getAuditLogs: (page: number = 0, size: number = 50) =>
     axiosInstance.get("/admin/audit-logs", {
       params: { page, size },
     }),
@@ -335,7 +335,7 @@ export const warrantyClaimAPI = {
 
   reportMissingParts: (
     id: number,
-    data: { missingParts: string; reason: string }
+    data: ReportMissingPartsRequestDTO
   ) => axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
 
   // API: @GetMapping("/service-center/{serviceCenterID}/non-draft")

@@ -258,10 +258,7 @@ export function ApprovedRequestsList({
         note: discrepancyNote.trim() || "KTV Báo thiếu hàng."
       };
 
-      console.log("Calling API: reportMissingParts", requestData);
-
       // 3. GỌI API BÁO THIẾU
-      //
       await warrantyClaimAPI.reportMissingParts(claimID, requestData);
 
       setDialogMessage(

@@ -26,7 +26,13 @@ const UserManagement: React.FC = () => {
     const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState(false);
 
-    // --- EFFECT: LOAD DATA KHI CHUYỂN TAB ---
+    // --- THÊM STATE PHÂN TRANG CHO AUDIT LOGS ---
+    const [currentPage, setCurrentPage] = useState(0); // Page bắt đầu từ 0
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const PAGE_SIZE = 50; // Kích thước trang cố định theo yêu cầu
+
+    // --- EFFECT: LOAD DATA KHI CHUYỂN TAB HOẶC CHUYỂN TRANG ---
     useEffect(() => {
         if (activeTab === 'users') {
             fetchUsers();
@@ -34,9 +40,9 @@ const UserManagement: React.FC = () => {
         } else {
             fetchAuditLogs();
         }
-    }, [activeTab]);
+    }, [activeTab, currentPage]); // <-- Thêm currentPage vào dependency array
 
-    // --- API: LẤY DANH SÁCH USER ---
+    // --- API: LẤY DANH SÁCH USER (Không đổi) ---
     const fetchUsers = async () => {
         try {
             setLoading(true);
@@ -79,7 +85,7 @@ const UserManagement: React.FC = () => {
         }
     };
 
-    // --- API: LẤY DANH SÁCH SERVICE CENTER ---
+    // --- API: LẤY DANH SÁCH SERVICE CENTER (Không đổi) ---
     const fetchServiceCenters = async () => {
         try {
             const response = await serviceCenterAPI.getServiceCenters();
@@ -108,22 +114,41 @@ const UserManagement: React.FC = () => {
         }
     };
 
-    // --- API: LẤY NHẬT KÝ HỆ THỐNG (MỚI) ---
+    // --- API: LẤY NHẬT KÝ HỆ THỐNG (CẬP NHẬT LOGIC PHÂN TRANG) ---
     const fetchAuditLogs = async () => {
         try {
             setLoadingLogs(true);
-            const response = await adminAPI.getAuditLogs(0, 50);
-            const logsData = response.data.result?.content || response.data.result || [];
+            // GỌI API VỚI THAM SỐ PHÂN TRANG
+            const response = await adminAPI.getAuditLogs(currentPage, PAGE_SIZE);
+
+            // Lấy data và thông tin phân trang
+            const result = response.data.result || {};
+            const logsData = result.content || [];
+
+            // Cập nhật state phân trang
             setAuditLogs(logsData);
+            setTotalPages(result.totalPages || 1);
+            setTotalElements(result.totalElements || 0);
+
         } catch (error) {
             console.error('Error fetching audit logs:', error);
             setAuditLogs([]);
+            setTotalPages(0);
+            setTotalElements(0);
         } finally {
             setLoadingLogs(false);
         }
     };
 
-    // --- HANDLERS: USER MODAL & ACTIONS ---
+    // --- HANDLER: CHUYỂN TRANG ---
+    const handlePageChange = (newPage: number) => {
+        // Đảm bảo newPage nằm trong phạm vi hợp lệ
+        if (newPage >= 0 && newPage < totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
+
+    // --- HANDLERS: USER MODAL & ACTIONS --- (Không đổi)
     const handleOpenModal = (mode: 'create' | 'edit', user: User | null = null) => {
         setModalMode(mode);
         setSelectedUser(user);
@@ -209,7 +234,7 @@ const UserManagement: React.FC = () => {
         }
     };
 
-    // --- FILTER LOGIC ---
+    // --- FILTER LOGIC --- (Không đổi)
     const filteredUsers = users.filter(user => {
         const matchesSearch =
             user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -258,7 +283,10 @@ const UserManagement: React.FC = () => {
                 </button>
 
                 <button
-                    onClick={() => setActiveTab('auditLogs')}
+                    onClick={() => {
+                        setActiveTab('auditLogs');
+                        setCurrentPage(0); // Reset về trang 0 khi chuyển tab
+                    }}
                     className={`${styles.tab} ${activeTab === 'auditLogs' ? styles.tabActive : ''}`}
                 >
                     <FaHistory />
@@ -266,7 +294,7 @@ const UserManagement: React.FC = () => {
                 </button>
             </div>
 
-            {/* --- TAB CONTENT 1: USER MANAGEMENT --- */}
+            {/* --- TAB CONTENT 1: USER MANAGEMENT --- (Không đổi) */}
             {activeTab === 'users' && (
                 <>
                     <div className={styles.controls}>
@@ -315,7 +343,15 @@ const UserManagement: React.FC = () => {
             {/* --- TAB CONTENT 2: AUDIT LOGS --- */}
             {activeTab === 'auditLogs' && (
                 <div className={styles.tableCard}>
-                    <AuditLogTable logs={auditLogs} loading={loadingLogs} />
+                    <AuditLogTable
+                        logs={auditLogs}
+                        loading={loadingLogs}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalElements={totalElements}
+                        pageSize={PAGE_SIZE}
+                        onPageChange={handlePageChange}
+                    />
                 </div>
             )}
 
