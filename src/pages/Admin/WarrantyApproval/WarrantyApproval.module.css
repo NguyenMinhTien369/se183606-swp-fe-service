@@ -83,6 +83,70 @@
     white-space: nowrap;
 }
 
+/* Container nội dung */
+.modalBody {
+    padding: 24px;
+}
+
+/* Nhóm bao quanh Label và Textarea để xếp dọc */
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    /* Quan trọng: Xếp từ trên xuống */
+    gap: 8px;
+    /* Khoảng cách giữa Label và Textarea */
+    width: 100%;
+}
+
+/* Label tiêu đề */
+.inputLabel {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    text-align: left;
+    /* Đảm bảo căn trái */
+}
+
+/* Dấu sao đỏ */
+.requiredStar {
+    color: #ef4444;
+    margin-left: 4px;
+}
+
+/* Ô nhập liệu */
+.textarea {
+    width: 100%;
+    /* Chiếm hết chiều ngang */
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    outline: none;
+    resize: vertical;
+    transition: all 0.2s;
+    box-sizing: border-box;
+    /* Quan trọng để không bị vỡ khung */
+}
+
+.textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Footer nút bấm */
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    /* Đẩy nút sang phải */
+    gap: 12px;
+    padding: 16px 24px;
+    background-color: #f9fafb;
+    /* Nền xám nhẹ phần footer cho tách biệt */
+    border-top: 1px solid #e5e7eb;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
 .refreshButton:hover:not(:disabled) {
     background: #0d9488;
     transform: translateY(-1px);
