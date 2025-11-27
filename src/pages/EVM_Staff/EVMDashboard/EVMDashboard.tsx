@@ -90,12 +90,6 @@ export default function EVMDashboard() {
             const products = productsRes.data.result || [];
             const vehicles = vehiclesRes.data.result || [];
 
-            console.log('📊 [EVM] Dashboard data loaded:');
-            console.log('  Users:', users.length);
-            console.log('  Claims:', claims.length);
-            console.log('  Products:', products.length);
-            console.log('  Vehicles:', vehicles.length);
-
             // Map status từ tiếng Việt sang tiếng Anh nếu cần
             const mapStatus = (status: string): string => {
                 const statusMap: Record<string, string> = {
