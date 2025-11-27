@@ -15,7 +15,7 @@ export function useWarrantyClaims(serviceCenterID: number) {
       setLoading(true);
       setError(null);
 
-      const response = await warrantyClaimAPI.getClaimsByServiceCenter(
+      const response = await warrantyClaimAPI.getNonDraftClaims(
         serviceCenterID
       );
       const claimsData = response.data.result || [];

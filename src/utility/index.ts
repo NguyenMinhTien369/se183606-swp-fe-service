@@ -258,6 +258,8 @@ export const warrantyClaimAPI = {
   getClaimsByServiceCenter: (serviceCenterID: number) =>
     axiosInstance.get(`/warranty-claims/service-center/${serviceCenterID}`),
   getClaimById: (id: number) => axiosInstance.get(`/warranty-claims/${id}`),
+
+  //Trang phân công
   getUnassignedClaims: () => axiosInstance.get("/warranty-claims/unassigned"),
 
   // 2. CRUD cơ bản
@@ -536,7 +538,9 @@ export const partDistributionAPI = {
 
   //API xuất kho bên center
   getDistributionsByServiceCenter: (serviceCenterId: number) =>
-    axiosInstance.get(`/distributions/service-center/${serviceCenterId}`),
+    axiosInstance.get(
+      `/distributions/service-center/${serviceCenterId}/exports`
+    ),
   getDistributionsByDateRange: (startDate: string, endDate: string) =>
     axiosInstance.get("/distributions/date-range", {
       params: { startDate, endDate },
