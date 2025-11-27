@@ -6,7 +6,7 @@ export interface PartDistributionResponseCenter {
   serviceCenterID: number;
   serviceCenterName: string;
   quantity: number;
-  distributionDate: string; // LocalDate từ Java thường được map thành string
+  distributionDate: string;
 }
 
 //API tồn kho phụ tùng
@@ -16,12 +16,12 @@ export interface PartInventoryResponseCenter {
   partTypeName: string;
   quantity: number;
   location: string;
-  lastUpdated: string; // LocalDate map về string (ISO 8601 format: YYYY-MM-DD)
+  lastUpdated: string;
 }
 export interface PartInventoryRequestCenter {
   partSerialNumber: string; // @NotBlank
   quantity: number; // @NotNull, @Min(0)
   location?: string; // Không bắt buộc
-  lastUpdated?: string; // LocalDate -> string (YYYY-MM-DD). Thường BE tự update.
+  lastUpdated?: string;
   serviceCenterID?: number; // Có thể null hoặc optional
 }
