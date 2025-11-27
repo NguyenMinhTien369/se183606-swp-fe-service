@@ -281,13 +281,14 @@ export const warrantyClaimAPI = {
     return axiosInstance.post(`/warranty-claims/${claimId}/submit`);
   },
 
-
   // 4. PROCESS FLOW - EVM STAFF (Hãng)
 
   // Đồng bộ trạng thái chung (Dùng cho Approve ban đầu -> "Hãng đã duyệt")
   syncStatusFromManufacturer: (id: number, status: string, note?: string) => {
     const params = note ? { status, note } : { status };
-    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, { params });
+    return axiosInstance.post(`/warranty-claims/${id}/sync-status`, null, {
+      params,
+    });
   },
 
   // SC Staff Duyệt hoặc Gửi Hãng !!!
@@ -534,6 +535,8 @@ export const partDistributionAPI = {
     axiosInstance.delete(`/distributions/${id}`),
   getDistributionsByPart: (serialNumber: string) =>
     axiosInstance.get(`/distributions/part/${serialNumber}`),
+
+  //API xuất kho bên center
   getDistributionsByServiceCenter: (serviceCenterId: number) =>
     axiosInstance.get(`/distributions/service-center/${serviceCenterId}`),
   getDistributionsByDateRange: (startDate: string, endDate: string) =>
@@ -589,30 +592,24 @@ export const inventoryAPI = {
   // API hiển thị phụ tùng trong kho theo Service Center
   // @GetMapping("/service-center/{serviceCenterID}")
   getServiceCenterInventories: (serviceCenterID: number) =>
-    axiosInstance.get<PartInventoryResponseCenter[]>(
-      `/inventory/service-center/${serviceCenterID}`
-    ),
+    axiosInstance.get(`/inventory/service-center/${serviceCenterID}`),
 
   // API xóa phụ tùng trong kho (Đã cập nhật thêm serviceCenterID)
   // @DeleteMapping("/{partSerialNumber}")
   deleteInventoryCenter: (serialNumber: string, serviceCenterID?: number) =>
-    axiosInstance.delete<void>(`/inventory/${serialNumber}`, {
+    axiosInstance.delete(`/inventory/${serialNumber}`, {
       params: { serviceCenterID }, // Truyền serviceCenterID dưới dạng Query Param
     }),
 
-  // API 2: Cập nhật tồn kho theo Serial Number
+  // API cập nhật tồn kho theo Serial Number
   // @PutMapping("/{partSerialNumber}")
   updateInventoryCenter: (
     partSerialNumber: string,
     data: PartInventoryRequestCenter
-  ) =>
-    axiosInstance.put<PartInventoryResponse>(
-      `/inventory/${partSerialNumber}`, // Đường dẫn có Path Variable
-      data
-    ),
+  ) => axiosInstance.put(`/inventory/${partSerialNumber}`, data),
 
-  // API 1: Thêm mới hoặc Cập nhật tồn kho
+  // API thêm mới hoặc Cập nhật tồn kho
   // @PostMapping (Đường dẫn: /inventory)
   createInventoryCenter: (data: PartInventoryRequestCenter) =>
-    axiosInstance.post<PartInventoryResponseCenter>("/inventory", data),
+    axiosInstance.post("/inventory", data),
 };
