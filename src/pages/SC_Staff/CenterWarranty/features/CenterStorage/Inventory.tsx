@@ -1,208 +1,151 @@
 import { useState, useEffect } from "react";
-
-// Hooks
 import { useAuth } from "@/pages/Login/feature/AuthContext";
+import useGetServiceCenterInventories from "@/pages/SC_Staff/CenterWarranty/Hooks/store/useGetServiceCenterInventories";
+import { inventoryAPI } from "@/utility";
+import type { PartInventoryResponseCenter } from "../../types/PartDistribution";
 
-// Components
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+// UI Components
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Loader2, Search, Pencil, Trash2, Plus } from "lucide-react";
 
-// Icons
-import { Loader2, Search, Pencil, Trash2 } from "lucide-react";
-import useGetServiceCenterInventories from "../../Hooks/Store/useGetServiceCenterInventories";
+// Import Form Component (Đảm bảo 2 file này nằm CÙNG THƯ MỤC với Inventory.tsx)
+import AddPartsForm from "./AddPartsForm";
+import UpdatePartsForm from "./UpdatePartsForm";
 
 export default function Inventory() {
   const { user } = useAuth();
   const serviceCenterID = user?.serviceCenterID || 1;
-  const { inventory, loading, error, fetchInventory } =
-    useGetServiceCenterInventories(serviceCenterID);
+  const { inventory, loading, error, fetchInventory } = useGetServiceCenterInventories(serviceCenterID);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Gọi fetchInventory khi component mount
+  // Modal States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<PartInventoryResponseCenter | null>(null);
+
   useEffect(() => {
     fetchInventory();
   }, [serviceCenterID]);
 
-  const handleEdit = (item: any) => {
-    console.log("Sửa phụ tùng:", item);
-    // TODO: Implement edit logic
+  // Handle Edit
+  const handleEdit = (item: PartInventoryResponseCenter) => {
+    setSelectedItem(item);
+    setShowUpdateModal(true);
   };
 
-  const handleDelete = (item: any) => {
-    console.log("Xóa phụ tùng:", item);
-    // TODO: Implement delete logic
+  // Handle Delete
+  const handleDelete = async (item: PartInventoryResponseCenter) => {
+    if (window.confirm(`Bạn chắc chắn muốn xóa serial: ${item.partSerialNumber}?`)) {
+      try {
+        await inventoryAPI.deleteInventoryCenter(item.partSerialNumber, serviceCenterID);
+        alert("✅ Đã xóa thành công!");
+        fetchInventory();
+      } catch (error: any) {
+        alert("❌ Lỗi khi xóa: " + (error.message || "Unknown error"));
+      }
+    }
   };
 
-  // Đảm bảo inventory là array trước khi filter
+  // Filter Logic
   const inventoryArray = Array.isArray(inventory) ? inventory : [];
-
   const filteredInventory = inventoryArray.filter((item) => {
     if (!searchTerm) return true;
-
-    const searchLower = searchTerm.toLowerCase();
+    const s = searchTerm.toLowerCase();
     return (
-      item.partSerialNumber.toLowerCase().includes(searchLower) ||
-      item.partTypeName.toLowerCase().includes(searchLower) ||
-      item.location.toLowerCase().includes(searchLower)
+      item.partSerialNumber.toLowerCase().includes(s) ||
+      item.partTypeName.toLowerCase().includes(s) ||
+      item.location.toLowerCase().includes(s)
     );
   });
 
   return (
     <Card className="border shadow-sm">
-      <CardHeader>
-        <CardTitle>Kho phụ tùng trung tâm</CardTitle>
-        <CardDescription>
-          Quản lý tồn kho và theo dõi phụ tùng tại trung tâm bảo hành
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Kho phụ tùng trung tâm</CardTitle>
+          <CardDescription>Quản lý tồn kho và vị trí</CardDescription>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="mr-2 h-4 w-4" /> Nhập Kho
+        </Button>
       </CardHeader>
 
       <CardContent>
-        {/* Search Filter */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Tìm kiếm theo mã serial, tên phụ tùng hoặc vị trí..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+        {/* Search */}
+        <div className="mb-6 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Tìm kiếm..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg">
-            <p className="font-medium">Lỗi khi tải dữ liệu</p>
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
+        {/* Error */}
+        {error && <div className="text-red-500 mb-4 p-2 bg-red-50 border border-red-200 rounded">{error}</div>}
 
         {/* Table */}
-        <div className="rounded-lg border overflow-hidden">
+        <div className="rounded-lg border">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Đang tải dữ liệu...
-              </p>
-            </div>
+            <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto h-8 w-8" /></div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Mã Kho</TableHead>
-                  <TableHead>Mã Số Serial</TableHead>
+                  <TableHead>Serial</TableHead>
                   <TableHead>Tên Phụ Tùng</TableHead>
                   <TableHead className="text-center">Số Lượng</TableHead>
                   <TableHead>Vị Trí</TableHead>
-                  <TableHead>Cập Nhật Lần Cuối</TableHead>
-                  <TableHead className="text-center w-[120px]">
-                    Thao Tác
-                  </TableHead>
+                  <TableHead className="text-center">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {filteredInventory.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="py-12 text-center text-muted-foreground"
-                    >
-                      {searchTerm
-                        ? "Không tìm thấy phụ tùng phù hợp"
-                        : "Chưa có phụ tùng nào trong kho"}
-                    </TableCell>
-                  </TableRow>
+                  <TableRow><TableCell colSpan={5} className="text-center py-8">Không có dữ liệu</TableCell></TableRow>
                 ) : (
-                  filteredInventory.map((item) => {
-                    return (
-                      <TableRow
-                        key={item.inventoryID}
-                        className="hover:bg-muted/50 transition-colors"
-                      >
-                        <TableCell className="font-mono font-medium text-primary">
-                          #{item.inventoryID}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.partSerialNumber}
-                        </TableCell>
-                        <TableCell className="max-w-[250px]">
-                          <div className="truncate font-medium">
-                            {item.partTypeName}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold text-sm">
-                            {item.quantity}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {item.location}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(item.lastUpdated).toLocaleString("vi-VN", {
-                            year: "numeric",
-                            month: "2-digit",
-                            day: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              onClick={() => handleEdit(item)}
-                              title="Sửa"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleDelete(item)}
-                              title="Xóa"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  filteredInventory.map((item) => (
+                    <TableRow key={item.inventoryID}>
+                      <TableCell className="font-mono font-medium">{item.partSerialNumber}</TableCell>
+                      <TableCell>{item.partTypeName}</TableCell>
+                      <TableCell className="text-center">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${item.quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {item.quantity}
+                        </span>
+                      </TableCell>
+                      <TableCell>{item.location}</TableCell>
+                      <TableCell>
+                        <div className="flex justify-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}><Pencil className="h-4 w-4 text-blue-600" /></Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
           )}
         </div>
 
-        {/* Summary */}
-        {!loading && filteredInventory.length > 0 && (
-          <div className="mt-4 text-sm text-muted-foreground">
-            Hiển thị {filteredInventory.length} phụ tùng
-            {searchTerm && ` (đã lọc từ ${inventoryArray.length} phụ tùng)`}
-          </div>
-        )}
+        {/* Modals */}
+        <AddPartsForm
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={fetchInventory}
+          serviceCenterID={serviceCenterID}
+        />
+
+        <UpdatePartsForm
+          isOpen={showUpdateModal}
+          onClose={() => { setShowUpdateModal(false); setSelectedItem(null); }}
+          onSuccess={fetchInventory}
+          item={selectedItem}
+          serviceCenterID={serviceCenterID}
+        />
       </CardContent>
     </Card>
   );
