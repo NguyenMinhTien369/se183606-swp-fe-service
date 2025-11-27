@@ -3,10 +3,11 @@
   ScRejectRequest,
 } from "@/pages/SC_Staff/CenterWarranty/types/CenterWarranty";
 import axiosInstance from "./axios";
+import type { ConfirmPartsRequestDTO } from "@/pages/SC_Technician/ConductWarranty/types/warranty";
 import type {
-  ConfirmPartsRequestDTO,
-  ReportMissingPartsRequestDTO,
-} from "@/pages/SC_Technician/ConductWarranty/types/warranty";
+  PartInventoryRequestCenter,
+  PartInventoryResponseCenter,
+} from "@/pages/SC_Staff/CenterWarranty/types/PartDistribution";
 
 // Lưu ý: Các API dưới đây đã được chuẩn hóa theo backend hiện tại trong EVWarrantyHub.
 // Những endpoint chưa có ở backend đã được gỡ bỏ hoặc thay đổi cho phù hợp.
@@ -335,6 +336,12 @@ export const warrantyClaimAPI = {
     id: number,
     data: { missingParts: string; reason: string }
   ) => axiosInstance.post(`/warranty-claims/${id}/report-missing`, data),
+
+  // API: @GetMapping("/service-center/{serviceCenterID}/non-draft")
+  getNonDraftClaims: (serviceCenterID: number) =>
+    axiosInstance.get(
+      `/warranty-claims/service-center/${serviceCenterID}/non-draft`
+    ),
 };
 
 // ==================== CLAIM ASSIGNMENT API ====================
@@ -576,4 +583,36 @@ export const inventoryAPI = {
   // @GetMapping("/location")
   getInventoryByLocation: (location: string) =>
     axiosInstance.get("/inventory/location", { params: { location } }),
+
+  //--------------------API bên kho trung tâm------------------------
+
+  // API hiển thị phụ tùng trong kho theo Service Center
+  // @GetMapping("/service-center/{serviceCenterID}")
+  getServiceCenterInventories: (serviceCenterID: number) =>
+    axiosInstance.get<PartInventoryResponseCenter[]>(
+      `/inventory/service-center/${serviceCenterID}`
+    ),
+
+  // API xóa phụ tùng trong kho (Đã cập nhật thêm serviceCenterID)
+  // @DeleteMapping("/{partSerialNumber}")
+  deleteInventoryCenter: (serialNumber: string, serviceCenterID?: number) =>
+    axiosInstance.delete<void>(`/inventory/${serialNumber}`, {
+      params: { serviceCenterID }, // Truyền serviceCenterID dưới dạng Query Param
+    }),
+
+  // API 2: Cập nhật tồn kho theo Serial Number
+  // @PutMapping("/{partSerialNumber}")
+  updateInventoryCenter: (
+    partSerialNumber: string,
+    data: PartInventoryRequestCenter
+  ) =>
+    axiosInstance.put<PartInventoryResponse>(
+      `/inventory/${partSerialNumber}`, // Đường dẫn có Path Variable
+      data
+    ),
+
+  // API 1: Thêm mới hoặc Cập nhật tồn kho
+  // @PostMapping (Đường dẫn: /inventory)
+  createInventoryCenter: (data: PartInventoryRequestCenter) =>
+    axiosInstance.post<PartInventoryResponseCenter>("/inventory", data),
 };
