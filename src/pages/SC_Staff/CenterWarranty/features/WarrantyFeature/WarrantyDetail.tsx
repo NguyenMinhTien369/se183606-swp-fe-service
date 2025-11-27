@@ -214,7 +214,7 @@ export default function WarrantyDetail() {
 
         {/* --- KHU VỰC CÁC NÚT CHỨC NĂNG --- */}
         {/* --- 3 nút chính --- */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {claim.status === "Chờ duyệt" && (
             <>
               {/* Nút 1: Cấp phụ tùng -> Mở Dialog */}
